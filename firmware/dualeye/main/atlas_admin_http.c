@@ -188,7 +188,7 @@ static esp_err_t index_handler(httpd_req_t *req)
         "<section><h2>大模型/API</h2><label>模式<select id=\"llm_mode\"><option value=\"off\">关闭</option><option value=\"host\">电脑宿主 MiniClaw</option><option value=\"cloud\">云端大模型</option><option value=\"embedded\">端侧 MimiClaw</option></select></label>"
         "<label>Provider<input id=\"provider\" value=\"openai_compatible\"></label><label>Base URL<input id=\"base_url\"></label><label>Model<input id=\"model\"></label><label>API Key<input id=\"api_key\" type=\"password\" placeholder=\"留空则不更新\"></label>"
         "<button class=\"primary\" onclick=\"saveLlm()\">保存 API 设置</button></section>"
-        "<section><h2>安全</h2><label><input id=\"motion_enabled\" type=\"checkbox\"> 允许 Web/语音移动</label><label>最大速度 %<input id=\"max_speed\" type=\"number\" min=\"1\" max=\"80\" value=\"40\"></label>"
+        "<section><h2>安全</h2><label><input id=\"motion_enabled\" type=\"checkbox\"> 允许运动</label><label>控制模式<select id=\"control_mode\"><option value=\"manual\">手动模式：Web 控制</option><option value=\"ai\">AI 模式：语音/MimiClaw</option></select></label><label>最大速度 %<input id=\"max_speed\" type=\"number\" min=\"1\" max=\"80\" value=\"40\"></label>"
         "<label>最大时长 ms<input id=\"max_duration\" type=\"number\" min=\"100\" max=\"2000\" value=\"700\"></label><button class=\"primary\" onclick=\"saveSafety()\">保存安全设置</button></section>"
         "<section><h2>文本意图测试</h2><label>文本<input id=\"voice_text\" placeholder=\"forward / stop / left\"></label><button onclick=\"sendText()\">发送到意图层</button></section>"
         "<section><h2>系统</h2><div class=\"row\"><button onclick=\"resetCfg()\">清除 Wi-Fi/API</button><button onclick=\"reboot()\">重启</button></div></section></div></main>"
@@ -196,13 +196,13 @@ static esp_err_t index_handler(httpd_req_t *req)
         "const enc=encodeURIComponent;function pin(){return document.getElementById('pin').value}"
         "async function post(u,b=''){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b});const t=await r.text();try{return JSON.parse(t)}catch(e){return {raw:t}}}"
         "async function refresh(){const s=await (await fetch('/api/status')).json();document.getElementById('status').textContent=JSON.stringify(s,null,2);"
-        "document.getElementById('max_speed').value=s.safety.max_speed_percent;document.getElementById('max_duration').value=s.safety.max_duration_ms;document.getElementById('motion_enabled').checked=s.safety.motion_enabled;"
+        "document.getElementById('max_speed').value=s.safety.max_speed_percent;document.getElementById('max_duration').value=s.safety.max_duration_ms;document.getElementById('motion_enabled').checked=s.safety.motion_enabled;document.getElementById('control_mode').value=s.safety.control_mode||'manual';"
         "document.getElementById('llm_mode').value=s.llm.mode||'off';document.getElementById('provider').value=s.llm.provider||'';document.getElementById('base_url').value=s.llm.base_url||'';document.getElementById('model').value=s.llm.model||''}"
         "async function stopNow(){alert(JSON.stringify(await post('/api/rover/stop')));refresh()}"
         "async function move(d){const b=`pin=${enc(pin())}&dir=${d}&speed=${enc(speed.value)}&duration=${enc(duration.value)}`;alert(JSON.stringify(await post('/api/rover/move',b)));refresh()}"
         "async function saveWifi(){const b=`pin=${enc(pin())}&ssid=${enc(ssid.value)}&password=${enc(wifi_pass.value)}`;alert(JSON.stringify(await post('/api/config/wifi',b)));refresh()}"
         "async function saveLlm(){const b=`pin=${enc(pin())}&mode=${enc(llm_mode.value)}&provider=${enc(provider.value)}&base_url=${enc(base_url.value)}&model=${enc(model.value)}&api_key=${enc(api_key.value)}`;alert(JSON.stringify(await post('/api/config/llm',b)));api_key.value='';refresh()}"
-        "async function saveSafety(){const b=`pin=${enc(pin())}&motion_enabled=${motion_enabled.checked?1:0}&max_speed=${enc(max_speed.value)}&max_duration=${enc(max_duration.value)}`;alert(JSON.stringify(await post('/api/config/safety',b)));refresh()}"
+        "async function saveSafety(){const b=`pin=${enc(pin())}&motion_enabled=${motion_enabled.checked?1:0}&control_mode=${enc(control_mode.value)}&max_speed=${enc(max_speed.value)}&max_duration=${enc(max_duration.value)}`;alert(JSON.stringify(await post('/api/config/safety',b)));refresh()}"
         "async function sendText(){const b=`pin=${enc(pin())}&text=${enc(voice_text.value)}`;alert(JSON.stringify(await post('/api/voice/text',b)));refresh()}"
         "async function resetCfg(){if(confirm('清除 Wi-Fi/API 配置？'))alert(JSON.stringify(await post('/api/config/reset',`pin=${enc(pin())}`)))}"
         "async function reboot(){if(confirm('重启设备？'))alert(JSON.stringify(await post('/api/system/reboot',`pin=${enc(pin())}`)))}refresh();setInterval(refresh,4000);</script></body></html>";
@@ -228,7 +228,7 @@ static esp_err_t status_handler(httpd_req_t *req)
     json_escape(model, sizeof(model), llm.model);
     json_escape(provider, sizeof(provider), llm.provider);
 
-    char json[1400];
+    char json[1500];
     snprintf(json,
              sizeof(json),
              "{"
@@ -237,7 +237,7 @@ static esp_err_t status_handler(httpd_req_t *req)
              "\"ui\":{\"page\":\"%s\",\"expression\":\"%s\",\"motion\":\"%s\",\"moving\":%s,\"last_ack\":%d},"
              "\"wifi\":{\"mode\":\"%s\",\"sta_connected\":%s,\"sta_ip\":\"%s\",\"ap_started\":%s,\"ap_ip\":\"%s\",\"ap_ssid\":\"%s\"},"
              "\"llm\":{\"mode\":\"%s\",\"label\":\"%s\",\"provider\":\"%s\",\"base_url\":\"%s\",\"model\":\"%s\",\"configured\":%s,\"api_key_set\":%s},"
-             "\"safety\":{\"motion_enabled\":%s,\"max_speed_percent\":%u,\"max_duration_ms\":%u}"
+             "\"safety\":{\"motion_enabled\":%s,\"control_mode\":\"%s\",\"max_speed_percent\":%u,\"max_duration_ms\":%u}"
              "}",
              atlas_page_name(s_ctx.ui_state->page),
              atlas_expression_name(s_ctx.ui_state->expression),
@@ -258,6 +258,7 @@ static esp_err_t status_handler(httpd_req_t *req)
              llm.configured ? "true" : "false",
              llm.api_key_set ? "true" : "false",
              s_ctx.config->safety.motion_enabled ? "true" : "false",
+             s_ctx.config->safety.control_mode,
              s_ctx.config->safety.max_speed_percent,
              s_ctx.config->safety.max_duration_ms);
 
@@ -283,6 +284,9 @@ static esp_err_t move_handler(httpd_req_t *req)
     }
     if (!atlas_config_motion_allowed(s_ctx.config)) {
         return send_error(req, "423 Locked", "motion disabled");
+    }
+    if (!atlas_config_manual_control_allowed(s_ctx.config)) {
+        return send_error(req, "409 Conflict", "manual mode required");
     }
 
     char dir[8] = "";
@@ -386,7 +390,7 @@ static esp_err_t save_llm_handler(httpd_req_t *req)
 
 static esp_err_t save_safety_handler(httpd_req_t *req)
 {
-    char body[256];
+    char body[320];
     ESP_RETURN_ON_ERROR(read_body(req, body, sizeof(body)), TAG, "read body failed");
     if (!authorize_body(body)) {
         return send_error(req, "403 Forbidden", "pairing required");
@@ -396,6 +400,9 @@ static esp_err_t save_safety_handler(httpd_req_t *req)
     atlas_safety_config_t safety = s_ctx.config->safety;
     if (form_get_value(body, "motion_enabled", value, sizeof(value))) {
         safety.motion_enabled = strcmp(value, "1") == 0 || strcmp(value, "true") == 0;
+    }
+    if (form_get_value(body, "control_mode", value, sizeof(value))) {
+        strlcpy(safety.control_mode, value, sizeof(safety.control_mode));
     }
     if (form_get_value(body, "max_speed", value, sizeof(value))) {
         safety.max_speed_percent = (uint8_t)atoi(value);
@@ -425,8 +432,13 @@ static esp_err_t voice_text_handler(httpd_req_t *req)
     char text[160] = "";
     (void)form_get_value(body, "text", text, sizeof(text));
     atlas_mimiclaw_result_t result = atlas_mimiclaw_resolve_text(s_ctx.config, text);
-    if (is_motion_event(result.intent.event) && !atlas_config_motion_allowed(s_ctx.config)) {
-        return send_error(req, "423 Locked", "motion disabled");
+    if (is_motion_event(result.intent.event)) {
+        if (!atlas_config_motion_allowed(s_ctx.config)) {
+            return send_error(req, "423 Locked", "motion disabled");
+        }
+        if (!atlas_config_ai_control_allowed(s_ctx.config)) {
+            return send_error(req, "409 Conflict", "ai mode required");
+        }
     }
 
     const esp_err_t err = atlas_ui_handle_voice_intent(s_ctx.ui_state, result.intent, now_ms());

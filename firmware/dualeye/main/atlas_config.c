@@ -60,6 +60,7 @@ void atlas_config_defaults(atlas_config_t *config)
     config->ui.brightness = 70;
     config->ui.volume = 60;
     config->safety.motion_enabled = true;
+    copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     config->safety.max_speed_percent = 40;
     config->safety.max_duration_ms = 700;
     config->safety.require_confirm_for_patrol = true;
@@ -107,6 +108,10 @@ esp_err_t atlas_config_load(atlas_config_t *config)
     (void)nvs_get_string_default(handle, "llm_model", config->llm.model, sizeof(config->llm.model), "");
     (void)nvs_get_string_default(handle, "llm_key", config->llm.api_key, sizeof(config->llm.api_key), "");
     (void)nvs_get_string_default(handle, "ui_theme", config->ui.theme, sizeof(config->ui.theme), "atlas_blue");
+    (void)nvs_get_string_default(handle, "ctrl_mode", config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
+    if (strcmp(config->safety.control_mode, "manual") != 0 && strcmp(config->safety.control_mode, "ai") != 0) {
+        copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
+    }
 
     uint8_t value_u8 = 0;
     uint16_t value_u16 = 0;
@@ -131,11 +136,12 @@ esp_err_t atlas_config_load(atlas_config_t *config)
 
     nvs_close(handle);
     ESP_LOGI(TAG,
-             "config loaded: wifi=%s llm_mode=%s api_key=%s motion=%s max_speed=%u max_duration=%u",
+             "config loaded: wifi=%s llm_mode=%s api_key=%s motion=%s control=%s max_speed=%u max_duration=%u",
              atlas_config_has_wifi(config) ? "set" : "unset",
              config->llm.mode,
              atlas_config_has_llm_api_key(config) ? "set" : "unset",
              config->safety.motion_enabled ? "enabled" : "disabled",
+             config->safety.control_mode,
              config->safety.max_speed_percent,
              config->safety.max_duration_ms);
     return ESP_OK;
@@ -210,10 +216,16 @@ esp_err_t atlas_config_save_safety(const atlas_safety_config_t *safety)
     if (clipped.max_duration_ms < 100) {
         clipped.max_duration_ms = 100;
     }
+    if (strcmp(clipped.control_mode, "manual") != 0 && strcmp(clipped.control_mode, "ai") != 0) {
+        copy_string(clipped.control_mode, sizeof(clipped.control_mode), "manual");
+    }
 
     nvs_handle_t handle;
     ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &handle), TAG, "nvs_open failed");
     esp_err_t err = nvs_set_u8(handle, "motion_en", clipped.motion_enabled ? 1 : 0);
+    if (err == ESP_OK) {
+        err = nvs_set_string_checked(handle, "ctrl_mode", clipped.control_mode);
+    }
     if (err == ESP_OK) {
         err = nvs_set_u8(handle, "max_speed", clipped.max_speed_percent);
     }
@@ -228,8 +240,9 @@ esp_err_t atlas_config_save_safety(const atlas_safety_config_t *safety)
     }
     nvs_close(handle);
     ESP_LOGI(TAG,
-             "safety config saved: motion=%s max_speed=%u max_duration=%u",
+             "safety config saved: motion=%s control=%s max_speed=%u max_duration=%u",
              clipped.motion_enabled ? "enabled" : "disabled",
+             clipped.control_mode,
              clipped.max_speed_percent,
              clipped.max_duration_ms);
     return err;
@@ -265,4 +278,16 @@ bool atlas_config_has_llm_api_key(const atlas_config_t *config)
 bool atlas_config_motion_allowed(const atlas_config_t *config)
 {
     return config != NULL && config->safety.motion_enabled;
+}
+
+bool atlas_config_manual_control_allowed(const atlas_config_t *config)
+{
+    return atlas_config_motion_allowed(config) &&
+           strcmp(config->safety.control_mode, "manual") == 0;
+}
+
+bool atlas_config_ai_control_allowed(const atlas_config_t *config)
+{
+    return atlas_config_motion_allowed(config) &&
+           strcmp(config->safety.control_mode, "ai") == 0;
 }

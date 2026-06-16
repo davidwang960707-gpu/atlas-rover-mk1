@@ -34,7 +34,7 @@ MOCK_FETCH_SCRIPT = r"""
     ui: { page: "home", expression: "idle", motion: "stop", moving: false, last_ack: 0 },
     wifi: { mode: "ap", sta_connected: false, sta_ip: "", ap_started: true, ap_ip: "192.168.4.1", ap_ssid: "AtlasRover-PREVIEW" },
     llm: { mode: "off", label: "关闭", provider: "openai_compatible", base_url: "", model: "", configured: false, api_key_set: false },
-    safety: { motion_enabled: true, max_speed_percent: 40, max_duration_ms: 700 }
+    safety: { motion_enabled: true, control_mode: "manual", max_speed_percent: 40, max_duration_ms: 700 }
   };
   const labels = { off: "关闭", host: "电脑宿主 MiniClaw", cloud: "云端大模型", embedded: "端侧 MimiClaw" };
   const jsonResponse = (payload, status = 200) => new Response(JSON.stringify(payload), {
@@ -62,6 +62,7 @@ MOCK_FETCH_SCRIPT = r"""
       const motion = { F: "forward", B: "backward", L: "turn_left", R: "turn_right" }[form.get("dir")];
       if (!motion) return jsonResponse({ ok: false, error: "bad direction" }, 400);
       if (!state.safety.motion_enabled) return jsonResponse({ ok: false, error: "motion disabled" }, 423);
+      if (state.safety.control_mode !== "manual") return jsonResponse({ ok: false, error: "manual mode required" }, 409);
       Object.assign(state.ui, { expression: "moving", motion, moving: true, last_ack: 1 });
       return jsonResponse({
         ok: true,
@@ -98,6 +99,7 @@ MOCK_FETCH_SCRIPT = r"""
       if (denied) return jsonResponse(denied.payload, denied.status);
       Object.assign(state.safety, {
         motion_enabled: ["1", "true"].includes(form.get("motion_enabled")),
+        control_mode: ["manual", "ai"].includes(form.get("control_mode")) ? form.get("control_mode") : "manual",
         max_speed_percent: Math.min(Math.max(Number(form.get("max_speed") || 40), 1), 80),
         max_duration_ms: Math.min(Math.max(Number(form.get("max_duration") || 700), 100), 2000)
       });
@@ -107,8 +109,15 @@ MOCK_FETCH_SCRIPT = r"""
       const denied = requirePin(form);
       if (denied) return jsonResponse(denied.payload, denied.status);
       const text = (form.get("text") || "").toLowerCase();
-      const event = text.includes("stop") || text.includes("停") ? "stop" : "thinking";
-      state.ui.expression = event === "stop" ? "idle" : "thinking";
+      const event = text.includes("stop") || text.includes("停") ? "stop" :
+        (text.includes("forward") || text.includes("前")) ? "move_forward" :
+        (text.includes("back") || text.includes("后")) ? "move_backward" :
+        (text.includes("left") || text.includes("左")) ? "turn_left" :
+        (text.includes("right") || text.includes("右")) ? "turn_right" : "thinking";
+      const isMotion = ["move_forward", "move_backward", "turn_left", "turn_right"].includes(event);
+      if (isMotion && !state.safety.motion_enabled) return jsonResponse({ ok: false, error: "motion disabled" }, 423);
+      if (isMotion && state.safety.control_mode !== "ai") return jsonResponse({ ok: false, error: "ai mode required" }, 409);
+      state.ui.expression = event === "stop" ? "idle" : (isMotion ? "moving" : "thinking");
       return jsonResponse({ ok: true, source: "preview", used_llm: false, event });
     }
     if (path === "/api/config/reset") {
@@ -183,6 +192,7 @@ STATE = {
     },
     "safety": {
         "motion_enabled": True,
+        "control_mode": "manual",
         "max_speed_percent": 40,
         "max_duration_ms": 700,
     },
@@ -259,6 +269,9 @@ class PreviewHandler(BaseHTTPRequestHandler):
             if not STATE["safety"]["motion_enabled"]:
                 self.send_json({"ok": False, "error": "motion disabled"}, HTTPStatus.LOCKED)
                 return
+            if STATE["safety"]["control_mode"] != "manual":
+                self.send_json({"ok": False, "error": "manual mode required"}, HTTPStatus.CONFLICT)
+                return
             direction = form.get("dir", "")
             speed = min(int(form.get("speed") or 30), STATE["safety"]["max_speed_percent"])
             duration = min(int(form.get("duration") or 500), STATE["safety"]["max_duration_ms"])
@@ -308,6 +321,7 @@ class PreviewHandler(BaseHTTPRequestHandler):
             STATE["safety"].update(
                 {
                     "motion_enabled": form.get("motion_enabled") in {"1", "true"},
+                    "control_mode": form.get("control_mode") if form.get("control_mode") in {"manual", "ai"} else "manual",
                     "max_speed_percent": min(max(int(form.get("max_speed") or 40), 1), 80),
                     "max_duration_ms": min(max(int(form.get("max_duration") or 700), 100), 2000),
                 }
@@ -319,8 +333,26 @@ class PreviewHandler(BaseHTTPRequestHandler):
             if not self.require_pin(form):
                 return
             text = form.get("text", "").lower()
-            event = "stop" if "stop" in text or "停" in text else "thinking"
-            STATE["ui"]["expression"] = "idle" if event == "stop" else "thinking"
+            if "stop" in text or "停" in text:
+                event = "stop"
+            elif "forward" in text or "前" in text:
+                event = "move_forward"
+            elif "back" in text or "后" in text:
+                event = "move_backward"
+            elif "left" in text or "左" in text:
+                event = "turn_left"
+            elif "right" in text or "右" in text:
+                event = "turn_right"
+            else:
+                event = "thinking"
+            is_motion = event in {"move_forward", "move_backward", "turn_left", "turn_right"}
+            if is_motion and not STATE["safety"]["motion_enabled"]:
+                self.send_json({"ok": False, "error": "motion disabled"}, HTTPStatus.LOCKED)
+                return
+            if is_motion and STATE["safety"]["control_mode"] != "ai":
+                self.send_json({"ok": False, "error": "ai mode required"}, HTTPStatus.CONFLICT)
+                return
+            STATE["ui"]["expression"] = "idle" if event == "stop" else "moving" if is_motion else "thinking"
             self.send_json({"ok": True, "source": "preview", "used_llm": False, "event": event})
             return
 

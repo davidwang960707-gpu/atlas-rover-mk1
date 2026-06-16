@@ -105,6 +105,7 @@ flowchart LR
 8. STOP 不需要配对码；移动、配置修改、重启、清配置需要 6 位配对码。
 9. LLM/MimiClaw 不能直接输出 UART 字符串，只能输出结构化意图，再由本地 Safety Guard 裁剪。
 10. API Key 不写源码、不进 GitHub、不打印日志；当前原型阶段尚未启用 NVS 加密。
+11. 控制模式默认 `manual`：Web 方向按钮可以控制；切到 `ai` 后，运动类语音/MimiClaw 意图可以控制，Web 方向按钮会被拒绝。
 
 ## 7. 真机适配待办
 

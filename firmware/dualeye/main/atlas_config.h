@@ -14,9 +14,11 @@
 #define ATLAS_LLM_MODEL_MAX 64
 #define ATLAS_LLM_API_KEY_MAX 128
 #define ATLAS_UI_THEME_MAX 32
+#define ATLAS_CONTROL_MODE_MAX 8
 
 typedef struct {
     bool motion_enabled;
+    char control_mode[ATLAS_CONTROL_MODE_MAX]; // manual / ai
     uint8_t max_speed_percent;
     uint16_t max_duration_ms;
     bool require_confirm_for_patrol;
@@ -56,3 +58,5 @@ esp_err_t atlas_config_reset_network_and_llm(void);
 bool atlas_config_has_wifi(const atlas_config_t *config);
 bool atlas_config_has_llm_api_key(const atlas_config_t *config);
 bool atlas_config_motion_allowed(const atlas_config_t *config);
+bool atlas_config_manual_control_allowed(const atlas_config_t *config);
+bool atlas_config_ai_control_allowed(const atlas_config_t *config);
