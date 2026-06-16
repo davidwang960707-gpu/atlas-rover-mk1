@@ -29,6 +29,7 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 | 双目表情方案 | 已有 V0.1，按“一屏一眼”设计 |
 | Web 表情预览 | 已可在 VS Code Live Preview 中查看 |
 | DualEye 固件 | V0.1 可编译，已包含表情状态机、UART 协议和安全超时 |
+| 配网/API/管理界面 | 方案已明确，待实现 SoftAP、NVS、Web 管理页 |
 | 真机双屏显示 | 待接入 Waveshare 官方 ESP-IDF/LVGL 示例 |
 | 语音 miniClaw/MimiClaw | 接口已预留，待正式接入 |
 | 底盘闭环控制 | 待底盘板固件实现 |
