@@ -1,4 +1,4 @@
-# Atlas Rover Mk.1 双目表情设计方案 V0.1
+# Atlas Rover Mk.1 双目表情设计方案 V0.2
 
 本文档定义 Atlas Rover Mk.1 的双实体圆屏表情方案。核心约束是：左侧实体屏只显示左眼，右侧实体屏只显示右眼；两块 1.28 英寸圆屏组合成一个“脸”，不要在单块屏幕里再绘制一对小眼睛。
 
@@ -73,19 +73,34 @@ typedef struct {
 | 充电 | 状态页 | charging | 禁止移动 |
 | 时钟模式 | 时钟页 | 无眼睛表情或低频眨眼角标 | 不发移动指令 |
 
-## 6. 实现建议
+## 6. 主题皮肤候选 V0.2
+
+Web 评审阶段先保留 5 套主题，后续接入 Waveshare DualEye 官方 LCD/LVGL 初始化时，优先把这些颜色抽成 LVGL style token，而不是在每个控件里写死颜色。
+
+| 主题 ID | 中文名 | 用途定位 | 主视觉 | 适合场景 |
+|---|---|---|---|---|
+| classic | 经典蓝眼 | 默认开箱主题，最贴近当前概念图。 | 黑底、青蓝眼睛、黄铜外圈、薄荷正反馈。 | 日常待机、移动、语音互动。 |
+| amber | 琥珀巡航 | 强化铜丝车架和复古机械感。 | 琥珀提示色、铜色边框、保留少量青蓝作为科技感。 | 展示、巡航、充电提示。 |
+| mint | 薄荷友好 | 更温和、更像陪伴机器人。 | 薄荷绿表情、浅青辅助、低对比黄铜边。 | 开心、讲故事、儿童/桌面陪伴场景。 |
+| alert | 红色警戒 | 安全与拒绝状态更明确。 | 红橙眼睛、暖黄辅助、暗红背景。 | 错误、拒绝危险指令、急停、底盘保护。 |
+| night | 低亮夜航 | 降低亮度和刺眼感。 | 深色低亮背景、柔蓝眼睛、低饱和边框。 | 夜间时钟、低功耗待机、安静陪伴。 |
+
+每套主题至少包含这些 token：`bg`、`panel`、`eye_bg`、`line`、`cyan`、`mint`、`red`、`amber`、`text`、`muted`。表情 ID 不跟主题绑定，同一个 `happy/listen/moving/error` 可以套用任意主题。
+
+## 7. 实现建议
 
 1. 第一阶段：Web Preview 确认表情语言，所有表情先用 CSS/Canvas 参数实现。
 2. 第二阶段：ESP-IDF/LVGL 中实现同样的 `atlas_eye_pose_t`，双屏分别调用 `render_left_eye()` 和 `render_right_eye()`。
 3. 第三阶段：miniClaw/MimiClaw 输出语义事件，如 `VOICE_LISTENING`、`THINKING`、`MOVE_FORWARD`、`STOPPED`，UI 状态机统一映射到表情。
 4. 第四阶段：增加音频驱动，让 listen/speaking 的虹膜脉冲跟随麦克风输入和 TTS 音量。
-5. 第五阶段：加入主题包，例如“经典蓝眼”“琥珀巡航”“睡眠夜灯”“时钟双表盘”。
+5. 第五阶段：固化 5 套主题 token，并在 LVGL 端实现主题切换、NVS 保存和 Web 管理页同步。
 
-## 7. 当前已落地
+## 8. 当前已落地
 
 已更新 `/Users/macbook/Documents/Atlas One/simulator_web/index.html`：
 
 - 每块圆屏只显示一只眼睛。
 - 支持 idle、happy、listen、thinking、speaking、moving、curious、sleepy、surprised、wink、angry、charging、error。
+- 支持 classic、amber、mint、alert、night 5 套 Web 主题候选，切换结果会保存在浏览器本地。
 - 底盘方向指令会改变移动表情的目光方向。
 - 继续使用 VS Code Live Preview 即可快速查看效果。

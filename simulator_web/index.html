@@ -4,16 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Atlas Rover Mk.1 DualEye Preview</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2307080a'/%3E%3Ccircle cx='24' cy='32' r='10' fill='none' stroke='%233fc9ff' stroke-width='5'/%3E%3Ccircle cx='44' cy='32' r='10' fill='none' stroke='%235fe1b4' stroke-width='5'/%3E%3C/svg%3E">
   <style>
     :root {
       --bg: #07080a;
       --panel: #111318;
+      --panel-2: #0d0f13;
+      --stage-bg: #07080a;
+      --stage-glow: rgba(63, 201, 255, 0.06);
       --line: #a66c2a;
+      --line-soft: rgba(166, 108, 42, 0.45);
+      --line-strong: rgba(166, 108, 42, 0.78);
       --cyan: #3fc9ff;
       --mint: #5fe1b4;
       --red: #ff6b4b;
+      --amber: #f5dc96;
       --text: #efe9df;
       --muted: #9c958c;
+      --eye-bg: #07080a;
+      --button-bg: #151922;
+      --button-border: rgba(166, 108, 42, 0.7);
+      --code-bg: #07080a;
     }
 
     * {
@@ -29,6 +40,91 @@
       letter-spacing: 0;
       display: grid;
       grid-template-columns: minmax(560px, 1fr) 310px;
+      transition: background 220ms ease, color 220ms ease;
+    }
+
+    body[data-theme="amber"] {
+      --bg: #0b0906;
+      --panel: #15120d;
+      --panel-2: #100d09;
+      --stage-bg: #090807;
+      --stage-glow: rgba(255, 186, 88, 0.08);
+      --line: #cc8742;
+      --line-soft: rgba(204, 135, 66, 0.48);
+      --line-strong: rgba(204, 135, 66, 0.82);
+      --cyan: #ffc15f;
+      --mint: #70d7ff;
+      --red: #ff6d4f;
+      --amber: #ffc15f;
+      --text: #fff1dc;
+      --muted: #c0aa8f;
+      --eye-bg: #090706;
+      --button-bg: #1b150e;
+      --button-border: rgba(204, 135, 66, 0.72);
+      --code-bg: #090706;
+    }
+
+    body[data-theme="mint"] {
+      --bg: #06100f;
+      --panel: #0d1917;
+      --panel-2: #091310;
+      --stage-bg: #06100f;
+      --stage-glow: rgba(94, 225, 180, 0.08);
+      --line: #8f9f7a;
+      --line-soft: rgba(143, 159, 122, 0.45);
+      --line-strong: rgba(143, 159, 122, 0.78);
+      --cyan: #62f0b5;
+      --mint: #b8f477;
+      --red: #ff7066;
+      --amber: #e2d478;
+      --text: #eafff6;
+      --muted: #9fc2b3;
+      --eye-bg: #04100e;
+      --button-bg: #10201d;
+      --button-border: rgba(143, 159, 122, 0.72);
+      --code-bg: #06100f;
+    }
+
+    body[data-theme="alert"] {
+      --bg: #0d0808;
+      --panel: #171011;
+      --panel-2: #110b0c;
+      --stage-bg: #0d0808;
+      --stage-glow: rgba(255, 107, 75, 0.09);
+      --line: #b57c3b;
+      --line-soft: rgba(181, 124, 59, 0.46);
+      --line-strong: rgba(181, 124, 59, 0.8);
+      --cyan: #ff7b61;
+      --mint: #ffd36a;
+      --red: #ff4f45;
+      --amber: #ffc45f;
+      --text: #fff0ea;
+      --muted: #c29b93;
+      --eye-bg: #0b0707;
+      --button-bg: #1c1112;
+      --button-border: rgba(181, 124, 59, 0.72);
+      --code-bg: #0b0707;
+    }
+
+    body[data-theme="night"] {
+      --bg: #05080d;
+      --panel: #0c1118;
+      --panel-2: #080d13;
+      --stage-bg: #05080d;
+      --stage-glow: rgba(99, 159, 255, 0.07);
+      --line: #7c826e;
+      --line-soft: rgba(124, 130, 110, 0.42);
+      --line-strong: rgba(124, 130, 110, 0.72);
+      --cyan: #88bfff;
+      --mint: #74dcb2;
+      --red: #ff6c6c;
+      --amber: #d6c784;
+      --text: #dfe9f7;
+      --muted: #93a0ad;
+      --eye-bg: #03060a;
+      --button-bg: #0f1721;
+      --button-border: rgba(124, 130, 110, 0.68);
+      --code-bg: #05080d;
     }
 
     main {
@@ -39,8 +135,8 @@
     }
 
     aside {
-      border-left: 1px solid rgba(166, 108, 42, 0.45);
-      background: #0d0f13;
+      border-left: 1px solid var(--line-soft);
+      background: var(--panel-2);
       padding: 22px;
       overflow: auto;
     }
@@ -48,11 +144,12 @@
     .stage {
       width: min(860px, 100%);
       aspect-ratio: 16 / 9;
-      border: 1px solid rgba(166, 108, 42, 0.78);
+      border: 1px solid var(--line-strong);
       position: relative;
       display: grid;
       place-items: center;
-      background: radial-gradient(circle at 50% 32%, rgba(63, 201, 255, 0.06), transparent 42%), #07080a;
+      background: radial-gradient(circle at 50% 32%, var(--stage-glow), transparent 42%), var(--stage-bg);
+      transition: background 220ms ease, border-color 220ms ease;
     }
 
     .eyes {
@@ -78,10 +175,11 @@
       aspect-ratio: 1;
       border-radius: 50%;
       border: 6px solid var(--line);
-      background: #07080a;
+      background: var(--eye-bg);
       position: relative;
       box-shadow: inset 0 0 34px rgba(63, 201, 255, 0.06), 0 0 24px rgba(166, 108, 42, 0.18);
       overflow: hidden;
+      transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
     }
 
     .eye.left {
@@ -151,9 +249,9 @@
       left: -8%;
       width: 116%;
       height: 62%;
-      background: #07080a;
+      background: var(--eye-bg);
       z-index: 4;
-      transition: top 180ms ease, bottom 180ms ease, transform 180ms ease;
+      transition: top 180ms ease, bottom 180ms ease, transform 180ms ease, background 220ms ease;
     }
 
     .lid-top {
@@ -366,7 +464,7 @@
     }
 
     .expr-charging .eye {
-      --accent: #f5dc96;
+      --accent: var(--amber);
       --look-y: 4px;
     }
 
@@ -411,7 +509,7 @@
       border-radius: 50%;
       border: 6px solid var(--line);
       position: relative;
-      background: #07080a;
+      background: var(--eye-bg);
     }
 
     .hand {
@@ -439,7 +537,7 @@
     .page-panel {
       display: none;
       width: min(620px, 86%);
-      border: 1px solid rgba(166, 108, 42, 0.7);
+      border: 1px solid var(--button-border);
       background: var(--panel);
       padding: 26px;
     }
@@ -490,6 +588,12 @@
       background: var(--color);
     }
 
+    .swatch-cyan { --color: var(--cyan); }
+    .swatch-mint { --color: var(--mint); }
+    .swatch-red { --color: var(--red); }
+    .swatch-line { --color: var(--line); }
+    .swatch-amber { --color: var(--amber); }
+
     .active-eyes .eyes,
     .active-clock .clock,
     .active-status .status,
@@ -528,16 +632,69 @@
       gap: 8px;
     }
 
+    .theme-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .theme-button {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      align-items: center;
+      text-align: left;
+    }
+
+    .theme-mark {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--mark-line);
+      background: radial-gradient(circle at 50% 50%, var(--mark-eye) 0 28%, transparent 30% 100%), var(--mark-bg);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--mark-eye) 45%, transparent);
+    }
+
+    .theme-classic {
+      --mark-bg: #07080a;
+      --mark-eye: #3fc9ff;
+      --mark-line: #a66c2a;
+    }
+
+    .theme-amber {
+      --mark-bg: #090706;
+      --mark-eye: #ffc15f;
+      --mark-line: #cc8742;
+    }
+
+    .theme-mint {
+      --mark-bg: #04100e;
+      --mark-eye: #62f0b5;
+      --mark-line: #8f9f7a;
+    }
+
+    .theme-alert {
+      --mark-bg: #0b0707;
+      --mark-eye: #ff4f45;
+      --mark-line: #b57c3b;
+    }
+
+    .theme-night {
+      --mark-bg: #03060a;
+      --mark-eye: #88bfff;
+      --mark-line: #7c826e;
+    }
+
     button {
       appearance: none;
-      border: 1px solid rgba(166, 108, 42, 0.7);
+      border: 1px solid var(--button-border);
       color: var(--text);
-      background: #151922;
+      background: var(--button-bg);
       border-radius: 6px;
       padding: 8px 10px;
       cursor: pointer;
       font: inherit;
       font-size: 13px;
+      transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
     }
 
     button:hover,
@@ -549,7 +706,7 @@
     code {
       display: block;
       color: var(--mint);
-      background: #07080a;
+      background: var(--code-bg);
       padding: 10px;
       border: 1px solid rgba(95, 225, 180, 0.22);
       min-height: 42px;
@@ -602,7 +759,7 @@
 
       aside {
         border-left: 0;
-        border-top: 1px solid rgba(166, 108, 42, 0.45);
+        border-top: 1px solid var(--line-soft);
       }
     }
 
@@ -684,11 +841,11 @@
 
       <div class="page-panel settings">
         <div class="swatches">
-          <span class="swatch" style="--color:#3fc9ff"></span>
-          <span class="swatch" style="--color:#5fe1b4"></span>
-          <span class="swatch" style="--color:#ff6b4b"></span>
-          <span class="swatch" style="--color:#a66c2a"></span>
-          <span class="swatch" style="--color:#f5dc96"></span>
+          <span class="swatch swatch-cyan"></span>
+          <span class="swatch swatch-mint"></span>
+          <span class="swatch swatch-red"></span>
+          <span class="swatch swatch-line"></span>
+          <span class="swatch swatch-amber"></span>
         </div>
       </div>
     </section>
@@ -697,6 +854,17 @@
   <aside>
     <h1>Atlas Rover Mk.1</h1>
     <p>VS Code Live Preview 双目界面预览。改这个文件保存后会自动刷新。</p>
+
+    <section class="group">
+      <p>主题</p>
+      <div class="theme-row" id="themeButtons">
+        <button data-theme="classic" class="theme-button active"><span class="theme-mark theme-classic"></span><span>经典蓝眼</span></button>
+        <button data-theme="amber" class="theme-button"><span class="theme-mark theme-amber"></span><span>琥珀巡航</span></button>
+        <button data-theme="mint" class="theme-button"><span class="theme-mark theme-mint"></span><span>薄荷友好</span></button>
+        <button data-theme="alert" class="theme-button"><span class="theme-mark theme-alert"></span><span>红色警戒</span></button>
+        <button data-theme="night" class="theme-button"><span class="theme-mark theme-night"></span><span>低亮夜航</span></button>
+      </div>
+    </section>
 
     <section class="group">
       <p>页面</p>
@@ -751,6 +919,14 @@
     const stage = document.querySelector("#stage");
     const log = document.querySelector("#log");
     const wave = document.querySelector("#wave");
+    const themeStorageKey = "atlas_rover_theme";
+    const themeNames = {
+      classic: "经典蓝眼",
+      amber: "琥珀巡航",
+      mint: "薄荷友好",
+      alert: "红色警戒",
+      night: "低亮夜航",
+    };
 
     for (let i = 1; i <= 42; i += 1) {
       const bar = document.createElement("span");
@@ -762,6 +938,14 @@
       document.querySelectorAll(`${container} button`).forEach((button) => {
         button.classList.toggle("active", button.dataset[valueAttr] === value);
       });
+    }
+
+    function setTheme(theme) {
+      const nextTheme = themeNames[theme] ? theme : "classic";
+      document.body.dataset.theme = nextTheme;
+      localStorage.setItem(themeStorageKey, nextTheme);
+      setActive("#themeButtons", "button", "theme", nextTheme);
+      log.textContent = `THEME,${nextTheme},${themeNames[nextTheme]}`;
     }
 
     function setPage(page) {
@@ -815,6 +999,11 @@
       if (page) setPage(page);
     });
 
+    document.querySelector("#themeButtons").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-theme]");
+      if (button) setTheme(button.dataset.theme);
+    });
+
     document.querySelector("#exprButtons").addEventListener("click", (event) => {
       const expr = event.target.dataset.expr;
       if (expr) setExpression(expr);
@@ -846,6 +1035,16 @@
       if (event.key === "ArrowLeft") send("AR1,TURN,L,30");
       if (event.key === "ArrowRight") send("AR1,TURN,R,30");
       if (event.key === " ") send("AR1,STOP");
+      if (key === "[") {
+        const themes = Object.keys(themeNames);
+        const current = themes.indexOf(document.body.dataset.theme || "classic");
+        setTheme(themes[(current + themes.length - 1) % themes.length]);
+      }
+      if (key === "]") {
+        const themes = Object.keys(themeNames);
+        const current = themes.indexOf(document.body.dataset.theme || "classic");
+        setTheme(themes[(current + 1) % themes.length]);
+      }
     });
 
     function updateClock() {
@@ -860,6 +1059,7 @@
 
     updateClock();
     setInterval(updateClock, 1000);
+    setTheme(localStorage.getItem(themeStorageKey) || "classic");
   </script>
 </body>
 </html>
