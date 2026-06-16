@@ -36,7 +36,7 @@ const char *atlas_llm_client_mode_label(const char *mode)
         return "关闭";
     }
     if (strcmp(mode, "host") == 0) {
-        return "电脑宿主 MiniClaw";
+        return "外部宿主/调试桥";
     }
     if (strcmp(mode, "embedded") == 0) {
         return "端侧 MimiClaw";

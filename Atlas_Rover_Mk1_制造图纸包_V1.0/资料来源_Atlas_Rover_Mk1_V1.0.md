@@ -12,7 +12,6 @@
 | 18650 电池尺寸参考 | https://www.neware.net/news/18650-battery-everything-you-need-to-know/230/46.html | 用于核对 18650 标称 18 mm 直径和 65 mm 长度。 |
 | MimiClaw GitHub | https://github.com/memovai/mimiclaw | 用于核对 ESP32-S3 上运行 OpenClaw-like AI assistant 的基础思路、ESP-IDF 和 16 MB flash / 8 MB PSRAM 需求。 |
 | MimiClaw 项目页 | https://mimiclaw.io/ | 用于核对 MimiClaw 的纯 C、Telegram/WebSocket、工具调用、GPIO/传感器/执行器控制定位。 |
-| MiniClaw 项目页 | https://miniclaw.bot/ | 用于区分桌面本地 agent 生态与 ESP32 端 MimiClaw，并作为外部 agent/宿主模式的参考。 |
 
 ## 备注
 

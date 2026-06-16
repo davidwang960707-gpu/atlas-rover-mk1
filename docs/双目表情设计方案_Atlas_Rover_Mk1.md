@@ -48,7 +48,7 @@ typedef struct {
 | idle | 待机 | 两眼居中，轻微呼吸缩放，偶发眨眼，左右目光略有内聚。 | 默认状态、停止后 1-2 秒回落。 | 低 |
 | happy | 开心 | 两眼变成上扬弧线，薄荷绿发光，短促弹性动画。 | 指令执行成功、触摸互动成功。 | 中 |
 | listen | 聆听 | 虹膜放大，外圈脉冲，亮度随麦克风 RMS 微动。 | 唤醒词触发、正在收音。 | 中 |
-| thinking | 思考 | 半睁眼，左眼看左上、右眼看右上，扫描线缓慢扫过。 | miniClaw/MimiClaw 正在理解指令。 | 中 |
+| thinking | 思考 | 半睁眼，左眼看左上、右眼看右上，扫描线缓慢扫过。 | MimiClaw 正在理解指令。 | 中 |
 | speaking | 说话 | 虹膜随 TTS 音量跳动，下眼睑轻微抖动。 | 语音回复播放时。 | 中 |
 | moving | 移动 | 半专注眼，目光按底盘指令偏移：前进向上、后退向下、左转向左、右转向右。 | UART 指令已下发且底盘 ACK。 | 高 |
 | surprised | 惊讶 | 双眼全开、虹膜放大、瞳孔缩小，瞬时亮一下。 | 避障急停、被拿起、用户突然触碰。 | 高 |
@@ -129,7 +129,7 @@ Web 评审阶段保留 5 套主题；固件 V0.4 已经把这些颜色抽成 `at
 
 1. 第一阶段：Web Preview 确认表情语言，所有表情先用 CSS/Canvas 参数实现。
 2. 第二阶段：ESP-IDF/LVGL 中实现同样的 `atlas_eye_pose_t`，双屏分别调用 `render_left_eye()` 和 `render_right_eye()`。（V0.4 已开始落地）
-3. 第三阶段：miniClaw/MimiClaw 输出语义事件，如 `VOICE_LISTENING`、`THINKING`、`MOVE_FORWARD`、`STOPPED`，UI 状态机统一映射到表情。
+3. 第三阶段：MimiClaw 输出语义事件，如 `VOICE_LISTENING`、`THINKING`、`MOVE_FORWARD`、`STOPPED`，UI 状态机统一映射到表情。
 4. 第四阶段：增加音频驱动，让 listen/speaking 的虹膜脉冲跟随麦克风输入和 TTS 音量。
 5. 第五阶段：固化 5 套主题 token，并在 LVGL 端实现主题切换、NVS 保存和 Web 管理页同步。
 

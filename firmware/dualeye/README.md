@@ -1,21 +1,21 @@
-# Atlas Rover Mk.1 DualEye 固件 V0.4
+# Atlas Rover Mk.1 DualEye 固件 V0.5
 
 这个目录是 `ESP32-S3-DualEye-Touch-LCD-1.28` 的 ESP-IDF 固件工程，目标芯片为 `esp32s3`。
 
-V0.4 已经从单文件脚手架升级为可配网、可管理、可日常控制、可驱动双屏的模块化程序：
+V0.5 已经从单文件脚手架升级为可配网、可管理、可日常控制、可驱动双屏，并可接收 MimiClaw 结构化意图的模块化程序：
 
 - 双目表情参数模型：每块实体屏幕对应一只眼睛。
-- 表情状态机：待机、开心、聆听、思考、说话、移动、好奇、困倦、惊讶、眨眼、拒绝、充电、错误。
+- 表情状态机：待机、开心、聆听、思考、说话、移动、好奇、困倦、惊讶、眨眼、爱心、爱钱、生气、充电、错误、大哭。
 - UART 底盘协议：只发送 `AR1,` 开头的运动/停止指令。
 - 双板职责划分：DualEye 负责 HMI/语音/意图，底盘板负责电机闭环/限速/超时停车/DRV8833。
 - 安全超时：DualEye 发出移动指令后会在约 700 ms 后主动补发 `AR1,STOP`。
-- 语音事件接口：miniClaw/MimiClaw 后续只需要输出标准事件即可驱动表情和底盘指令。
+- 语音事件接口：MimiClaw 可输出标准事件、tool-call 或 `atlas.mimiclaw.v1` 意图来驱动表情、页面、应用和底盘指令。
 - NVS 配置：保存 Wi-Fi、LLM 模式、Base URL、Model、API Key 和安全限制。
 - Wi-Fi 配网：无配置时开启 `AtlasRover-XXXX` SoftAP；有配置时优先连接路由器，失败后回落 APSTA。
 - Web 管理页：手机/电脑访问设备 IP，可查看状态、保存配置、STOP、短时移动和测试文本意图。
 - 配对码：启动时生成 6 位配对码；STOP 不需要配对码，移动和配置修改需要配对码。
 - Web 入口拆分：`/app` 是日常应用页，`/admin` 是管理后台，根路径 `/` 默认进入应用页。
-- MimiClaw 适配层：当前先做本地关键词意图和 LLM 配置状态，真实云端/宿主调用后续接入。
+- MimiClaw 适配层：当前支持本地关键词意图、LLM 配置状态，以及 `/api/mimiclaw/intent` 结构化意图执行入口。
 - 主题同步：`classic`、`amber`、`mint`、`alert`、`night` 已从 Web 评审页同步到 `atlas_expression` palette。
 - Waveshare 双屏后端：`atlas_display.c` 默认接入官方同款 GC9A01/LVGL 初始化；如果硬件初始化失败，会回退为串口日志渲染。
 - Flash/PSRAM 配置：已按 DualEye 官方规格设置为 16MB Flash、8MB PSRAM 方向，并使用 4MB 应用分区。
@@ -29,7 +29,8 @@ main/
   atlas_expression.*     双眼表情参数帧
   atlas_display.*        双屏显示适配层，Waveshare GC9A01/LVGL + 日志回退
   atlas_rover_uart.*     AR1 UART 底盘协议
-  atlas_voice.*          语音/miniClaw 事件入口
+  atlas_voice.*          语音/MimiClaw 事件入口
+  atlas_mimiclaw_intent.* MimiClaw tool-call / 结构化意图解析
   atlas_ui.*             页面、表情、运动、安全状态机
   atlas_config.*         NVS 配置读写
   atlas_wifi.*           SoftAP/STA/APSTA 网络
@@ -67,6 +68,7 @@ main/
 | `/api/config/safety` | POST | 是 | 保存是否允许移动、最大速度、最大时长 |
 | `/api/config/ui` | POST | 是 | 保存主题、屏幕亮度、音量 |
 | `/api/voice/text` | POST | 是 | 文本意图测试，进入 MimiClaw 适配层 |
+| `/api/mimiclaw/intent` | POST | 是 | 接收 MimiClaw tool-call 或 `atlas.mimiclaw.v1` 意图，驱动表情、页面、应用和安全运动 |
 | `/api/config/reset` | POST | 是 | 清除 Wi-Fi 和 LLM 配置 |
 | `/api/system/reboot` | POST | 是 | 重启设备 |
 
@@ -176,13 +178,13 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
   "$IDF_PYTHON_ENV_PATH/bin/python" -m pip install PySocks
 ```
 
-本地已经验证过一次：`idf.py set-target esp32s3 build` 可以生成 `build/atlas_rover_dualeye.bin`，大小约 `0x10cef0`，4MB 应用分区剩余约 74%。
+本地已经验证过一次：`idf.py build` 可以生成 `build/atlas_rover_dualeye.bin`，大小约 `0x110710`，4MB 应用分区剩余约 73%。
 
 ## 后续接入点
 
 1. 真机屏幕：上电实测 GC9A01/LVGL 后端的旋转、左右眼方向、背光曲线和刷新稳定性。
 2. 触摸：接入 CST816S 双路触摸事件，进入 `atlas_ui_handle_voice_intent()` 或新增 `atlas_ui_handle_touch_event()`。
-3. miniClaw/MimiClaw：把语音理解结果映射成 `atlas_voice_event_t`，不要直接散落发送 UART。
+3. MimiClaw：当前可通过 `/api/mimiclaw/intent` 提交 tool-call；下一步接真实 MimiClaw agent loop。
 4. 音频：把麦克风 RMS/TTS 音量写入 `audio_level`，驱动聆听和说话表情脉冲。
 5. 底盘 ACK：底盘板回传 `AR1,ACK,*`，DualEye 会更新状态或进入错误表情。
 6. 真实 LLM：`atlas_llm_client.*` 目前只做配置状态；云端/宿主调用要先输出结构化意图，再进入本地 Safety Guard。

@@ -30,7 +30,7 @@
 | eye_engine | 双眼渲染和表情动画 | 眨眼、瞳孔跟随、眼皮曲线、情绪过渡、低帧率省电 |
 | theme_manager | 多主题资源管理 | 赛博蓝、黄铜复古、夜间低亮、调试高对比等主题 |
 | voice_service | 语音入口 | 板载麦克风收音、唤醒/命令词、VAD、录音状态上报 |
-| miniclaw_adapter | miniClaw/MimiClaw 适配层 | 把自然语言/agent tool call 转成标准 RoverIntent，不直接驱动电机 |
+| mimiclaw_adapter | MimiClaw 适配层 | 把自然语言/agent tool call 转成标准 RoverIntent，不直接驱动电机 |
 | intent_router | 意图路由和安全裁剪 | 优先处理 STOP；限制速度/时长；低置信度要求确认 |
 | rover_link | 底盘通信 | 通过 UART 文本协议向底盘板下发 AR1,MOVE/AR1,TURN/AR1,STOP/AR1,LIGHT |
 | safety_watchdog | 安全看门狗 | 运动命令超时、串口断开、低电量、过流/异常复位时进入 STOP |
@@ -67,13 +67,13 @@
 这里把用户口中的 miniClaw 按两类兼容处理：
 
 - MimiClaw：ESP32-S3 端 OpenClaw-like 方案，适合未来直接嵌入固件；但直接集成前必须确认 DualEye 实际 flash/PSRAM 是否满足目标版本需求。
-- MiniClaw：桌面/Mac 本地 agent 方案，适合作为外部宿主；DualEye 作为语音、表情和串口控制终端。
+- 外部宿主/调试桥：可作为端侧 MimiClaw 合并前的临时联调方式；DualEye 作为语音、表情和串口控制终端。
 
 | 模式/层级 | 优先级 | 设计说明 |
 | --- | --- | --- |
 | 本地安全层 | 优先级最高 | STOP、前进、后退、左转、右转、显示时间、切换表情等固定命令先由本地规则解析，保证离线可用。 |
 | MimiClaw 端侧模式 | 中期目标 | 若确认 DualEye 具备足够 flash/PSRAM，可把 MimiClaw/OpenClaw-like agent 编进 ESP-IDF 固件，用 tool call 调用 rover.move/eyes.set_expression。 |
-| MiniClaw 宿主模式 | 备选/增强 | 若使用 Mac/本地 MiniClaw，DualEye 作为语音和显示终端，通过 Wi-Fi WebSocket/HTTP 与宿主通信，再由 DualEye 转 UART 控底盘。 |
+| 外部宿主/调试桥模式 | 备选/增强 | 若暂时使用 Mac/本地宿主，DualEye 作为语音和显示终端，通过 Wi-Fi WebSocket/HTTP 与宿主通信，再由 DualEye 转 UART 控底盘。 |
 | 云端/Telegram 模式 | 可选 | MimiClaw 原始思路支持 Telegram/LLM API；Mk.1 只把它作为远程调试/长文本理解，不把云端回答直接当运动命令。 |
 | 工具调用白名单 | 必须 | 只开放 rover.move、rover.turn、rover.stop、eyes.set_expression、ui.set_page、lights.set_mode；不开放任意串口写入。 |
 | 意图确认 | 必须 | 长距离、长时间、高速、离开桌面等指令必须二次确认；低置信度只回答澄清，不动车。 |

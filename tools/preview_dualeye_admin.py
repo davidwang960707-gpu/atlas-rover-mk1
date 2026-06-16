@@ -36,9 +36,9 @@ MOCK_FETCH_SCRIPT = r"""
     llm: { mode: "off", label: "关闭", provider: "openai_compatible", base_url: "", model: "", configured: false, api_key_set: false },
     safety: { motion_enabled: true, control_mode: "manual", max_speed_percent: 40, max_duration_ms: 700 }
   };
-  const labels = { off: "关闭", host: "电脑宿主 MiniClaw", cloud: "云端大模型", embedded: "端侧 MimiClaw" };
-  const expressions = new Set(["idle", "happy", "listen", "thinking", "speaking", "moving", "curious", "sleepy", "surprised", "wink", "angry", "charging", "error"]);
-  const pages = new Set(["eyes", "clock", "status", "voice", "settings", "alarm", "photo", "music", "story"]);
+  const labels = { off: "关闭", host: "外部宿主/调试桥", cloud: "云端大模型", embedded: "端侧 MimiClaw" };
+  const expressions = new Set(["idle", "happy", "listen", "thinking", "speaking", "moving", "curious", "sleepy", "surprised", "wink", "love", "money", "angry", "charging", "error", "cry"]);
+  const pages = new Set(["eyes", "clock", "status", "voice", "settings", "alarm", "photo", "music", "story", "chat", "calendar", "pomodoro"]);
   const jsonResponse = (payload, status = 200) => new Response(JSON.stringify(payload), {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8" }
@@ -253,7 +253,7 @@ PAGES = {"eyes", "clock", "status", "voice", "settings", "alarm", "photo", "musi
 def llm_label(mode: str) -> str:
     return {
         "off": "关闭",
-        "host": "电脑宿主 MiniClaw",
+        "host": "外部宿主/调试桥",
         "cloud": "云端大模型",
         "embedded": "端侧 MimiClaw",
     }.get(mode, "未知模式")

@@ -21,13 +21,13 @@ Atlas Rover Mk.1 不按“表情程序一份、MimiClaw 再一份”拆烧录，
 |---|---|---|
 | DualEye 板 | 一份 DualEye 固件 | 包含双目 UI、表情、触摸、音频、Wi-Fi/BLE、配网、管理界面、语音事件入口、MimiClaw 适配层、UART 底盘协议 |
 | 底盘板 | 一份底盘固件 | 包含电机控制、DRV8833/PWM、限速、加减速、超时停车、ACK 回传 |
-| Mac/电脑宿主 | 不烧录到 DualEye | 如果选择 MiniClaw 宿主模式，MiniClaw 跑在 Mac/电脑上，DualEye 通过 Wi-Fi HTTP/WebSocket 与宿主通信 |
+| Mac/电脑宿主 | 不烧录到 DualEye | 如果选择外部宿主/调试桥模式，宿主程序跑在 Mac/电脑上，DualEye 通过 Wi-Fi HTTP/WebSocket 与宿主通信 |
 
 所以：
 
 - **端侧 MimiClaw 模式**：MimiClaw 作为 DualEye 固件组件，一起编译、一起烧录。
-- **电脑宿主 MiniClaw 模式**：MiniClaw 不烧进 DualEye，只在电脑上运行；DualEye 只烧 HMI/语音终端固件。
-- **当前 Mk.1 推荐**：先做“DualEye 固件 + 可选电脑宿主”，等真机屏幕、音频、PSRAM、Flash 使用量验证后，再决定是否把 MimiClaw 完整端侧化。
+- **外部宿主/调试桥模式**：外部宿主不烧进 DualEye，只在电脑上运行；DualEye 只烧 HMI/语音终端固件。
+- **当前 Mk.1 推荐**：先做“DualEye 固件 + MimiClaw 接口层”，等真机屏幕、音频、PSRAM、Flash 使用量验证后，再决定是否把 MimiClaw agent loop 完整端侧化。
 
 ## 2. 推荐三阶段方案
 
@@ -35,7 +35,7 @@ Atlas Rover Mk.1 不按“表情程序一份、MimiClaw 再一份”拆烧录，
 |---|---|---|
 | V0.1 | DualEye 本地命令 + UART | 先保证双目、页面、STOP、前进/后退/转向等基础链路稳定 |
 | V0.2 | DualEye 配网 + 手机/电脑 Web 管理界面 | 已完成基础骨架：SoftAP/STA、NVS、Web 管理页、配对码、安全配置 |
-| V0.3 | MiniClaw 宿主或 MimiClaw 端侧 | 再接自然语言和大模型，避免一开始把硬件驱动、网络、语音、LLM 全绑在一起排错 |
+| V0.3 | 外部宿主/调试桥或 MimiClaw 端侧 | 再接自然语言和大模型，避免一开始把硬件驱动、网络、语音、LLM 全绑在一起排错 |
 
 ## 3. 首次配网流程
 
@@ -97,7 +97,7 @@ API Key 处理原则：
 
 ## 5. 大模型不能直接控制电机
 
-无论使用云端大模型、MiniClaw 宿主，还是端侧 MimiClaw，都必须遵守：
+无论使用云端大模型、外部宿主/调试桥，还是端侧 MimiClaw，都必须遵守：
 
 ```text
 用户语音/文本
@@ -161,7 +161,7 @@ system.get_status()
 |---|---|
 | DualEye | 直接托管 Web 管理页，配置保存在 DualEye NVS；Wi-Fi、LLM、页面、安全策略都从这里读取 |
 | 端侧 MimiClaw | 后续作为 DualEye 固件组件运行时，读取 DualEye 本地 LLM/语音配置，不单独配一套 |
-| 电脑宿主 MiniClaw | 当前可在管理页保存宿主 Base URL；完整的宿主配置同步/API 代理后续再补 |
+| 外部宿主/调试桥 | 当前可在管理页保存宿主 Base URL；完整的宿主配置同步/API 代理后续再补 |
 | 底盘板 | 不直接访问 Web 管理页；只接收 DualEye 通过 UART 下发的安全裁剪后运动指令 |
 | 底盘专属参数 | 例如轮径、编码器、PID、左右轮补偿，后续应增加“底盘配置”页面，再通过 UART 同步到底盘板 |
 
@@ -195,7 +195,7 @@ Mk.1 的 Web 端分成两个入口：
 管理后台负责低频设置：
 
 - Wi-Fi 配网。
-- LLM/API、MiniClaw/MimiClaw 模式和密钥。
+- LLM/API、MimiClaw 模式和密钥。
 - 安全策略、控制模式、最大速度、最大时长。
 - 调试状态、清配置、重启。
 
@@ -296,13 +296,14 @@ V0.2 已新增：
 | `atlas_admin_http.*` | 手机/电脑 Web 管理界面和 REST API |
 | `atlas_pairing.*` | 本地配对码、会话 token、权限检查 |
 | `atlas_llm_client.*` | 云端/宿主 API 调用封装，不直接输出运动指令 |
-| `atlas_mimiclaw_adapter.*` | 把 MimiClaw/MiniClaw 结果转为 `atlas_voice_intent_t` |
+| `atlas_mimiclaw_adapter.*` | 把本地文本或 MimiClaw 结果转为 `atlas_voice_intent_t` |
+| `atlas_mimiclaw_intent.*` | 解析 MimiClaw tool-call / `atlas.mimiclaw.v1` 意图，并进入 DualEye UI/安全层 |
 
 当前限制：
 
 - `atlas_llm_client.*` 目前只做配置状态和就绪判断，还没有发起真实 HTTPS/HTTP LLM 请求。
 - `atlas_mimiclaw_adapter.*` 当前先做本地关键词意图识别；遇到无法本地理解但 LLM 已配置时，会进入 `thinking` 安全占位，不会直接控制电机。
-- MiniClaw/MimiClaw 侧也需要预置 Skills/Agent；推荐契约见 `docs/MiniClaw技能与Agent设计_Atlas_Rover_Mk1.md`。DualEye 侧只接受结构化意图，不接受自由文本直接驱动 UART。
+- MimiClaw 侧需要预置 Atlas Rover control skill；推荐契约见 `docs/MimiClaw集成方案_Atlas_Rover_Mk1.md`。DualEye 侧只接受结构化意图，不接受自由文本直接驱动 UART。
 - 保存 Wi-Fi 后建议重启连接 STA；运行时热切 Wi-Fi 后续再补。
 - 运动开关默认开启，控制模式默认 `manual`，方便开箱即用；但单条移动仍受最大速度、最大时长、STOP 和底盘板超时停车保护。
 - API Key 存入 NVS，但原型阶段尚未启用 NVS 加密，建议只使用低风险测试 Key。
@@ -310,7 +311,7 @@ V0.2 已新增：
 ## 10. 对当前问题的直接回答
 
 1. **现有程序和 MimiClaw 是否一起烧录？**  
-   如果 MimiClaw 端侧运行，就和 DualEye 程序一起编译成一份 DualEye 固件烧录；如果 MiniClaw 跑在 Mac/电脑上，就不烧进 DualEye，DualEye 只通过 Wi-Fi 与宿主通信。底盘板永远是另一份独立固件。
+   如果 MimiClaw 端侧运行，就和 DualEye 程序一起编译成一份 DualEye 固件烧录；如果先用外部宿主/调试桥，就不烧进 DualEye，DualEye 只通过 Wi-Fi 与宿主通信。底盘板永远是另一份独立固件。
 
 2. **烧录后怎么配网和配大模型 API？**  
    第一版应进入 SoftAP 配网模式，手机/电脑连 `AtlasRover-XXXX`，打开 `192.168.4.1`，配置 Wi-Fi；入网后先使用串口日志中的设备 IP，配置 LLM 模式、Base URL、Model、API Key。API Key 只进 NVS，不进固件源码和 GitHub。`atlas-rover.local` 等 mDNS 入口后续确认稳定后再补。

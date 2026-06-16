@@ -4,7 +4,7 @@
 
 它现在的样子，大概是：铜丝焊接车架、Waveshare ESP32-S3 DualEye 双圆屏、双板 UART 控制、N20/DRV8833 底盘、语音交互、双目表情，还有一点点“我想活起来”的执念。
 
-我们知道它还很粗糙：机械结构没经过足够多次打样，DualEye 真屏驱动还没接上，miniClaw/MimiClaw 语音链路也还在搭骨架。这个仓库不是“成品展示柜”，更像一个公开的工作台。欢迎大神路过时顺手指点，尤其欢迎指出不合理、不安全、不优雅的地方。
+我们知道它还很粗糙：机械结构没经过足够多次打样，DualEye 真屏驱动还没接上，MimiClaw 语音链路也还在搭骨架。这个仓库不是“成品展示柜”，更像一个公开的工作台。欢迎大神路过时顺手指点，尤其欢迎指出不合理、不安全、不优雅的地方。
 <img width="2506" height="2348" alt="image" src="https://github.com/user-attachments/assets/82bc6d5b-bc66-4e5b-b9d4-6708805ef747" />
 
 
@@ -28,10 +28,10 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 | 采购清单 | 已有中文清单和规格复审 |
 | 双目表情方案 | 已有 V0.6，按“一屏一眼”设计并补充页面视觉、应用能力映射和候选界面推荐 |
 | Web 表情预览 | 已可在 VS Code Live Preview 中查看，支持 5 套主题、16 个表情、时钟/状态/语音/音乐/故事/对话/日历/番茄页评审 |
-| DualEye 固件 | V0.4 可编译，已同步 5 套主题 palette，并接入 Waveshare GC9A01/LVGL 双屏后端 |
+| DualEye 固件 | V0.5 可编译，已同步 5 套主题 palette，接入 Waveshare GC9A01/LVGL 双屏后端，并新增 MimiClaw 结构化意图入口 |
 | Web 应用/管理界面 | V0.4 已拆分 `/app` 日常应用页和 `/admin` 管理后台，支持表情、页面、主题、移动、MimiClaw 应用占位和配置管理 |
 | 真机双屏显示 | 已接 Waveshare 官方同款 GC9A01/LVGL 初始化，真机需继续实测触摸和复杂页面 |
-| 语音 MiniClaw/MimiClaw | DualEye 适配层已预留，MiniClaw Skills/Agent 契约见 `docs/MiniClaw技能与Agent设计_Atlas_Rover_Mk1.md` |
+| 语音 MimiClaw | DualEye 已提供 `/api/mimiclaw/intent`，MimiClaw 集成方案见 `docs/MimiClaw集成方案_Atlas_Rover_Mk1.md` |
 | 底盘闭环控制 | 待底盘板固件实现 |
 
 ## 仓库结构
@@ -75,7 +75,7 @@ idf.py set-target esp32s3
 idf.py build
 ```
 
-当前 V0.4 已通过本地构建，并按 DualEye 官方规格配置为 16MB Flash、PSRAM 和 4MB 应用分区；固件已接入 Waveshare GC9A01/LVGL 双屏后端，下一步重点是真机校准旋转、背光、触摸和复杂页面。
+当前 V0.5 已通过本地构建，并按 DualEye 官方规格配置为 16MB Flash、PSRAM 和 4MB 应用分区；固件已接入 Waveshare GC9A01/LVGL 双屏后端和 MimiClaw 结构化意图入口，下一步重点是真机校准旋转、背光、触摸、复杂页面和完整 MimiClaw agent loop 合并。
 
 烧录后：
 

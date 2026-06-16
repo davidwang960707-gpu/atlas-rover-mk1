@@ -6,7 +6,7 @@ DualEye 固件 V0.1 的目标不是一次性完成所有硬件驱动，而是先
 
 - 双实体圆屏表情模型。
 - 页面与表情状态机。
-- miniClaw/MimiClaw 语音事件入口。
+- MimiClaw 语音事件入口。
 - UART 底盘控制协议。
 - 移动安全超时和 `AR1,STOP` 保护。
 - 后续接入 Waveshare 官方双屏、触摸、音频驱动的适配边界。
@@ -19,13 +19,13 @@ V0.2 在 V0.1 上继续补齐“烧录后怎么配置和调试”的骨架：
 - 用户应用页 `/app` 和管理后台 `/admin` 分离，根路径 `/` 默认进入应用页。
 - 6 位配对码。
 - STOP、短时移动、文本意图测试 API。
-- MimiClaw/MiniClaw 适配层占位。
+- MimiClaw 适配层占位。
 
 ## 2. 双板职责
 
 | 板子 | 职责 | 不做什么 |
 |---|---|---|
-| DualEye | 双目表情、页面、触摸、语音、miniClaw/MimiClaw、向底盘板发送运动意图 | 不直接驱动电机，不承担电机闭环，不从自身给电机供电 |
+| DualEye | 双目表情、页面、触摸、语音、MimiClaw、向底盘板发送运动意图 | 不直接驱动电机，不承担电机闭环，不从自身给电机供电 |
 | 底盘板 | 电机 PWM/闭环、DRV8833、限速、超时停车、灯光执行、ACK 回传 | 不做复杂语音理解，不负责双目 UI |
 
 ## 3. 程序结构
@@ -43,9 +43,9 @@ V0.2 在 V0.1 上继续补齐“烧录后怎么配置和调试”的骨架：
 | `atlas_admin_http.*` | Web 管理页和 REST API |
 | `atlas_pairing.*` | 启动时生成 6 位本地配对码 |
 | `atlas_llm_client.*` | LLM 配置状态和就绪判断，不直接控制电机 |
-| `atlas_mimiclaw_adapter.*` | 把本地文本或后续 MiniClaw/MimiClaw 结果转成 `atlas_voice_intent_t` |
+| `atlas_mimiclaw_adapter.*` | 把本地文本或后续 MimiClaw 结果转成 `atlas_voice_intent_t` |
 
-`main.c` 中的 `ATLAS_ENABLE_DEV_EVENT_DEMO` 默认开启，用于烧录后观察聆听、思考、说话、成功几个表情状态切换；它不会发送移动指令。接入真实 miniClaw/MimiClaw 后可把该宏设为 `0`。
+`main.c` 中的 `ATLAS_ENABLE_DEV_EVENT_DEMO` 默认开启，用于烧录后观察聆听、思考、说话、成功几个表情状态切换；它不会发送移动指令。接入真实 MimiClaw 后可把该宏设为 `0`。
 
 ## 4. 表情状态
 
@@ -56,7 +56,7 @@ V0.2 在 V0.1 上继续补齐“烧录后怎么配置和调试”的骨架：
 | `idle` | 待机 |
 | `happy` | 指令成功、互动成功 |
 | `listen` | 唤醒/收音 |
-| `thinking` | miniClaw/MimiClaw 理解指令 |
+| `thinking` | MimiClaw 理解指令 |
 | `speaking` | 语音回复播放 |
 | `moving` | 底盘执行运动 |
 | `curious` | 不确定、等待确认、底盘忙 |
@@ -71,7 +71,7 @@ V0.2 在 V0.1 上继续补齐“烧录后怎么配置和调试”的骨架：
 
 ```mermaid
 flowchart LR
-  A["麦克风/触摸唤醒"] --> B["miniClaw/MimiClaw 理解"]
+  A["麦克风/触摸唤醒"] --> B["MimiClaw 理解"]
   B --> C["atlas_voice_intent_t"]
   C --> D["atlas_ui 状态机"]
   D --> E["表情切换"]
@@ -116,7 +116,7 @@ flowchart LR
 | 圆屏绘制 | `atlas_display.c` | 把 `atlas_eye_frame_t` 绘制成左/右 240 x 240 图层 |
 | 触摸 | 新增或扩展 UI 层 | 触摸切页面、切主题、确认/取消指令 |
 | 麦克风与 TTS 音量 | `atlas_ui_state_t.audio_level` | 让 listen/speaking 表情随音量跳动 |
-| miniClaw/MimiClaw | `atlas_voice.*` | 把语义输出映射成 `atlas_voice_event_t` |
+| MimiClaw | `atlas_voice.*` | 把语义输出映射成 `atlas_voice_event_t` |
 | 真机 UART 引脚确认 | `atlas_rover_uart.*` | 当前按官方 LCD1 UART 口使用，若后续改独立 UART，需要在这里换端口/引脚 |
 | 真实 LLM/宿主调用 | `atlas_llm_client.*` | 当前只做配置状态，后续接入 HTTPS/HTTP 或 WebSocket |
 | 管理页优化 | `atlas_admin_http.*` | 当前为基础嵌入式页面，后续补日志、表情调试、OTA 和更好的手机布局 |

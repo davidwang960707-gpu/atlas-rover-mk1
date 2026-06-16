@@ -456,6 +456,20 @@ const char *atlas_page_name(atlas_page_t page)
     }
 }
 
+bool atlas_page_from_name(const char *name, atlas_page_t *page)
+{
+    if (name == NULL || page == NULL) {
+        return false;
+    }
+    for (atlas_page_t candidate = ATLAS_PAGE_EYES; candidate <= ATLAS_PAGE_POMODORO; ++candidate) {
+        if (strcmp(name, atlas_page_name(candidate)) == 0) {
+            *page = candidate;
+            return true;
+        }
+    }
+    return false;
+}
+
 void atlas_display_set_theme(const char *theme_id)
 {
     s_theme = atlas_expression_theme_palette_by_id(theme_id);

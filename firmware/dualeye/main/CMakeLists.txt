@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS
         "atlas_admin_http.c"
+        "atlas_mimiclaw_intent.c"
         "atlas_config.c"
         "atlas_display.c"
         "atlas_expression.c"
@@ -24,6 +25,7 @@ idf_component_register(
         esp_lcd_gc9a01
         esp_lcd_touch
         esp_lcd_touch_cst816s
+        json
         lvgl
         nvs_flash
 )

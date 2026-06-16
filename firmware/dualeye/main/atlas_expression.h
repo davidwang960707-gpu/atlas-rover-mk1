@@ -14,9 +14,12 @@ typedef enum {
     ATLAS_EXPR_SLEEPY,
     ATLAS_EXPR_SURPRISED,
     ATLAS_EXPR_WINK,
+    ATLAS_EXPR_LOVE,
+    ATLAS_EXPR_MONEY,
     ATLAS_EXPR_ANGRY,
     ATLAS_EXPR_CHARGING,
     ATLAS_EXPR_ERROR,
+    ATLAS_EXPR_CRY,
     ATLAS_EXPR_COUNT,
 } atlas_expression_t;
 
@@ -84,6 +87,7 @@ typedef struct {
 } atlas_eye_frame_t;
 
 const char *atlas_expression_name(atlas_expression_t expression);
+bool atlas_expression_from_name(const char *name, atlas_expression_t *expression);
 const char *atlas_motion_name(atlas_motion_t motion);
 const atlas_theme_palette_t *atlas_expression_theme_palette(atlas_theme_t theme);
 const atlas_theme_palette_t *atlas_expression_theme_palette_by_id(const char *theme_id);

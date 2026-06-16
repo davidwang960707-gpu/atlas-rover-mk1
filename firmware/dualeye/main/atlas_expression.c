@@ -139,15 +139,33 @@ const char *atlas_expression_name(atlas_expression_t expression)
         [ATLAS_EXPR_SLEEPY] = "sleepy",
         [ATLAS_EXPR_SURPRISED] = "surprised",
         [ATLAS_EXPR_WINK] = "wink",
+        [ATLAS_EXPR_LOVE] = "love",
+        [ATLAS_EXPR_MONEY] = "money",
         [ATLAS_EXPR_ANGRY] = "angry",
         [ATLAS_EXPR_CHARGING] = "charging",
         [ATLAS_EXPR_ERROR] = "error",
+        [ATLAS_EXPR_CRY] = "cry",
     };
 
     if (expression < 0 || expression >= ATLAS_EXPR_COUNT || names[expression] == NULL) {
         return "unknown";
     }
     return names[expression];
+}
+
+bool atlas_expression_from_name(const char *name, atlas_expression_t *expression)
+{
+    if (name == NULL || expression == NULL) {
+        return false;
+    }
+
+    for (atlas_expression_t candidate = ATLAS_EXPR_IDLE; candidate < ATLAS_EXPR_COUNT; ++candidate) {
+        if (strcmp(name, atlas_expression_name(candidate)) == 0) {
+            *expression = candidate;
+            return true;
+        }
+    }
+    return false;
 }
 
 const char *atlas_motion_name(atlas_motion_t motion)
@@ -361,6 +379,32 @@ void atlas_expression_make_frame_with_theme(atlas_expression_t expression,
         frame->right.look_x = 8;
         break;
 
+    case ATLAS_EXPR_LOVE:
+        frame->left = base_eye(theme->rose_rgb);
+        frame->right = base_eye(theme->rose_rgb);
+        frame->left.iris_scale = (uint16_t)(116 + pulse / 3);
+        frame->right.iris_scale = (uint16_t)(116 + pulse / 3);
+        frame->left.pupil_scale = 76;
+        frame->right.pupil_scale = 76;
+        frame->left.look_y = -6;
+        frame->right.look_y = -6;
+        frame->left.effect = ATLAS_EYE_EFFECT_PULSE;
+        frame->right.effect = ATLAS_EYE_EFFECT_PULSE;
+        break;
+
+    case ATLAS_EXPR_MONEY:
+        frame->left = base_eye(theme->amber_rgb);
+        frame->right = base_eye(theme->amber_rgb);
+        frame->left.iris_scale = 86;
+        frame->right.iris_scale = 86;
+        frame->left.pupil_scale = 62;
+        frame->right.pupil_scale = 62;
+        frame->left.look_x = -12;
+        frame->right.look_x = 12;
+        frame->left.effect = ATLAS_EYE_EFFECT_SCAN;
+        frame->right.effect = ATLAS_EYE_EFFECT_SCAN;
+        break;
+
     case ATLAS_EXPR_ANGRY:
         frame->left = base_eye(theme->danger_rgb);
         frame->right = base_eye(theme->danger_rgb);
@@ -394,6 +438,21 @@ void atlas_expression_make_frame_with_theme(atlas_expression_t expression,
         frame->right.bottom_lid = 45;
         frame->left.effect = ATLAS_EYE_EFFECT_ERROR;
         frame->right.effect = ATLAS_EYE_EFFECT_ERROR;
+        break;
+
+    case ATLAS_EXPR_CRY:
+        frame->left = base_eye(theme->tear_rgb);
+        frame->right = base_eye(theme->tear_rgb);
+        frame->left.look_y = 24;
+        frame->right.look_y = 24;
+        frame->left.iris_scale = 72;
+        frame->right.iris_scale = 72;
+        frame->left.top_lid = 42;
+        frame->right.top_lid = 42;
+        frame->left.bottom_lid = 28;
+        frame->right.bottom_lid = 28;
+        frame->left.effect = ATLAS_EYE_EFFECT_TALK;
+        frame->right.effect = ATLAS_EYE_EFFECT_TALK;
         break;
 
     case ATLAS_EXPR_COUNT:

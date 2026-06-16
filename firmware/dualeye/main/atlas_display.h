@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "esp_err.h"
@@ -32,3 +33,4 @@ void atlas_display_render(atlas_page_t page,
                           uint32_t now_ms);
 
 const char *atlas_page_name(atlas_page_t page);
+bool atlas_page_from_name(const char *name, atlas_page_t *page);

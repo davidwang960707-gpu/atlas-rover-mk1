@@ -12,6 +12,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "atlas_mimiclaw_intent.h"
 #include "atlas_llm_client.h"
 #include "atlas_mimiclaw_adapter.h"
 #include "atlas_pairing.h"
@@ -34,55 +35,6 @@ static bool is_motion_event(atlas_voice_event_t event)
            event == ATLAS_VOICE_EVENT_MOVE_BACKWARD ||
            event == ATLAS_VOICE_EVENT_TURN_LEFT ||
            event == ATLAS_VOICE_EVENT_TURN_RIGHT;
-}
-
-static bool expression_from_name(const char *name, atlas_expression_t *expression)
-{
-    if (name == NULL || expression == NULL) {
-        return false;
-    }
-    for (atlas_expression_t candidate = ATLAS_EXPR_IDLE; candidate < ATLAS_EXPR_COUNT; ++candidate) {
-        if (strcmp(name, atlas_expression_name(candidate)) == 0) {
-            *expression = candidate;
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool page_from_name(const char *name, atlas_page_t *page)
-{
-    if (name == NULL || page == NULL) {
-        return false;
-    }
-    if (strcmp(name, "eyes") == 0) {
-        *page = ATLAS_PAGE_EYES;
-    } else if (strcmp(name, "clock") == 0) {
-        *page = ATLAS_PAGE_CLOCK;
-    } else if (strcmp(name, "status") == 0) {
-        *page = ATLAS_PAGE_STATUS;
-    } else if (strcmp(name, "voice") == 0) {
-        *page = ATLAS_PAGE_VOICE;
-    } else if (strcmp(name, "settings") == 0) {
-        *page = ATLAS_PAGE_SETTINGS;
-    } else if (strcmp(name, "alarm") == 0) {
-        *page = ATLAS_PAGE_ALARM;
-    } else if (strcmp(name, "photo") == 0) {
-        *page = ATLAS_PAGE_PHOTO;
-    } else if (strcmp(name, "music") == 0) {
-        *page = ATLAS_PAGE_MUSIC;
-    } else if (strcmp(name, "story") == 0) {
-        *page = ATLAS_PAGE_STORY;
-    } else if (strcmp(name, "chat") == 0) {
-        *page = ATLAS_PAGE_CHAT;
-    } else if (strcmp(name, "calendar") == 0) {
-        *page = ATLAS_PAGE_CALENDAR;
-    } else if (strcmp(name, "pomodoro") == 0) {
-        *page = ATLAS_PAGE_POMODORO;
-    } else {
-        return false;
-    }
-    return true;
 }
 
 static uint32_t now_ms(void)
@@ -268,7 +220,7 @@ static esp_err_t admin_handler(httpd_req_t *req)
         "<label>速度 %<input id=\"speed\" type=\"number\" min=\"1\" max=\"80\" value=\"30\"></label><label>时长 ms<input id=\"duration\" type=\"number\" min=\"100\" max=\"2000\" value=\"500\"></label>"
         "<div class=\"row\"><button onclick=\"move('F')\">前进</button><button onclick=\"move('B')\">后退</button><button onclick=\"move('L')\">左转</button><button onclick=\"move('R')\">右转</button></div></section>"
         "<section><h2>Wi-Fi 配网</h2><label>SSID<input id=\"ssid\"></label><label>密码<input id=\"wifi_pass\" type=\"password\"></label><button class=\"primary\" onclick=\"saveWifi()\">保存 Wi-Fi</button></section>"
-        "<section><h2>大模型/API</h2><label>模式<select id=\"llm_mode\"><option value=\"off\">关闭</option><option value=\"host\">电脑宿主 MiniClaw</option><option value=\"cloud\">云端大模型</option><option value=\"embedded\">端侧 MimiClaw</option></select></label>"
+        "<section><h2>大模型/API</h2><label>模式<select id=\"llm_mode\"><option value=\"off\">关闭</option><option value=\"host\">外部宿主/调试桥</option><option value=\"cloud\">云端大模型</option><option value=\"embedded\">端侧 MimiClaw</option></select></label>"
         "<label>Provider<input id=\"provider\" value=\"openai_compatible\"></label><label>Base URL<input id=\"base_url\"></label><label>Model<input id=\"model\"></label><label>API Key<input id=\"api_key\" type=\"password\" placeholder=\"留空则不更新\"></label>"
         "<button class=\"primary\" onclick=\"saveLlm()\">保存 API 设置</button></section>"
         "<section><h2>安全</h2><label><input id=\"motion_enabled\" type=\"checkbox\"> 允许运动</label><label>控制模式<select id=\"control_mode\"><option value=\"manual\">手动模式：Web 控制</option><option value=\"ai\">AI 模式：语音/MimiClaw</option></select></label><label>最大速度 %<input id=\"max_speed\" type=\"number\" min=\"1\" max=\"80\" value=\"40\"></label>"
@@ -276,6 +228,7 @@ static esp_err_t admin_handler(httpd_req_t *req)
         "<section><h2>界面/主题</h2><label>主题<select id=\"ui_theme\"><option value=\"classic\">经典蓝眼</option><option value=\"amber\">琥珀巡航</option><option value=\"mint\">薄荷友好</option><option value=\"alert\">红色警戒</option><option value=\"night\">低亮夜航</option></select></label>"
         "<label>屏幕亮度 %<input id=\"brightness\" type=\"number\" min=\"0\" max=\"100\" value=\"70\"></label><label>音量 %<input id=\"volume\" type=\"number\" min=\"0\" max=\"100\" value=\"60\"></label><button class=\"primary\" onclick=\"saveUi()\">保存界面设置</button></section>"
         "<section><h2>文本意图测试</h2><label>文本<input id=\"voice_text\" placeholder=\"forward / stop / left\"></label><button onclick=\"sendText()\">发送到意图层</button></section>"
+        "<section><h2>MimiClaw 结构化意图</h2><label>MimiClawIntent<textarea id=\"mimiclaw_intent\" rows=\"9\" style=\"font:inherit;padding:9px;border-radius:6px;border:1px solid #8a632f;background:#151922;color:#efe9df\">{\"tool\":\"atlas_set_expression\",\"input\":{\"expression\":\"happy\"}}</textarea></label><button onclick=\"sendMimiclaw()\">发送结构化意图</button></section>"
         "<section><h2>系统</h2><div class=\"row\"><button onclick=\"resetCfg()\">清除 Wi-Fi/API</button><button onclick=\"reboot()\">重启</button></div></section></div></main>"
         "<script>"
         "const enc=encodeURIComponent;function pin(){return document.getElementById('pin').value}"
@@ -291,6 +244,7 @@ static esp_err_t admin_handler(httpd_req_t *req)
         "async function saveSafety(){const b=`pin=${enc(pin())}&motion_enabled=${motion_enabled.checked?1:0}&control_mode=${enc(control_mode.value)}&max_speed=${enc(max_speed.value)}&max_duration=${enc(max_duration.value)}`;alert(JSON.stringify(await post('/api/config/safety',b)));refresh()}"
         "async function saveUi(){const b=`pin=${enc(pin())}&theme=${enc(ui_theme.value)}&brightness=${enc(brightness.value)}&volume=${enc(volume.value)}`;alert(JSON.stringify(await post('/api/config/ui',b)));refresh()}"
         "async function sendText(){const b=`pin=${enc(pin())}&text=${enc(voice_text.value)}`;alert(JSON.stringify(await post('/api/voice/text',b)));refresh()}"
+        "async function sendMimiclaw(){const b=`pin=${enc(pin())}&intent=${enc(mimiclaw_intent.value)}`;alert(JSON.stringify(await post('/api/mimiclaw/intent',b)));refresh()}"
         "async function resetCfg(){if(confirm('清除 Wi-Fi/API 配置？'))alert(JSON.stringify(await post('/api/config/reset',`pin=${enc(pin())}`)))}"
         "async function reboot(){if(confirm('重启设备？'))alert(JSON.stringify(await post('/api/system/reboot',`pin=${enc(pin())}`)))}refresh();setInterval(refresh,4000);</script></body></html>";
 
@@ -369,7 +323,7 @@ static esp_err_t app_expression_handler(httpd_req_t *req)
     char expression_name[24] = "";
     (void)form_get_value(body, "expression", expression_name, sizeof(expression_name));
     atlas_expression_t expression = ATLAS_EXPR_IDLE;
-    if (!expression_from_name(expression_name, &expression)) {
+    if (!atlas_expression_from_name(expression_name, &expression)) {
         return send_error(req, "400 Bad Request", "bad expression");
     }
 
@@ -391,7 +345,7 @@ static esp_err_t app_page_handler(httpd_req_t *req)
     char page_name[24] = "";
     (void)form_get_value(body, "page", page_name, sizeof(page_name));
     atlas_page_t page = ATLAS_PAGE_EYES;
-    if (!page_from_name(page_name, &page)) {
+    if (!atlas_page_from_name(page_name, &page)) {
         return send_error(req, "400 Bad Request", "bad page");
     }
 
@@ -685,6 +639,51 @@ static esp_err_t voice_text_handler(httpd_req_t *req)
     return send_json(req, json);
 }
 
+static esp_err_t mimiclaw_intent_handler(httpd_req_t *req)
+{
+    char body[1400];
+    ESP_RETURN_ON_ERROR(read_body(req, body, sizeof(body)), TAG, "read body failed");
+    if (!authorize_body(body)) {
+        return send_error(req, "403 Forbidden", "pairing required");
+    }
+
+    char intent_json[1150] = "";
+    (void)form_get_value(body, "intent", intent_json, sizeof(intent_json));
+    if (intent_json[0] == '\0') {
+        return send_error(req, "400 Bad Request", "intent required");
+    }
+
+    atlas_mimiclaw_intent_t intent;
+    char error[96] = "";
+    esp_err_t err = atlas_mimiclaw_intent_parse_json(intent_json, &intent, error, sizeof(error));
+    if (err != ESP_OK) {
+        return send_error(req, "400 Bad Request", error[0] == '\0' ? esp_err_to_name(err) : error);
+    }
+
+    char result[80] = "";
+    err = atlas_mimiclaw_intent_apply_intent(s_ctx.config, s_ctx.ui_state, &intent, now_ms(), result, sizeof(result));
+    if (err == ESP_ERR_NOT_FINISHED) {
+        char json[220];
+        snprintf(json,
+                 sizeof(json),
+                 "{\"ok\":true,\"accepted\":false,\"requires_confirmation\":true,\"result\":\"%s\"}",
+                 result);
+        return send_json(req, json);
+    }
+    if (err != ESP_OK) {
+        return send_error(req, "409 Conflict", result[0] == '\0' ? esp_err_to_name(err) : result);
+    }
+
+    char json[260];
+    snprintf(json,
+             sizeof(json),
+             "{\"ok\":true,\"accepted\":true,\"page\":\"%s\",\"expression\":\"%s\",\"motion\":\"%s\"}",
+             atlas_page_name(s_ctx.ui_state->page),
+             atlas_expression_name(s_ctx.ui_state->expression),
+             atlas_motion_name(s_ctx.ui_state->motion));
+    return send_json(req, json);
+}
+
 static esp_err_t reset_handler(httpd_req_t *req)
 {
     char body[128];
@@ -741,7 +740,7 @@ esp_err_t atlas_admin_http_start(atlas_config_t *config,
     httpd_config_t http_config = HTTPD_DEFAULT_CONFIG();
     http_config.server_port = 80;
     http_config.stack_size = 8192;
-    http_config.max_uri_handlers = 20;
+    http_config.max_uri_handlers = 21;
 
     ESP_RETURN_ON_ERROR(httpd_start(&s_ctx.server, &http_config), TAG, "httpd_start failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/", HTTP_GET, app_handler), TAG, "route / failed");
@@ -758,6 +757,7 @@ esp_err_t atlas_admin_http_start(atlas_config_t *config,
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/safety", HTTP_POST, save_safety_handler), TAG, "route safety failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/ui", HTTP_POST, save_ui_handler), TAG, "route ui failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/voice/text", HTTP_POST, voice_text_handler), TAG, "route voice failed");
+    ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/mimiclaw/intent", HTTP_POST, mimiclaw_intent_handler), TAG, "route mimiclaw failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/reset", HTTP_POST, reset_handler), TAG, "route reset failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/system/reboot", HTTP_POST, reboot_handler), TAG, "route reboot failed");
 
