@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atlas Rover Mk.1 DualEye Preview</title>
+  <style>
+    :root {
+      --bg: #07080a;
+      --panel: #111318;
+      --line: #a66c2a;
+      --cyan: #3fc9ff;
+      --mint: #5fe1b4;
+      --red: #ff6b4b;
+      --text: #efe9df;
+      --muted: #9c958c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      display: grid;
+      grid-template-columns: minmax(560px, 1fr) 310px;
+    }
+
+    main {
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 28px;
+    }
+
+    aside {
+      border-left: 1px solid rgba(166, 108, 42, 0.45);
+      background: #0d0f13;
+      padding: 22px;
+      overflow: auto;
+    }
+
+    .stage {
+      width: min(860px, 100%);
+      aspect-ratio: 16 / 9;
+      border: 1px solid rgba(166, 108, 42, 0.78);
+      position: relative;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 32%, rgba(63, 201, 255, 0.06), transparent 42%), #07080a;
+    }
+
+    .eyes {
+      display: none;
+      gap: clamp(28px, 5vw, 56px);
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    .eye {
+      --accent: var(--cyan);
+      --look-x: 0px;
+      --look-y: 0px;
+      --iris-scale: 1;
+      --top-lid: -58%;
+      --bottom-lid: -58%;
+      --brow-opacity: 0;
+      --brow-tilt: 0deg;
+      --eye-tilt: 0deg;
+      width: clamp(190px, 28vw, 280px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 6px solid var(--line);
+      background: #07080a;
+      position: relative;
+      box-shadow: inset 0 0 34px rgba(63, 201, 255, 0.06), 0 0 24px rgba(166, 108, 42, 0.18);
+      overflow: hidden;
+    }
+
+    .eye.left {
+      --eye-tilt: -1deg;
+    }
+
+    .eye.right {
+      --eye-tilt: 1deg;
+    }
+
+    .iris {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 45%;
+      aspect-ratio: 1;
+      border: 7px solid var(--accent);
+      border-left-color: transparent;
+      border-radius: 50%;
+      transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(var(--iris-scale)) rotate(var(--eye-tilt));
+      transition: transform 220ms ease, border-color 220ms ease, opacity 160ms ease;
+      filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 70%, transparent));
+      z-index: 2;
+    }
+
+    .pupil {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 65%, transparent);
+      transition: transform 180ms ease, opacity 180ms ease;
+    }
+
+    .highlight {
+      position: absolute;
+      left: 26%;
+      top: 22%;
+      width: 13%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.8);
+      opacity: 0.78;
+    }
+
+    .smile {
+      position: absolute;
+      left: 50%;
+      top: 45%;
+      width: 52%;
+      height: 30%;
+      border-bottom: 7px solid var(--accent);
+      border-radius: 0 0 120px 120px;
+      transform: translateX(-50%);
+      opacity: 0;
+      filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 70%, transparent));
+      transition: opacity 160ms ease, transform 180ms ease;
+      z-index: 2;
+    }
+
+    .lid {
+      position: absolute;
+      left: -8%;
+      width: 116%;
+      height: 62%;
+      background: #07080a;
+      z-index: 4;
+      transition: top 180ms ease, bottom 180ms ease, transform 180ms ease;
+    }
+
+    .lid-top {
+      top: var(--top-lid);
+      border-bottom: 2px solid rgba(63, 201, 255, 0.24);
+      border-radius: 0 0 50% 50%;
+      transform: rotate(var(--top-tilt, 0deg));
+      transform-origin: 50% 100%;
+    }
+
+    .lid-bottom {
+      bottom: var(--bottom-lid);
+      border-top: 2px solid rgba(63, 201, 255, 0.18);
+      border-radius: 50% 50% 0 0;
+      transform: rotate(var(--bottom-tilt, 0deg));
+      transform-origin: 50% 0;
+    }
+
+    .brow {
+      position: absolute;
+      left: 22%;
+      top: 24%;
+      width: 56%;
+      height: 7px;
+      border-radius: 99px;
+      background: var(--accent);
+      opacity: var(--brow-opacity);
+      transform: rotate(var(--brow-tilt));
+      box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
+      transition: opacity 180ms ease, transform 180ms ease;
+      z-index: 5;
+    }
+
+    .eye .scan {
+      position: absolute;
+      left: 18%;
+      right: 18%;
+      top: 50%;
+      height: 3px;
+      background: var(--accent);
+      opacity: 0;
+      z-index: 5;
+      box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 65%, transparent);
+    }
+
+    .spark {
+      position: absolute;
+      inset: 22%;
+      border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      border-radius: 50%;
+      opacity: 0;
+      z-index: 1;
+    }
+
+    .expr-idle .iris {
+      animation: breathe 3.8s ease-in-out infinite;
+    }
+
+    .expr-idle .eye.left {
+      --look-x: -4px;
+    }
+
+    .expr-idle .eye.right {
+      --look-x: 4px;
+    }
+
+    .expr-happy .eye {
+      --accent: var(--mint);
+      --look-y: -8px;
+      --iris-scale: 0.72;
+      --top-lid: -14%;
+      --bottom-lid: -18%;
+    }
+
+    .expr-happy .iris {
+      opacity: 0.16;
+    }
+
+    .expr-happy .smile {
+      opacity: 1;
+    }
+
+    .expr-listen .eye {
+      --iris-scale: 1.08;
+    }
+
+    .expr-listen .iris {
+      animation: pulse 900ms ease-in-out infinite;
+    }
+
+    .expr-listen .spark {
+      opacity: 0.7;
+      animation: ringpulse 900ms ease-in-out infinite;
+    }
+
+    .expr-thinking .eye {
+      --look-y: -12px;
+      --iris-scale: 0.92;
+      --top-lid: -34%;
+    }
+
+    .expr-thinking .eye.left {
+      --look-x: -16px;
+      --eye-tilt: -12deg;
+    }
+
+    .expr-thinking .eye.right {
+      --look-x: 16px;
+      --eye-tilt: 12deg;
+    }
+
+    .expr-thinking .scan {
+      opacity: 1;
+      animation: scan 1.2s linear infinite;
+    }
+
+    .expr-speaking .iris {
+      animation: talk 340ms ease-in-out infinite;
+    }
+
+    .expr-moving .eye {
+      --iris-scale: 0.96;
+      --top-lid: -44%;
+      --bottom-lid: -50%;
+    }
+
+    .motion-forward .eye {
+      --look-y: -8px;
+    }
+
+    .motion-back .eye {
+      --look-y: 10px;
+    }
+
+    .motion-left .eye {
+      --look-x: -22px;
+    }
+
+    .motion-right .eye {
+      --look-x: 22px;
+    }
+
+    .expr-curious .eye.left {
+      --look-x: -8px;
+      --look-y: -6px;
+      --iris-scale: 1.18;
+      --eye-tilt: -16deg;
+    }
+
+    .expr-curious .eye.right {
+      --look-x: 10px;
+      --look-y: 8px;
+      --iris-scale: 0.86;
+      --eye-tilt: 12deg;
+      --top-lid: -34%;
+    }
+
+    .expr-sleepy .eye {
+      --look-y: 12px;
+      --iris-scale: 0.78;
+      --top-lid: -14%;
+      --bottom-lid: -36%;
+    }
+
+    .expr-surprised .eye {
+      --iris-scale: 1.28;
+      --top-lid: -70%;
+      --bottom-lid: -70%;
+    }
+
+    .expr-surprised .pupil {
+      transform: translate(-50%, -50%) scale(0.55);
+    }
+
+    .expr-wink .eye.left {
+      --top-lid: 0%;
+      --bottom-lid: 0%;
+      --accent: var(--mint);
+    }
+
+    .expr-wink .eye.left .iris {
+      opacity: 0;
+    }
+
+    .expr-wink .eye.left .smile {
+      opacity: 1;
+    }
+
+    .expr-wink .eye.right {
+      --look-x: 8px;
+      --iris-scale: 1.05;
+    }
+
+    .expr-angry .eye {
+      --accent: var(--red);
+      --iris-scale: 0.88;
+      --top-lid: -20%;
+      --bottom-lid: -38%;
+      --brow-opacity: 1;
+    }
+
+    .expr-angry .eye.left {
+      --brow-tilt: 18deg;
+      --look-x: 8px;
+    }
+
+    .expr-angry .eye.right {
+      --brow-tilt: -18deg;
+      --look-x: -8px;
+    }
+
+    .expr-charging .eye {
+      --accent: #f5dc96;
+      --look-y: 4px;
+    }
+
+    .expr-charging .spark {
+      opacity: 0.55;
+      animation: charge 1.6s linear infinite;
+    }
+
+    .expr-error .eye {
+      --accent: var(--red);
+      --iris-scale: 0.92;
+      --top-lid: -28%;
+      --bottom-lid: -28%;
+    }
+
+    .expr-error .iris {
+      border-radius: 0;
+      border-left-color: var(--red);
+      width: 40%;
+      height: 7px;
+      background: var(--red);
+      transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) rotate(45deg);
+    }
+
+    .expr-error .eye.right .iris {
+      transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) rotate(-45deg);
+    }
+
+    .expr-error .pupil,
+    .expr-error .highlight {
+      opacity: 0;
+    }
+
+    .clock {
+      display: none;
+      gap: clamp(28px, 5vw, 56px);
+    }
+
+    .dial {
+      width: clamp(190px, 28vw, 280px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 6px solid var(--line);
+      position: relative;
+      background: #07080a;
+    }
+
+    .hand {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 36%;
+      height: 4px;
+      background: var(--cyan);
+      transform-origin: 0 50%;
+      border-radius: 99px;
+    }
+
+    .hand.minute {
+      width: 42%;
+      background: var(--mint);
+    }
+
+    .hand.second {
+      width: 46%;
+      height: 2px;
+      background: var(--red);
+    }
+
+    .page-panel {
+      display: none;
+      width: min(620px, 86%);
+      border: 1px solid rgba(166, 108, 42, 0.7);
+      background: var(--panel);
+      padding: 26px;
+    }
+
+    .bars {
+      display: grid;
+      gap: 18px;
+    }
+
+    .bar {
+      height: 18px;
+      border: 1px solid rgba(63, 201, 255, 0.75);
+      position: relative;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: var(--value);
+      background: var(--cyan);
+    }
+
+    .wave {
+      height: 160px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .wave span {
+      width: 6px;
+      height: calc(18px + var(--i) * 7px);
+      background: var(--cyan);
+      animation: wave 760ms ease-in-out infinite alternate;
+      animation-delay: calc(var(--i) * -45ms);
+    }
+
+    .swatches {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .swatch {
+      width: 70px;
+      height: 70px;
+      border: 1px solid rgba(239, 233, 223, 0.65);
+      background: var(--color);
+    }
+
+    .active-eyes .eyes,
+    .active-clock .clock,
+    .active-status .status,
+    .active-voice .voice,
+    .active-settings .settings {
+      display: flex;
+    }
+
+    .active-status .status,
+    .active-voice .voice,
+    .active-settings .settings {
+      display: block;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 6px;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0 0 18px;
+      font-size: 13px;
+    }
+
+    .group {
+      display: grid;
+      gap: 8px;
+      margin: 18px 0;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(166, 108, 42, 0.7);
+      color: var(--text);
+      background: #151922;
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    button:hover,
+    button.active {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    code {
+      display: block;
+      color: var(--mint);
+      background: #07080a;
+      padding: 10px;
+      border: 1px solid rgba(95, 225, 180, 0.22);
+      min-height: 42px;
+      white-space: pre-wrap;
+    }
+
+    @keyframes breathe {
+      0%, 100% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(0.96) rotate(var(--eye-tilt)); }
+      50% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(1.04) rotate(var(--eye-tilt)); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(0.88) rotate(var(--eye-tilt)); }
+      50% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(1.18) rotate(var(--eye-tilt)); }
+    }
+
+    @keyframes ringpulse {
+      0%, 100% { transform: scale(0.92); opacity: 0.32; }
+      50% { transform: scale(1.12); opacity: 0.82; }
+    }
+
+    @keyframes talk {
+      0%, 100% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(0.88) rotate(var(--eye-tilt)); }
+      50% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(1.12) rotate(var(--eye-tilt)); }
+    }
+
+    @keyframes scan {
+      from { transform: translateY(-58px); }
+      to { transform: translateY(58px); }
+    }
+
+    @keyframes charge {
+      from { clip-path: inset(100% 0 0 0); }
+      to { clip-path: inset(0 0 0 0); }
+    }
+
+    @keyframes wave {
+      from { transform: scaleY(0.42); }
+      to { transform: scaleY(1.35); }
+    }
+
+    @media (max-width: 920px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      main {
+        min-height: 58vh;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid rgba(166, 108, 42, 0.45);
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        padding: 16px;
+      }
+
+      .stage {
+        width: 100%;
+      }
+
+      .eyes,
+      .clock {
+        gap: 14px;
+      }
+
+      .eye,
+      .dial {
+        width: clamp(132px, 39vw, 180px);
+        border-width: 4px;
+      }
+
+      .iris {
+        border-width: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section id="stage" class="stage active-eyes expr-idle">
+      <div class="eyes" aria-label="双目表情预览">
+        <div class="eye left" aria-label="左实体屏幕：左眼">
+          <span class="brow"></span>
+          <span class="iris"><span class="pupil"></span><span class="highlight"></span></span>
+          <span class="smile"></span>
+          <span class="lid lid-top"></span>
+          <span class="lid lid-bottom"></span>
+          <span class="scan"></span>
+          <span class="spark"></span>
+        </div>
+        <div class="eye right" aria-label="右实体屏幕：右眼">
+          <span class="brow"></span>
+          <span class="iris"><span class="pupil"></span><span class="highlight"></span></span>
+          <span class="smile"></span>
+          <span class="lid lid-top"></span>
+          <span class="lid lid-bottom"></span>
+          <span class="scan"></span>
+          <span class="spark"></span>
+        </div>
+      </div>
+
+      <div class="clock">
+        <div class="dial">
+          <span class="hand hour"></span>
+          <span class="hand minute"></span>
+          <span class="hand second"></span>
+        </div>
+        <div class="dial">
+          <span class="hand hour"></span>
+          <span class="hand minute"></span>
+          <span class="hand second"></span>
+        </div>
+      </div>
+
+      <div class="page-panel status">
+        <div class="bars">
+          <div class="bar" style="--value:62%"><span></span></div>
+          <div class="bar" style="--value:48%"><span></span></div>
+          <div class="bar" style="--value:88%"><span></span></div>
+          <div class="bar" style="--value:25%"><span></span></div>
+        </div>
+      </div>
+
+      <div class="page-panel voice">
+        <div class="wave" id="wave"></div>
+      </div>
+
+      <div class="page-panel settings">
+        <div class="swatches">
+          <span class="swatch" style="--color:#3fc9ff"></span>
+          <span class="swatch" style="--color:#5fe1b4"></span>
+          <span class="swatch" style="--color:#ff6b4b"></span>
+          <span class="swatch" style="--color:#a66c2a"></span>
+          <span class="swatch" style="--color:#f5dc96"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside>
+    <h1>Atlas Rover Mk.1</h1>
+    <p>VS Code Live Preview 双目界面预览。改这个文件保存后会自动刷新。</p>
+
+    <section class="group">
+      <p>页面</p>
+      <div class="row" id="pageButtons">
+        <button data-page="eyes" class="active">双眼</button>
+        <button data-page="clock">时钟</button>
+        <button data-page="status">状态</button>
+        <button data-page="voice">语音</button>
+        <button data-page="settings">设置</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <p>表情</p>
+      <div class="row" id="exprButtons">
+        <button data-expr="idle" class="active">待机</button>
+        <button data-expr="happy">开心</button>
+        <button data-expr="listen">聆听</button>
+        <button data-expr="thinking">思考</button>
+        <button data-expr="speaking">说话</button>
+        <button data-expr="moving">移动</button>
+        <button data-expr="curious">好奇</button>
+        <button data-expr="sleepy">困倦</button>
+        <button data-expr="surprised">惊讶</button>
+        <button data-expr="wink">眨眼</button>
+        <button data-expr="angry">拒绝</button>
+        <button data-expr="charging">充电</button>
+        <button data-expr="error">错误</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <p>底盘指令</p>
+      <div class="row">
+        <button data-cmd="AR1,MOVE,F,40,500">前进</button>
+        <button data-cmd="AR1,MOVE,B,35,400">后退</button>
+        <button data-cmd="AR1,TURN,L,30">左转</button>
+        <button data-cmd="AR1,TURN,R,30">右转</button>
+        <button data-cmd="AR1,STOP">停止</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <p>最后输出</p>
+      <code id="log">AR1,STOP</code>
+    </section>
+
+    <p>快捷键：1-5 切页面，H/L/T/S/M/C/Y/U/W/A/G/E 切表情，方向键输出移动指令，空格 STOP。</p>
+  </aside>
+
+  <script>
+    const stage = document.querySelector("#stage");
+    const log = document.querySelector("#log");
+    const wave = document.querySelector("#wave");
+
+    for (let i = 1; i <= 42; i += 1) {
+      const bar = document.createElement("span");
+      bar.style.setProperty("--i", String((i % 9) + 1));
+      wave.appendChild(bar);
+    }
+
+    function setActive(container, selector, valueAttr, value) {
+      document.querySelectorAll(`${container} button`).forEach((button) => {
+        button.classList.toggle("active", button.dataset[valueAttr] === value);
+      });
+    }
+
+    function setPage(page) {
+      stage.className = stage.className
+        .replace(/\bactive-\S+/g, "")
+        .trim();
+      stage.classList.add(`active-${page}`);
+      setActive("#pageButtons", "button", "page", page);
+    }
+
+    function setExpression(expr) {
+      stage.className = stage.className
+        .replace(/\bexpr-\S+/g, "")
+        .trim();
+      stage.classList.add(`expr-${expr}`);
+      setActive("#exprButtons", "button", "expr", expr);
+      if (expr !== "moving") setMotion("");
+      if (expr !== "idle") setPage("eyes");
+    }
+
+    function setMotion(motion) {
+      stage.className = stage.className
+        .replace(/\bmotion-\S+/g, "")
+        .trim();
+      if (motion) stage.classList.add(`motion-${motion}`);
+    }
+
+    function send(cmd) {
+      log.textContent = cmd;
+      console.log(cmd);
+      if (cmd.includes("MOVE,F")) {
+        setMotion("forward");
+        setExpression("moving");
+      } else if (cmd.includes("MOVE,B")) {
+        setMotion("back");
+        setExpression("moving");
+      } else if (cmd.includes("TURN,L")) {
+        setMotion("left");
+        setExpression("moving");
+      } else if (cmd.includes("TURN,R")) {
+        setMotion("right");
+        setExpression("moving");
+      } else if (cmd.endsWith("STOP")) {
+        setMotion("");
+        setExpression("idle");
+      }
+    }
+
+    document.querySelector("#pageButtons").addEventListener("click", (event) => {
+      const page = event.target.dataset.page;
+      if (page) setPage(page);
+    });
+
+    document.querySelector("#exprButtons").addEventListener("click", (event) => {
+      const expr = event.target.dataset.expr;
+      if (expr) setExpression(expr);
+    });
+
+    document.querySelectorAll("[data-cmd]").forEach((button) => {
+      button.addEventListener("click", () => send(button.dataset.cmd));
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+      if (["1", "2", "3", "4", "5"].includes(key)) {
+        setPage(["eyes", "clock", "status", "voice", "settings"][Number(key) - 1]);
+      }
+      if (key === "h") setExpression("happy");
+      if (key === "l") setExpression("listen");
+      if (key === "t") setExpression("thinking");
+      if (key === "s") setExpression("speaking");
+      if (key === "m") setExpression("moving");
+      if (key === "c") setExpression("curious");
+      if (key === "y") setExpression("sleepy");
+      if (key === "u") setExpression("surprised");
+      if (key === "w") setExpression("wink");
+      if (key === "a") setExpression("angry");
+      if (key === "g") setExpression("charging");
+      if (key === "e") setExpression("error");
+      if (event.key === "ArrowUp") send("AR1,MOVE,F,40,500");
+      if (event.key === "ArrowDown") send("AR1,MOVE,B,35,400");
+      if (event.key === "ArrowLeft") send("AR1,TURN,L,30");
+      if (event.key === "ArrowRight") send("AR1,TURN,R,30");
+      if (event.key === " ") send("AR1,STOP");
+    });
+
+    function updateClock() {
+      const now = new Date();
+      const second = now.getSeconds() * 6 - 90;
+      const minute = now.getMinutes() * 6 - 90;
+      const hour = (now.getHours() % 12) * 30 + now.getMinutes() * 0.5 - 90;
+      document.querySelectorAll(".hour").forEach((hand) => hand.style.transform = `rotate(${hour}deg)`);
+      document.querySelectorAll(".minute").forEach((hand) => hand.style.transform = `rotate(${minute}deg)`);
+      document.querySelectorAll(".second").forEach((hand) => hand.style.transform = `rotate(${second}deg)`);
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>

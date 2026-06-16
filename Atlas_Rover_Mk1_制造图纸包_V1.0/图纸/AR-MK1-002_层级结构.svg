@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220mm" height="150mm" viewBox="0 0 220 150">
+<defs>
+<marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L6,3 L0,6 z" fill="#222"/>
+</marker>
+</defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#fbfaf6"/>
+<text x="8" y="10" font-family="Arial, sans-serif" font-size="5" font-weight="700">AR-MK1-002 层级结构 - mm</text>
+<g stroke="#222" stroke-width="0.45" fill="none" font-family="Arial, sans-serif" font-size="3.2">
+<text x="20" y="25" fill="#333" stroke="none">侧视图</text>
+<line x1="25" y1="125" x2="175" y2="125" stroke="#444"/>
+<circle cx="65" cy="108" r="17" stroke="#111" fill="#ddd"/>
+<circle cx="148" cy="114" r="7" stroke="#111" fill="#eee"/>
+<rect x="35" y="86" width="120" height="4" stroke="#333" fill="#f5f5f5"/>
+<rect x="45" y="65" width="84" height="3" stroke="#333" fill="#f5f5f5"/>
+<rect x="55" y="92" width="76" height="20" rx="2" stroke="#777" fill="#f1f1f1"/>
+<text x="93" y="105" fill="#333" stroke="none" text-anchor="middle">电池</text>
+<rect x="62" y="70" width="60" height="13" rx="2" stroke="#777" fill="#eef6ff"/>
+<text x="92" y="79" fill="#333" stroke="none" text-anchor="middle">驱动板</text>
+<rect x="95" y="37" width="94" height="18" rx="5" stroke="#111" fill="#111"/>
+<circle cx="121" cy="46" r="18.25" stroke="#111" fill="#222"/>
+<circle cx="173.5" cy="46" r="18.25" stroke="#111" fill="#222"/>
+<path d="M38 88 C45 38, 150 25, 185 52" stroke="#b87333" stroke-width="1.2"/>
+<path d="M42 62 L42 88 M132 62 L132 88" stroke="#b87333" stroke-width="1.2"/>
+<line x1="195" y1="125" x2="195" y2="15" stroke="#333" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="195.0" y="68.0" fill="#111" text-anchor="middle" stroke="none">目标高度 110</text>
+<line x1="35" y1="132" x2="155" y2="132" stroke="#333" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="95.0" y="130.0" fill="#111" text-anchor="middle" stroke="none">长度 120</text>
+<text x="20" y="138" fill="#333" stroke="none">层高可微调。保留 USB-C 操作空间，并与黄铜车架保持绝缘间隙。</text>
+</g>
+</svg>

@@ -1,0 +1,38 @@
+{
+  "folders": [
+    {
+      "name": "Atlas One",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "idf.espIdfPath": "${env:HOME}/.espressif/esp-idf-v5.5.2",
+    "idf.toolsPath": "${env:HOME}/.espressif",
+    "idf.pythonBinPath": "${env:HOME}/.espressif/python_env/idf5.5_py3.9_env/bin/python3",
+    "idf.port": "/dev/cu.usbmodem*",
+    "idf.flashType": "UART",
+    "idf.adapterTargetName": "esp32s3",
+    "idf.openOcdConfigs": [
+      "board/esp32s3-builtin.cfg"
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cmake.sourceDirectory": "${workspaceFolder}/simulator_mac",
+    "livePreview.openPreviewTarget": "Embedded Preview",
+    "livePreview.defaultPreviewPath": "/simulator_web/index.html",
+    "livePreview.serverRoot": ".",
+    "livePreview.autoRefreshPreview": "On Changes to Saved Files",
+    "livePreview.showServerStatusNotifications": true,
+    "files.associations": {
+      "*.h": "c",
+      "*.c": "c"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "espressif.esp-idf-extension",
+      "ms-vscode.cpptools",
+      "ms-vscode.cmake-tools",
+      "ms-vscode.live-server"
+    ]
+  }
+}

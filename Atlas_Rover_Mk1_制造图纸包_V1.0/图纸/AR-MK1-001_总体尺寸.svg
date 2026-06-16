@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220mm" height="160mm" viewBox="0 0 220 160">
+<defs>
+<marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L6,3 L0,6 z" fill="#222"/>
+</marker>
+</defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#fbfaf6"/>
+<text x="8" y="10" font-family="Arial, sans-serif" font-size="5" font-weight="700">AR-MK1-001 总体尺寸 - mm</text>
+<g stroke="#222" stroke-width="0.45" fill="none" font-family="Arial, sans-serif" font-size="3.2">
+<text x="15" y="20" fill="#333" stroke="none">顶视图</text>
+<rect x="35" y="35" width="120" height="90" rx="4" stroke="#b87333" stroke-width="1.2"/>
+<rect x="40" y="44" width="110" height="72" rx="3" stroke="#333" stroke-dasharray="2 1"/>
+<circle cx="70" cy="125" r="17" stroke="#111" fill="#ddd"/>
+<circle cx="120" cy="125" r="17" stroke="#111" fill="#ddd"/>
+<circle cx="145" cy="80" r="6" stroke="#111" fill="#eee"/>
+<rect x="49" y="57" width="76" height="21" rx="2" stroke="#777" fill="#f1f1f1"/>
+<text x="87" y="70" fill="#333" stroke="none" text-anchor="middle">18650 电池盒</text>
+<rect x="62" y="84" width="62" height="25" rx="2" stroke="#777" fill="#eef6ff"/>
+<text x="93" y="99" fill="#333" stroke="none" text-anchor="middle">DRV8833 + PCA9685</text>
+<rect x="43" y="22" width="104" height="10" rx="5" stroke="#333" fill="#111"/>
+<circle cx="69" cy="27" r="18.25" stroke="#111" fill="#222"/>
+<circle cx="121.5" cy="27" r="18.25" stroke="#111" fill="#222"/>
+<text x="95" y="17" fill="#333" stroke="none" text-anchor="middle">ESP32 双眼板，官方宽度 93.5 mm</text>
+<line x1="35" y1="132" x2="155" y2="132" stroke="#333" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="95.0" y="130.0" fill="#111" text-anchor="middle" stroke="none">车身长度 120</text>
+<line x1="162" y1="35" x2="162" y2="125" stroke="#333" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="162.0" y="78.0" fill="#111" text-anchor="middle" stroke="none">黄铜车架宽 90</text>
+<line x1="43" y1="14" x2="146.5" y2="14" stroke="#333" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="94.75" y="12.0" fill="#111" text-anchor="middle" stroke="none">车头/护栏最大外宽 100-104</text>
+<text x="15" y="145" fill="#333" stroke="none">备注：90 mm 为车架/车体宽度。双眼板宽 93.5 mm，允许轻微外凸。</text>
+</g>
+</svg>

@@ -1,0 +1,28 @@
+# macOS / editor noise
+.DS_Store
+**/.DS_Store
+*.swp
+*.swo
+
+# Office temporary files
+~$*
+.~*
+
+# Local build outputs
+firmware/**/build/
+simulator_mac/build/
+
+# Node dependencies
+node_modules
+node_modules/
+
+# Python / tool caches
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Generated export bundles
+/Atlas_Rover_Mk1_制造图纸包_V1.0/输出/
+
+# Root-level duplicate local workbook; canonical workbook lives in the manufacturing pack
+/采购执行表.xlsx

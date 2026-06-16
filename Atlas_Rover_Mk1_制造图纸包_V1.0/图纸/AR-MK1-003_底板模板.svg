@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160mm" height="115mm" viewBox="0 0 160 115">
+<defs>
+<marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L6,3 L0,6 z" fill="#222"/>
+</marker>
+</defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#fbfaf6"/>
+<text x="8" y="10" font-family="Arial, sans-serif" font-size="5" font-weight="700">AR-MK1-003 底板模板 - 可按 1:1 打印核对</text>
+<g stroke="#222" stroke-width="0.45" fill="none" font-family="Arial, sans-serif" font-size="3.2">
+<rect x="25" y="22" width="110" height="72" rx="4" stroke="#111" fill="#fff"/>
+<text x="80" y="16" fill="#333" stroke="none" text-anchor="middle">110 x 72 mm 层板，居中放入 120 x 90 mm 黄铜车架</text>
+<circle cx="35" cy="32" r="1.1" stroke="#111" fill="none"/>
+<text x="37.5" y="33" fill="#333" stroke="none">M2</text>
+<circle cx="35" cy="84" r="1.1" stroke="#111" fill="none"/>
+<text x="37.5" y="85" fill="#333" stroke="none">M2</text>
+<circle cx="125" cy="32" r="1.1" stroke="#111" fill="none"/>
+<text x="127.5" y="33" fill="#333" stroke="none">M2</text>
+<circle cx="125" cy="84" r="1.1" stroke="#111" fill="none"/>
+<text x="127.5" y="85" fill="#333" stroke="none">M2</text>
+<rect x="57.5" y="47" width="3" height="22" rx="1" stroke="#777" fill="none"/>
+<rect x="99.5" y="47" width="3" height="22" rx="1" stroke="#777" fill="none"/>
+<rect x="42" y="47.5" width="76" height="21" rx="2" stroke="#777" stroke-dasharray="2 1"/>
+<text x="80" y="60" fill="#333" stroke="none" text-anchor="middle">18650 电池盒占位</text>
+<rect x="53" y="26" width="12" height="3" rx="1" stroke="#1f4e79" fill="none"/>
+<rect x="53" y="86" width="12" height="3" rx="1" stroke="#1f4e79" fill="none"/>
+<rect x="79" y="26" width="12" height="3" rx="1" stroke="#1f4e79" fill="none"/>
+<rect x="79" y="86" width="12" height="3" rx="1" stroke="#1f4e79" fill="none"/>
+<text x="80" y="101" fill="#333" stroke="none" text-anchor="middle">蓝色槽位：电机固定/扎带区域</text>
+<circle cx="117" cy="58" r="1.1" stroke="#111" fill="none"/>
+<circle cx="125" cy="53" r="1.1" stroke="#111" fill="none"/>
+<circle cx="125" cy="63" r="1.1" stroke="#111" fill="none"/>
+<text x="124" y="60" fill="#333" stroke="none">万向轮 M2 区域</text>
+<line x1="25" y1="122" x2="135" y2="122" stroke="#333" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="80.0" y="120.0" fill="#111" text-anchor="middle" stroke="none">110</text>
+<line x1="149" y1="22" x2="149" y2="94" stroke="#333" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="149.0" y="56.0" fill="#111" text-anchor="middle" stroke="none">72</text>
+</g>
+</svg>

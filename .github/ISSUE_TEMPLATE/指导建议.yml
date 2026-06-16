@@ -1,0 +1,41 @@
+name: 指导建议 / 技术纠错
+description: 帮我们指出风险、错误或更好的实现路径
+title: "[建议] "
+labels: ["guidance", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先谢谢你愿意花时间看这个项目。我们还在学习阶段，具体的纠错和建议都非常欢迎。
+  - type: textarea
+    id: location
+    attributes:
+      label: 问题位置
+      description: 是哪个文件、图纸、接线、固件模块或采购项？
+      placeholder: 例如：firmware/dualeye/main/atlas_rover_uart.c，或接线说明里的 UART 部分
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: 你看到的风险或问题
+      description: 请尽量具体。安全、电源、电机、锂电池相关问题优先级最高。
+      placeholder: 例如：这里可能会让电机误动作，建议底盘板再加超时停车。
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 建议改法
+      description: 如果方便，请给出你建议的替代方案。
+      placeholder: 例如：把 UART 控制口改到独立 UART1，并关闭 boot log 干扰。
+    validations:
+      required: false
+  - type: textarea
+    id: reference
+    attributes:
+      label: 参考资料
+      description: 官方文档、手册、项目链接、图片都可以。
+      placeholder: 粘贴链接或说明资料来源
+    validations:
+      required: false

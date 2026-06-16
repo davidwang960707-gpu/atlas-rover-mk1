@@ -1,0 +1,81 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Atlas: 检查开发环境",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/check_dev_env.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Atlas: 构建 Mac 双眼模拟器",
+      "type": "shell",
+      "command": "cmake -S \"${workspaceFolder}/simulator_mac\" -B \"${workspaceFolder}/simulator_mac/build\" -G Ninja && cmake --build \"${workspaceFolder}/simulator_mac/build\"",
+      "problemMatcher": []
+    },
+    {
+      "label": "Atlas: 运行 Mac 双眼模拟器",
+      "type": "shell",
+      "command": "\"${workspaceFolder}/simulator_mac/build/atlas_dualeye_sim\"",
+      "dependsOn": "Atlas: 构建 Mac 双眼模拟器",
+      "problemMatcher": []
+    },
+    {
+      "label": "Atlas: 启动 Web 双眼预览服务器",
+      "type": "shell",
+      "command": "python3 -m http.server 5173 --directory \"${workspaceFolder}/simulator_web\"",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF: 构建 DualEye 固件",
+      "type": "shell",
+      "command": "export IDF_PYTHON_ENV_PATH=\"$HOME/.espressif/python_env/idf5.5_py3.9_env\" && source \"$HOME/.espressif/esp-idf-v5.5.2/export.sh\" >/dev/null && idf.py -C \"${workspaceFolder}/firmware/dualeye\" set-target esp32s3 build",
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF: 烧录 DualEye 固件",
+      "type": "shell",
+      "command": "export IDF_PYTHON_ENV_PATH=\"$HOME/.espressif/python_env/idf5.5_py3.9_env\" && source \"$HOME/.espressif/esp-idf-v5.5.2/export.sh\" >/dev/null && idf.py -C \"${workspaceFolder}/firmware/dualeye\" -p \"${input:serialPort}\" flash",
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF: 监视 DualEye 串口",
+      "type": "shell",
+      "command": "export IDF_PYTHON_ENV_PATH=\"$HOME/.espressif/python_env/idf5.5_py3.9_env\" && source \"$HOME/.espressif/esp-idf-v5.5.2/export.sh\" >/dev/null && idf.py -C \"${workspaceFolder}/firmware/dualeye\" -p \"${input:serialPort}\" monitor",
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "serialPort",
+      "type": "promptString",
+      "description": "DualEye 串口设备，例如 /dev/cu.usbmodem1101 或 /dev/cu.wchusbserialXXXX",
+      "default": "/dev/cu.usbmodem1101"
+    }
+  ]
+}
