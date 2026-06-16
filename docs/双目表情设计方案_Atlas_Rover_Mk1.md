@@ -1,4 +1,4 @@
-# Atlas Rover Mk.1 双目表情设计方案 V0.2
+# Atlas Rover Mk.1 双目表情设计方案 V0.3
 
 本文档定义 Atlas Rover Mk.1 的双实体圆屏表情方案。核心约束是：左侧实体屏只显示左眼，右侧实体屏只显示右眼；两块 1.28 英寸圆屏组合成一个“脸”，不要在单块屏幕里再绘制一对小眼睛。
 
@@ -41,7 +41,7 @@ typedef struct {
 
 每个表情是左右两只眼的 `atlas_eye_pose_t` 加一组动画参数。这样同一个渲染器可以同时服务双眼、时钟页、语音页和状态页。
 
-## 4. 表情库 V0.1
+## 4. 表情库 V0.2
 
 | ID | 中文名 | 视觉设计 | 触发场景 | 优先级 |
 |---|---|---|---|---|
@@ -55,9 +55,12 @@ typedef struct {
 | curious | 好奇 | 左眼略大右眼略小，左右眼轻微不同步，形成偏头感。 | 听到不确定指令、等待用户确认。 | 中 |
 | sleepy | 困倦 | 上眼睑压低，目光下垂，亮度降低。 | 长时间空闲、低功耗准备。 | 低 |
 | wink | 眨眼 | 左眼闭合成弧线，右眼微微放大。 | 任务完成、小彩蛋、Wi-Fi 连接成功。 | 低 |
+| love | 爱心/花痴 | 虹膜弱化，两眼变成心形发光，外圈轻微脉冲。 | 被夸、互动成功、陪伴彩蛋、撒娇反馈。 | 低 |
+| money | 爱钱 | 两眼显示 `$` 符号，金色/绿色轻微跳动，带外圈闪光。 | 价格、积分、打赏、预算或“想买零件”彩蛋。 | 低 |
 | angry | 拒绝 | 红橙色、斜眉、半眯眼。 | 危险/不支持指令、底盘保护触发。 | 高 |
 | charging | 充电 | 琥珀色外圈从下向上填充，眼神放松。 | 插电、充电中。 | 中 |
 | error | 错误 | 两眼变成红色 X 或断线，短闪 2 次后进入安全页。 | UART 断连、电池异常、驱动故障。 | 最高 |
+| cry | 大哭 | 目光下垂、眉线内收，蓝色泪滴连续下落。 | 失败、被拒绝、委屈反馈、低电量非危险提醒。 | 中 |
 
 ## 5. 页面与表情状态映射
 
@@ -100,7 +103,7 @@ Web 评审阶段先保留 5 套主题，后续接入 Waveshare DualEye 官方 LC
 已更新 `/Users/macbook/Documents/Atlas One/simulator_web/index.html`：
 
 - 每块圆屏只显示一只眼睛。
-- 支持 idle、happy、listen、thinking、speaking、moving、curious、sleepy、surprised、wink、angry、charging、error。
+- 支持 idle、happy、listen、thinking、speaking、moving、curious、sleepy、surprised、wink、love、money、angry、charging、error、cry。
 - 支持 classic、amber、mint、alert、night 5 套 Web 主题候选，切换结果会保存在浏览器本地。
 - 底盘方向指令会改变移动表情的目光方向。
 - 继续使用 VS Code Live Preview 即可快速查看效果。

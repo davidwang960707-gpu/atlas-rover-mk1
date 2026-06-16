@@ -19,6 +19,8 @@
       --mint: #5fe1b4;
       --red: #ff6b4b;
       --amber: #f5dc96;
+      --rose: #ff6aa9;
+      --tear: #6ed7ff;
       --text: #efe9df;
       --muted: #9c958c;
       --eye-bg: #07080a;
@@ -306,6 +308,74 @@
       z-index: 1;
     }
 
+    .heart {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 31%;
+      aspect-ratio: 1;
+      background: var(--rose);
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(-45deg) scale(0.82);
+      filter: drop-shadow(0 0 16px color-mix(in srgb, var(--rose) 72%, transparent));
+      z-index: 3;
+    }
+
+    .heart::before,
+    .heart::after {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: inherit;
+    }
+
+    .heart::before {
+      left: 0;
+      top: -50%;
+    }
+
+    .heart::after {
+      left: 50%;
+      top: 0;
+    }
+
+    .symbol {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      color: var(--accent);
+      font-size: clamp(72px, 9vw, 112px);
+      font-weight: 900;
+      line-height: 1;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.9);
+      text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 72%, transparent);
+      z-index: 5;
+    }
+
+    .tear {
+      position: absolute;
+      top: 52%;
+      width: 10%;
+      height: 30%;
+      border-radius: 99px 99px 70% 70%;
+      background: linear-gradient(180deg, rgba(210, 246, 255, 0.92), var(--tear));
+      opacity: 0;
+      filter: drop-shadow(0 0 12px color-mix(in srgb, var(--tear) 68%, transparent));
+      z-index: 6;
+    }
+
+    .tear-left {
+      left: 25%;
+    }
+
+    .tear-right {
+      right: 25%;
+      animation-delay: 180ms;
+    }
+
     .expr-idle .iris {
       animation: breathe 3.8s ease-in-out infinite;
     }
@@ -445,6 +515,61 @@
       --iris-scale: 1.05;
     }
 
+    .expr-love .eye {
+      --accent: var(--rose);
+      --top-lid: -56%;
+      --bottom-lid: -52%;
+      --brow-opacity: 1;
+    }
+
+    .expr-love .eye.left {
+      --brow-tilt: -9deg;
+      --look-x: 6px;
+    }
+
+    .expr-love .eye.right {
+      --brow-tilt: 9deg;
+      --look-x: -6px;
+    }
+
+    .expr-love .iris {
+      opacity: 0.06;
+    }
+
+    .expr-love .heart {
+      width: 26%;
+      opacity: 1;
+      animation: heartbeat 920ms ease-in-out infinite;
+    }
+
+    .expr-love .spark {
+      border-color: color-mix(in srgb, var(--rose) 58%, transparent);
+      opacity: 0.34;
+      animation: ringpulse 1.3s ease-in-out infinite;
+    }
+
+    .expr-money .eye {
+      --accent: var(--amber);
+      --look-y: -4px;
+      --iris-scale: 0.8;
+      --top-lid: -36%;
+      --bottom-lid: -42%;
+    }
+
+    .expr-money .iris {
+      opacity: 0.12;
+    }
+
+    .expr-money .symbol {
+      opacity: 1;
+      animation: moneyflash 980ms ease-in-out infinite;
+    }
+
+    .expr-money .spark {
+      opacity: 0.42;
+      animation: ringpulse 760ms ease-in-out infinite;
+    }
+
     .expr-angry .eye {
       --accent: var(--red);
       --iris-scale: 0.88;
@@ -496,6 +621,35 @@
     .expr-error .pupil,
     .expr-error .highlight {
       opacity: 0;
+    }
+
+    .expr-cry .eye {
+      --accent: var(--tear);
+      --look-y: 14px;
+      --iris-scale: 0.68;
+      --top-lid: -12%;
+      --bottom-lid: -36%;
+      --brow-opacity: 1;
+    }
+
+    .expr-cry .eye.left {
+      --brow-tilt: -14deg;
+      --look-x: -8px;
+    }
+
+    .expr-cry .eye.right {
+      --brow-tilt: 14deg;
+      --look-x: 8px;
+    }
+
+    .expr-cry .pupil {
+      transform: translate(-50%, -35%) scale(0.72);
+      opacity: 0.72;
+    }
+
+    .expr-cry .tear {
+      opacity: 1;
+      animation: tearflow 1.05s ease-in infinite;
     }
 
     .clock {
@@ -743,6 +897,23 @@
       to { clip-path: inset(0 0 0 0); }
     }
 
+    @keyframes heartbeat {
+      0%, 100% { transform: translate(-50%, -50%) rotate(-45deg) scale(0.82); }
+      44% { transform: translate(-50%, -56%) rotate(-45deg) scale(1.08); }
+      62% { transform: translate(-50%, -52%) rotate(-45deg) scale(0.96); }
+    }
+
+    @keyframes moneyflash {
+      0%, 100% { transform: translate(-50%, -50%) rotate(-5deg) scale(0.92); opacity: 0.82; }
+      50% { transform: translate(-50%, -54%) rotate(5deg) scale(1.12); opacity: 1; }
+    }
+
+    @keyframes tearflow {
+      0% { transform: translateY(-14px) scaleY(0.62); opacity: 0; }
+      22% { opacity: 1; }
+      100% { transform: translateY(46px) scaleY(1.24); opacity: 0.08; }
+    }
+
     @keyframes wave {
       from { transform: scaleY(0.42); }
       to { transform: scaleY(1.35); }
@@ -796,20 +967,28 @@
         <div class="eye left" aria-label="左实体屏幕：左眼">
           <span class="brow"></span>
           <span class="iris"><span class="pupil"></span><span class="highlight"></span></span>
+          <span class="heart" aria-hidden="true"></span>
+          <span class="symbol" aria-hidden="true">$</span>
           <span class="smile"></span>
           <span class="lid lid-top"></span>
           <span class="lid lid-bottom"></span>
           <span class="scan"></span>
           <span class="spark"></span>
+          <span class="tear tear-left" aria-hidden="true"></span>
+          <span class="tear tear-right" aria-hidden="true"></span>
         </div>
         <div class="eye right" aria-label="右实体屏幕：右眼">
           <span class="brow"></span>
           <span class="iris"><span class="pupil"></span><span class="highlight"></span></span>
+          <span class="heart" aria-hidden="true"></span>
+          <span class="symbol" aria-hidden="true">$</span>
           <span class="smile"></span>
           <span class="lid lid-top"></span>
           <span class="lid lid-bottom"></span>
           <span class="scan"></span>
           <span class="spark"></span>
+          <span class="tear tear-left" aria-hidden="true"></span>
+          <span class="tear tear-right" aria-hidden="true"></span>
         </div>
       </div>
 
@@ -890,9 +1069,12 @@
         <button data-expr="sleepy">困倦</button>
         <button data-expr="surprised">惊讶</button>
         <button data-expr="wink">眨眼</button>
+        <button data-expr="love">爱心</button>
+        <button data-expr="money">爱钱</button>
         <button data-expr="angry">拒绝</button>
         <button data-expr="charging">充电</button>
         <button data-expr="error">错误</button>
+        <button data-expr="cry">大哭</button>
       </div>
     </section>
 
@@ -912,7 +1094,7 @@
       <code id="log">AR1,STOP</code>
     </section>
 
-    <p>快捷键：1-5 切页面，H/L/T/S/M/C/Y/U/W/A/G/E 切表情，方向键输出移动指令，空格 STOP。</p>
+    <p>快捷键：1-5 切页面，H/L/T/S/M/C/Y/U/W/V/P/A/G/E/R 切表情，方向键输出移动指令，空格 STOP。</p>
   </aside>
 
   <script>
@@ -1027,9 +1209,12 @@
       if (key === "y") setExpression("sleepy");
       if (key === "u") setExpression("surprised");
       if (key === "w") setExpression("wink");
+      if (key === "v") setExpression("love");
+      if (key === "p") setExpression("money");
       if (key === "a") setExpression("angry");
       if (key === "g") setExpression("charging");
       if (key === "e") setExpression("error");
+      if (key === "r") setExpression("cry");
       if (event.key === "ArrowUp") send("AR1,MOVE,F,40,500");
       if (event.key === "ArrowDown") send("AR1,MOVE,B,35,400");
       if (event.key === "ArrowLeft") send("AR1,TURN,L,30");
