@@ -31,7 +31,7 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 | DualEye 固件 | V0.4 可编译，已同步 5 套主题 palette，并接入 Waveshare GC9A01/LVGL 双屏后端 |
 | Web 应用/管理界面 | V0.4 已拆分 `/app` 日常应用页和 `/admin` 管理后台，支持表情、页面、主题、移动、MimiClaw 应用占位和配置管理 |
 | 真机双屏显示 | 已接 Waveshare 官方同款 GC9A01/LVGL 初始化，真机需继续实测触摸和复杂页面 |
-| 语音 miniClaw/MimiClaw | 接口已预留，待正式接入 |
+| 语音 MiniClaw/MimiClaw | DualEye 适配层已预留，MiniClaw Skills/Agent 契约见 `docs/MiniClaw技能与Agent设计_Atlas_Rover_Mk1.md` |
 | 底盘闭环控制 | 待底盘板固件实现 |
 
 ## 仓库结构

@@ -302,6 +302,7 @@ V0.2 已新增：
 
 - `atlas_llm_client.*` 目前只做配置状态和就绪判断，还没有发起真实 HTTPS/HTTP LLM 请求。
 - `atlas_mimiclaw_adapter.*` 当前先做本地关键词意图识别；遇到无法本地理解但 LLM 已配置时，会进入 `thinking` 安全占位，不会直接控制电机。
+- MiniClaw/MimiClaw 侧也需要预置 Skills/Agent；推荐契约见 `docs/MiniClaw技能与Agent设计_Atlas_Rover_Mk1.md`。DualEye 侧只接受结构化意图，不接受自由文本直接驱动 UART。
 - 保存 Wi-Fi 后建议重启连接 STA；运行时热切 Wi-Fi 后续再补。
 - 运动开关默认开启，控制模式默认 `manual`，方便开箱即用；但单条移动仍受最大速度、最大时长、STOP 和底盘板超时停车保护。
 - API Key 存入 NVS，但原型阶段尚未启用 NVS 加密，建议只使用低风险测试 Key。
