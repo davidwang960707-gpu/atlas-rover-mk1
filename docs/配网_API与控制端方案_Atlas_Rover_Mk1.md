@@ -153,6 +153,18 @@ system.get_status()
 
 例如首次配网使用 `http://192.168.4.1`；连入路由器后使用串口日志中的局域网 IP，例如 `http://192.168.1.23`。mDNS 稳定后再补 `atlas-rover.local`。
 
+### 配置归属
+
+这个 Web 管理页是 Mk.1 的统一管理入口，但不是所有板子都“自己来网页取配置”。当前 V0.2 的边界如下：
+
+| 对象 | 如何使用管理页配置 |
+|---|---|
+| DualEye | 直接托管 Web 管理页，配置保存在 DualEye NVS；Wi-Fi、LLM、页面、安全策略都从这里读取 |
+| 端侧 MimiClaw | 后续作为 DualEye 固件组件运行时，读取 DualEye 本地 LLM/语音配置，不单独配一套 |
+| 电脑宿主 MiniClaw | 当前可在管理页保存宿主 Base URL；完整的宿主配置同步/API 代理后续再补 |
+| 底盘板 | 不直接访问 Web 管理页；只接收 DualEye 通过 UART 下发的安全裁剪后运动指令 |
+| 底盘专属参数 | 例如轮径、编码器、PID、左右轮补偿，后续应增加“底盘配置”页面，再通过 UART 同步到底盘板 |
+
 ### 页面规划
 
 | 页面 | 手机端 | 电脑端 |
@@ -216,7 +228,7 @@ system.get_status()
     "api_key": "stored-in-nvs"
   },
   "safety": {
-    "motion_enabled": false,
+    "motion_enabled": true,
     "max_speed_percent": 40,
     "max_duration_ms": 700,
     "require_confirm_for_patrol": true
@@ -255,6 +267,7 @@ V0.2 已新增：
 - `atlas_llm_client.*` 目前只做配置状态和就绪判断，还没有发起真实 HTTPS/HTTP LLM 请求。
 - `atlas_mimiclaw_adapter.*` 当前先做本地关键词意图识别；遇到无法本地理解但 LLM 已配置时，会进入 `thinking` 安全占位，不会直接控制电机。
 - 保存 Wi-Fi 后建议重启连接 STA；运行时热切 Wi-Fi 后续再补。
+- 运动开关默认开启，方便开箱即用；但单条移动仍受最大速度、最大时长、STOP 和底盘板超时停车保护。
 - API Key 存入 NVS，但原型阶段尚未启用 NVS 加密，建议只使用低风险测试 Key。
 
 ## 10. 对当前问题的直接回答

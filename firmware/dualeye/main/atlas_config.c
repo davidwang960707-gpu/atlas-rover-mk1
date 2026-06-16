@@ -59,7 +59,7 @@ void atlas_config_defaults(atlas_config_t *config)
     copy_string(config->ui.theme, sizeof(config->ui.theme), "atlas_blue");
     config->ui.brightness = 70;
     config->ui.volume = 60;
-    config->safety.motion_enabled = false;
+    config->safety.motion_enabled = true;
     config->safety.max_speed_percent = 40;
     config->safety.max_duration_ms = 700;
     config->safety.require_confirm_for_patrol = true;
