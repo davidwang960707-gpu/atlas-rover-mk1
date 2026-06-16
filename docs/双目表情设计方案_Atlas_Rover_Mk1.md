@@ -1,4 +1,4 @@
-# Atlas Rover Mk.1 双目表情设计方案 V0.3
+# Atlas Rover Mk.1 双目表情设计方案 V0.4
 
 本文档定义 Atlas Rover Mk.1 的双实体圆屏表情方案。核心约束是：左侧实体屏只显示左眼，右侧实体屏只显示右眼；两块 1.28 英寸圆屏组合成一个“脸”，不要在单块屏幕里再绘制一对小眼睛。
 
@@ -76,7 +76,19 @@ typedef struct {
 | 充电 | 状态页 | charging | 禁止移动 |
 | 时钟模式 | 时钟页 | 无眼睛表情或低频眨眼角标 | 不发移动指令 |
 
-## 6. 主题皮肤候选 V0.2
+## 6. 页面视觉方案 V0.1
+
+| 页面 | 左实体屏 | 右实体屏 | 关键状态 |
+|---|---|---|---|
+| 双眼页 | 左眼表情 | 右眼表情 | 默认陪伴、语音反馈、移动反馈。 |
+| 桌面时钟 | 机械模拟表盘：刻度、时/分/秒针、中心发光点。 | 数字时间、日期、秒数、连接状态。 | 夜间可切低亮夜航主题。 |
+| 语音输入 | 收音状态：REC 中心点、脉冲环、实时声波。 | 识别文本、意图状态、UART/系统命令、置信度。 | `LISTENING`、`INTENT OK`、`THINKING`、`ERROR`。 |
+| 状态页 | 电量/连接/底盘状态摘要。 | 安全状态/错误详情。 | 低电、UART 断连、电机保护。 |
+| 设置页 | 主题色/亮度/音量等快速状态。 | Wi-Fi、API、配对码等配置入口。 | 只在 Web 管理页授权后修改。 |
+
+页面设计仍然遵守“一屏一眼/一屏一信息组”的原则：双眼页显示表情；时钟、语音、状态、设置页可以显示文字和指标，但每块圆屏只承载一个清晰任务。
+
+## 7. 主题皮肤候选 V0.2
 
 Web 评审阶段先保留 5 套主题，后续接入 Waveshare DualEye 官方 LCD/LVGL 初始化时，优先把这些颜色抽成 LVGL style token，而不是在每个控件里写死颜色。
 
@@ -90,7 +102,7 @@ Web 评审阶段先保留 5 套主题，后续接入 Waveshare DualEye 官方 LC
 
 每套主题至少包含这些 token：`bg`、`panel`、`eye_bg`、`line`、`cyan`、`mint`、`red`、`amber`、`text`、`muted`。表情 ID 不跟主题绑定，同一个 `happy/listen/moving/error` 可以套用任意主题。
 
-## 7. 实现建议
+## 8. 实现建议
 
 1. 第一阶段：Web Preview 确认表情语言，所有表情先用 CSS/Canvas 参数实现。
 2. 第二阶段：ESP-IDF/LVGL 中实现同样的 `atlas_eye_pose_t`，双屏分别调用 `render_left_eye()` 和 `render_right_eye()`。
@@ -98,12 +110,14 @@ Web 评审阶段先保留 5 套主题，后续接入 Waveshare DualEye 官方 LC
 4. 第四阶段：增加音频驱动，让 listen/speaking 的虹膜脉冲跟随麦克风输入和 TTS 音量。
 5. 第五阶段：固化 5 套主题 token，并在 LVGL 端实现主题切换、NVS 保存和 Web 管理页同步。
 
-## 8. 当前已落地
+## 9. 当前已落地
 
 已更新 `/Users/macbook/Documents/Atlas One/simulator_web/index.html`：
 
 - 每块圆屏只显示一只眼睛。
 - 支持 idle、happy、listen、thinking、speaking、moving、curious、sleepy、surprised、wink、love、money、angry、charging、error、cry。
 - 支持 classic、amber、mint、alert、night 5 套 Web 主题候选，切换结果会保存在浏览器本地。
+- 桌面时钟页已细化为左侧模拟表盘、右侧数字时间/日期/状态。
+- 语音输入页已细化为左侧 REC 脉冲声波、右侧识别文本/意图/UART 命令。
 - 底盘方向指令会改变移动表情的目光方向。
 - 继续使用 VS Code Live Preview 即可快速查看效果。

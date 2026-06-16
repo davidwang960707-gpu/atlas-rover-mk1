@@ -655,6 +655,8 @@
     .clock {
       display: none;
       gap: clamp(28px, 5vw, 56px);
+      align-items: center;
+      justify-content: center;
     }
 
     .dial {
@@ -664,6 +666,96 @@
       border: 6px solid var(--line);
       position: relative;
       background: var(--eye-bg);
+      overflow: hidden;
+      box-shadow: inset 0 0 34px color-mix(in srgb, var(--cyan) 10%, transparent), 0 0 24px rgba(166, 108, 42, 0.18);
+    }
+
+    .dial.analog {
+      background:
+        radial-gradient(circle at 50% 50%, transparent 0 51%, color-mix(in srgb, var(--line) 52%, transparent) 52% 53%, transparent 54%),
+        var(--eye-bg);
+    }
+
+    .dial.analog::before,
+    .dial.analog::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .dial.analog::before {
+      inset: 15%;
+      border: 1px solid color-mix(in srgb, var(--cyan) 34%, transparent);
+      z-index: 0;
+    }
+
+    .dial.analog::after {
+      inset: 8%;
+      background: repeating-conic-gradient(from -1deg, color-mix(in srgb, var(--line) 74%, transparent) 0 2deg, transparent 2deg 6deg);
+      mask: radial-gradient(circle, transparent 0 78%, #000 80% 100%);
+      z-index: 0;
+    }
+
+    .dial.digital {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--cyan) 10%, transparent), transparent 42%),
+        var(--eye-bg);
+    }
+
+    .clock-face {
+      width: 74%;
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .clock-kicker,
+    .voice-kicker {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .digital-time {
+      color: var(--cyan);
+      font-size: 54px;
+      font-weight: 800;
+      line-height: 0.92;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 20px color-mix(in srgb, var(--cyan) 58%, transparent);
+    }
+
+    .digital-date {
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .clock-metrics {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .clock-metrics span,
+    .voice-chip {
+      border: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
+      color: var(--muted);
+      padding: 5px 7px;
+      font-size: 11px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--panel) 72%, transparent);
     }
 
     .hand {
@@ -675,6 +767,7 @@
       background: var(--cyan);
       transform-origin: 0 50%;
       border-radius: 99px;
+      z-index: 2;
     }
 
     .hand.minute {
@@ -686,6 +779,31 @@
       width: 46%;
       height: 2px;
       background: var(--red);
+    }
+
+    .clock-center {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 14px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--amber);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--amber) 68%, transparent);
+      z-index: 3;
+    }
+
+    .clock-label {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      transform: translate(-50%, -50%) rotate(var(--angle)) translateY(clamp(-102px, -10vw, -70px)) rotate(calc(var(--angle) * -1));
+      z-index: 2;
     }
 
     .page-panel {
@@ -715,18 +833,128 @@
     }
 
     .wave {
-      height: 160px;
+      width: 68%;
+      height: 74px;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 5px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .voice-disc .wave {
+      position: absolute;
+      left: 50%;
+      bottom: 22%;
+      width: 54%;
+      height: 50px;
+      gap: 3px;
+      transform: translateX(-50%);
+      overflow: hidden;
     }
 
     .wave span {
-      width: 6px;
-      height: calc(18px + var(--i) * 7px);
+      width: 5px;
+      height: calc(12px + var(--i) * 6px);
       background: var(--cyan);
+      border-radius: 99px;
+      box-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 62%, transparent);
       animation: wave 760ms ease-in-out infinite alternate;
       animation-delay: calc(var(--i) * -45ms);
+    }
+
+    .wave span:nth-child(n+25) {
+      display: none;
+    }
+
+    .voice {
+      display: none;
+      gap: clamp(28px, 5vw, 56px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .voice-disc {
+      width: clamp(190px, 28vw, 280px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 6px solid var(--line);
+      background:
+        radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 45%),
+        var(--eye-bg);
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      box-shadow: inset 0 0 34px color-mix(in srgb, var(--cyan) 10%, transparent), 0 0 24px rgba(166, 108, 42, 0.18);
+    }
+
+    .voice-ring {
+      position: absolute;
+      inset: 18%;
+      border: 2px solid color-mix(in srgb, var(--cyan) 42%, transparent);
+      border-radius: 50%;
+      animation: voicepulse 1.4s ease-in-out infinite;
+    }
+
+    .voice-ring:nth-child(2) {
+      inset: 28%;
+      border-color: color-mix(in srgb, var(--mint) 42%, transparent);
+      animation-delay: 220ms;
+    }
+
+    .voice-core {
+      width: 34%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--cyan) 68%, transparent);
+      background: color-mix(in srgb, var(--cyan) 12%, transparent);
+      display: grid;
+      place-items: center;
+      color: var(--cyan);
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-shadow: 0 0 18px color-mix(in srgb, var(--cyan) 62%, transparent);
+      position: relative;
+      z-index: 2;
+    }
+
+    .voice-stack {
+      width: 74%;
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .voice-text {
+      color: var(--text);
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.22;
+    }
+
+    .voice-command {
+      width: 100%;
+      border: 1px solid color-mix(in srgb, var(--mint) 42%, transparent);
+      color: var(--mint);
+      background: color-mix(in srgb, var(--panel) 72%, transparent);
+      padding: 9px 10px;
+      font-size: 12px;
+      line-height: 1.35;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .voice-status-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     .swatches {
@@ -757,7 +985,6 @@
     }
 
     .active-status .status,
-    .active-voice .voice,
     .active-settings .settings {
       display: block;
     }
@@ -914,6 +1141,11 @@
       100% { transform: translateY(46px) scaleY(1.24); opacity: 0.08; }
     }
 
+    @keyframes voicepulse {
+      0%, 100% { transform: scale(0.9); opacity: 0.22; }
+      50% { transform: scale(1.08); opacity: 0.82; }
+    }
+
     @keyframes wave {
       from { transform: scaleY(0.42); }
       to { transform: scaleY(1.35); }
@@ -944,18 +1176,33 @@
       }
 
       .eyes,
-      .clock {
+      .clock,
+      .voice {
         gap: 14px;
       }
 
       .eye,
-      .dial {
+      .dial,
+      .voice-disc {
         width: clamp(132px, 39vw, 180px);
         border-width: 4px;
       }
 
       .iris {
         border-width: 5px;
+      }
+
+      .digital-time {
+        font-size: 36px;
+      }
+
+      .digital-date,
+      .voice-text {
+        font-size: 15px;
+      }
+
+      .clock-label {
+        display: none;
       }
     }
   </style>
@@ -993,15 +1240,26 @@
       </div>
 
       <div class="clock">
-        <div class="dial">
+        <div class="dial analog" aria-label="左实体屏幕：模拟桌面时钟">
+          <span class="clock-label" style="--angle:0deg">12</span>
+          <span class="clock-label" style="--angle:90deg">3</span>
+          <span class="clock-label" style="--angle:180deg">6</span>
+          <span class="clock-label" style="--angle:270deg">9</span>
           <span class="hand hour"></span>
           <span class="hand minute"></span>
           <span class="hand second"></span>
+          <span class="clock-center"></span>
         </div>
-        <div class="dial">
-          <span class="hand hour"></span>
-          <span class="hand minute"></span>
-          <span class="hand second"></span>
+        <div class="dial digital" aria-label="右实体屏幕：数字桌面时钟">
+          <div class="clock-face">
+            <span class="clock-kicker" id="clockPeriod">桌面时钟</span>
+            <strong class="digital-time" id="digitalTime">00:00</strong>
+            <span class="digital-date" id="digitalDate">06.16 周二</span>
+            <div class="clock-metrics">
+              <span id="clockSecond">00s</span>
+              <span id="clockStatus">Wi-Fi</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1014,8 +1272,24 @@
         </div>
       </div>
 
-      <div class="page-panel voice">
-        <div class="wave" id="wave"></div>
+      <div class="voice" aria-label="双屏语音输入预览">
+        <div class="voice-disc" aria-label="左实体屏幕：语音收音">
+          <span class="voice-ring"></span>
+          <span class="voice-ring"></span>
+          <span class="voice-core">REC</span>
+          <div class="wave" id="wave"></div>
+        </div>
+        <div class="voice-disc" aria-label="右实体屏幕：语音理解结果">
+          <div class="voice-stack">
+            <span class="voice-kicker" id="voiceState">收音中</span>
+            <strong class="voice-text" id="voicePhrase">向前走一点</strong>
+            <span class="voice-command" id="voiceCommand">AR1,MOVE,F,40,500</span>
+            <div class="voice-status-row">
+              <span class="voice-chip" id="voiceMode">AI</span>
+              <span class="voice-chip" id="voiceConfidence">92%</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="page-panel settings">
@@ -1101,6 +1375,14 @@
     const stage = document.querySelector("#stage");
     const log = document.querySelector("#log");
     const wave = document.querySelector("#wave");
+    const digitalTime = document.querySelector("#digitalTime");
+    const digitalDate = document.querySelector("#digitalDate");
+    const clockSecond = document.querySelector("#clockSecond");
+    const clockPeriod = document.querySelector("#clockPeriod");
+    const voiceState = document.querySelector("#voiceState");
+    const voicePhrase = document.querySelector("#voicePhrase");
+    const voiceCommand = document.querySelector("#voiceCommand");
+    const voiceConfidence = document.querySelector("#voiceConfidence");
     const themeStorageKey = "atlas_rover_theme";
     const themeNames = {
       classic: "经典蓝眼",
@@ -1108,6 +1390,15 @@
       mint: "薄荷友好",
       alert: "红色警戒",
       night: "低亮夜航",
+    };
+    const dayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+    const voiceSamples = {
+      forward: ["向前走一点", "AR1,MOVE,F,40,500", "94%"],
+      back: ["往后退一点", "AR1,MOVE,B,35,400", "91%"],
+      left: ["左转一下", "AR1,TURN,L,30", "93%"],
+      right: ["右转一下", "AR1,TURN,R,30", "93%"],
+      stop: ["停下来", "AR1,STOP", "99%"],
+      listen: ["我在听", "VOICE,LISTENING", "LIVE"],
     };
 
     for (let i = 1; i <= 42; i += 1) {
@@ -1155,22 +1446,35 @@
       if (motion) stage.classList.add(`motion-${motion}`);
     }
 
+    function setVoiceResult(kind) {
+      const sample = voiceSamples[kind] || voiceSamples.listen;
+      voiceState.textContent = kind === "listen" ? "收音中" : "已理解";
+      voicePhrase.textContent = sample[0];
+      voiceCommand.textContent = sample[1];
+      voiceConfidence.textContent = sample[2];
+    }
+
     function send(cmd) {
       log.textContent = cmd;
       console.log(cmd);
       if (cmd.includes("MOVE,F")) {
+        setVoiceResult("forward");
         setMotion("forward");
         setExpression("moving");
       } else if (cmd.includes("MOVE,B")) {
+        setVoiceResult("back");
         setMotion("back");
         setExpression("moving");
       } else if (cmd.includes("TURN,L")) {
+        setVoiceResult("left");
         setMotion("left");
         setExpression("moving");
       } else if (cmd.includes("TURN,R")) {
+        setVoiceResult("right");
         setMotion("right");
         setExpression("moving");
       } else if (cmd.endsWith("STOP")) {
+        setVoiceResult("stop");
         setMotion("");
         setExpression("idle");
       }
@@ -1178,7 +1482,10 @@
 
     document.querySelector("#pageButtons").addEventListener("click", (event) => {
       const page = event.target.dataset.page;
-      if (page) setPage(page);
+      if (page) {
+        setPage(page);
+        if (page === "voice") setVoiceResult("listen");
+      }
     });
 
     document.querySelector("#themeButtons").addEventListener("click", (event) => {
@@ -1240,9 +1547,19 @@
       document.querySelectorAll(".hour").forEach((hand) => hand.style.transform = `rotate(${hour}deg)`);
       document.querySelectorAll(".minute").forEach((hand) => hand.style.transform = `rotate(${minute}deg)`);
       document.querySelectorAll(".second").forEach((hand) => hand.style.transform = `rotate(${second}deg)`);
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const date = String(now.getDate()).padStart(2, "0");
+      digitalTime.textContent = `${hh}:${mm}`;
+      digitalDate.textContent = `${month}.${date} ${dayNames[now.getDay()]}`;
+      clockSecond.textContent = `${ss}s`;
+      clockPeriod.textContent = now.getHours() < 12 ? "早上好" : "桌面时钟";
     }
 
     updateClock();
+    setVoiceResult("listen");
     setInterval(updateClock, 1000);
     setTheme(localStorage.getItem(themeStorageKey) || "classic");
   </script>
