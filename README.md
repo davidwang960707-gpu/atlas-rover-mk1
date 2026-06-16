@@ -5,6 +5,8 @@
 它现在的样子，大概是：铜丝焊接车架、Waveshare ESP32-S3 DualEye 双圆屏、双板 UART 控制、N20/DRV8833 底盘、语音交互、双目表情，还有一点点“我想活起来”的执念。
 
 我们知道它还很粗糙：机械结构没经过足够多次打样，DualEye 真屏驱动还没接上，miniClaw/MimiClaw 语音链路也还在搭骨架。这个仓库不是“成品展示柜”，更像一个公开的工作台。欢迎大神路过时顺手指点，尤其欢迎指出不合理、不安全、不优雅的地方。
+<img width="2506" height="2348" alt="image" src="https://github.com/user-attachments/assets/82bc6d5b-bc66-4e5b-b9d4-6708805ef747" />
+
 
 ## 我们想做什么
 
