@@ -1,10 +1,24 @@
 idf_component_register(
     SRCS
+        "atlas_admin_http.c"
+        "atlas_config.c"
         "atlas_display.c"
         "atlas_expression.c"
+        "atlas_llm_client.c"
+        "atlas_mimiclaw_adapter.c"
+        "atlas_pairing.c"
         "atlas_rover_uart.c"
         "atlas_ui.c"
         "atlas_voice.c"
+        "atlas_wifi.c"
         "main.c"
     INCLUDE_DIRS "."
+    REQUIRES
+        driver
+        esp_event
+        esp_http_server
+        esp_netif
+        esp_timer
+        esp_wifi
+        nvs_flash
 )

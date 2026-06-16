@@ -28,8 +28,8 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 | 采购清单 | 已有中文清单和规格复审 |
 | 双目表情方案 | 已有 V0.1，按“一屏一眼”设计 |
 | Web 表情预览 | 已可在 VS Code Live Preview 中查看 |
-| DualEye 固件 | V0.1 可编译，已包含表情状态机、UART 协议和安全超时 |
-| 配网/API/管理界面 | 方案已明确，待实现 SoftAP、NVS、Web 管理页 |
+| DualEye 固件 | V0.2 可编译，已包含表情状态机、UART 协议、安全超时、NVS 配置、SoftAP/STA 和 Web 管理页骨架 |
+| 配网/API/管理界面 | V0.2 已实现基础 HTTP 管理台、Wi-Fi/LLM/安全配置、配对码校验和 STOP/短时移动接口 |
 | 真机双屏显示 | 待接入 Waveshare 官方 ESP-IDF/LVGL 示例 |
 | 语音 miniClaw/MimiClaw | 接口已预留，待正式接入 |
 | 底盘闭环控制 | 待底盘板固件实现 |
@@ -75,7 +75,14 @@ idf.py set-target esp32s3
 idf.py build
 ```
 
-当前 V0.1 已通过本地构建，并按 DualEye 官方规格配置为 16MB Flash。PSRAM 暂未开启，等接入官方显示示例时再确认模式。
+当前 V0.2 已通过本地构建，并按 DualEye 官方规格配置为 16MB Flash；固件使用自定义分区表，应用分区为 4MB，方便后续接入屏幕、音频和 Web 页面。PSRAM 暂未开启，等接入官方显示示例时再确认模式。
+
+烧录后：
+
+- 没有 Wi-Fi 配置时，DualEye 会开启 `AtlasRover-XXXX` 热点，手机/电脑连接后访问 `http://192.168.4.1`。
+- 串口日志会打印 6 位配对码；STOP 不需要配对码，移动和配置修改需要配对码。
+- Web 管理页可以配置 Wi-Fi、LLM 模式、Base URL、Model、API Key 和移动安全限制。
+- API Key 只保存在设备 NVS，不写入源码、不提交到 GitHub、不在日志中输出。
 
 ## 最想请教的问题
 

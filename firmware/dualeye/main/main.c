@@ -6,10 +6,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "atlas_admin_http.h"
+#include "atlas_config.h"
 #include "atlas_display.h"
+#include "atlas_pairing.h"
 #include "atlas_rover_uart.h"
 #include "atlas_ui.h"
 #include "atlas_voice.h"
+#include "atlas_wifi.h"
 
 #ifndef ATLAS_ENABLE_DEV_EVENT_DEMO
 #define ATLAS_ENABLE_DEV_EVENT_DEMO 1
@@ -17,6 +21,7 @@
 
 static const char *TAG = "atlas_dualeye";
 
+static atlas_config_t s_config;
 static atlas_ui_state_t s_ui_state;
 
 static uint32_t atlas_now_ms(void)
@@ -89,16 +94,21 @@ static void dev_event_demo_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Atlas Rover Mk.1 DualEye firmware V0.1");
+    ESP_LOGI(TAG, "Atlas Rover Mk.1 DualEye firmware V0.2");
     ESP_LOGI(TAG, "DualEye role: HMI, expressions, voice events, UART motion intent");
     ESP_LOGI(TAG, "Chassis role: motor closed-loop, DRV8833/PWM, limit, timeout stop");
     ESP_LOGI(TAG, "UART wiring: LCD1 Pin10 TXD -> chassis RX, LCD1 Pin9 RXD <- chassis TX, GND common");
     ESP_LOGI(TAG, "Power rule: never power motors from DualEye");
 
+    ESP_ERROR_CHECK(atlas_config_init());
+    ESP_ERROR_CHECK(atlas_config_load(&s_config));
+    atlas_pairing_init();
     atlas_ui_init(&s_ui_state);
 
     ESP_ERROR_CHECK(atlas_display_init());
     ESP_ERROR_CHECK(atlas_rover_uart_init());
+    ESP_ERROR_CHECK(atlas_wifi_start(&s_config));
+    ESP_ERROR_CHECK(atlas_admin_http_start(&s_config, &s_ui_state, atlas_now_ms));
 
     vTaskDelay(pdMS_TO_TICKS(1000));
     ESP_ERROR_CHECK(atlas_ui_stop(&s_ui_state, atlas_now_ms()));

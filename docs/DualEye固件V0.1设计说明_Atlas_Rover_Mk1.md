@@ -1,4 +1,4 @@
-# Atlas Rover Mk.1 DualEye 固件 V0.1 设计说明
+# Atlas Rover Mk.1 DualEye 固件 V0.1/V0.2 设计说明
 
 ## 1. 本版目标
 
@@ -10,6 +10,15 @@ DualEye 固件 V0.1 的目标不是一次性完成所有硬件驱动，而是先
 - UART 底盘控制协议。
 - 移动安全超时和 `AR1,STOP` 保护。
 - 后续接入 Waveshare 官方双屏、触摸、音频驱动的适配边界。
+
+V0.2 在 V0.1 上继续补齐“烧录后怎么配置和调试”的骨架：
+
+- NVS 保存 Wi-Fi、LLM/API 和安全设置。
+- SoftAP/STA/APSTA 网络启动。
+- 手机/电脑 Web 管理页。
+- 6 位配对码。
+- STOP、短时移动、文本意图测试 API。
+- MimiClaw/MiniClaw 适配层占位。
 
 ## 2. 双板职责
 
@@ -28,6 +37,12 @@ DualEye 固件 V0.1 的目标不是一次性完成所有硬件驱动，而是先
 | `atlas_rover_uart.*` | `AR1,` UART 协议封装，负责发送 STOP/MOVE/TURN 和解析 ACK |
 | `atlas_voice.*` | 语音事件和文本意图归一化入口 |
 | `atlas_ui.*` | 页面、表情、运动、安全状态机 |
+| `atlas_config.*` | NVS 配置读写，保存 Wi-Fi、LLM、安全、UI 配置 |
+| `atlas_wifi.*` | SoftAP/STA/APSTA 网络启动和状态查询 |
+| `atlas_admin_http.*` | Web 管理页和 REST API |
+| `atlas_pairing.*` | 启动时生成 6 位本地配对码 |
+| `atlas_llm_client.*` | LLM 配置状态和就绪判断，不直接控制电机 |
+| `atlas_mimiclaw_adapter.*` | 把本地文本或后续 MiniClaw/MimiClaw 结果转成 `atlas_voice_intent_t` |
 
 `main.c` 中的 `ATLAS_ENABLE_DEV_EVENT_DEMO` 默认开启，用于烧录后观察聆听、思考、说话、成功几个表情状态切换；它不会发送移动指令。接入真实 miniClaw/MimiClaw 后可把该宏设为 `0`。
 
@@ -86,6 +101,10 @@ flowchart LR
 4. 底盘板仍必须独立实现 300-500 ms 级别的超时停车。
 5. 底盘板必须忽略非 `AR1,` 前缀内容。
 6. 电机供电不能从 DualEye 取，DualEye、底盘板和电机电源只共 GND。
+7. Web/语音移动默认关闭，必须在管理页安全设置中显式开启。
+8. STOP 不需要配对码；移动、配置修改、重启、清配置需要 6 位配对码。
+9. LLM/MimiClaw 不能直接输出 UART 字符串，只能输出结构化意图，再由本地 Safety Guard 裁剪。
+10. API Key 不写源码、不进 GitHub、不打印日志；当前原型阶段尚未启用 NVS 加密。
 
 ## 7. 真机适配待办
 
@@ -97,6 +116,9 @@ flowchart LR
 | 麦克风与 TTS 音量 | `atlas_ui_state_t.audio_level` | 让 listen/speaking 表情随音量跳动 |
 | miniClaw/MimiClaw | `atlas_voice.*` | 把语义输出映射成 `atlas_voice_event_t` |
 | 真机 UART 引脚确认 | `atlas_rover_uart.*` | 当前按官方 LCD1 UART 口使用，若后续改独立 UART，需要在这里换端口/引脚 |
+| 真实 LLM/宿主调用 | `atlas_llm_client.*` | 当前只做配置状态，后续接入 HTTPS/HTTP 或 WebSocket |
+| 管理页优化 | `atlas_admin_http.*` | 当前为基础嵌入式页面，后续补日志、表情调试、OTA 和更好的手机布局 |
+| mDNS/设备发现 | `atlas_wifi.*` | 当前使用 SoftAP 地址或局域网 IP，后续再补 `atlas-rover.local` |
 
 ## 8. 当前验证
 
@@ -112,4 +134,12 @@ idf.py build
 
 构建通过后，说明固件骨架、模块拆分和 ESP-IDF 配置是可用的；后续再进入真机显示/音频适配。
 
-当前项目已按 DualEye 官方规格把 Flash 配置为 16MB。PSRAM 暂未在 V0.1 中启用，因为真实双屏/LVGL 工程需要跟随 Waveshare 官方示例确认 PSRAM 模式、缓存策略和显示缓冲区位置。
+当前项目已按 DualEye 官方规格把 Flash 配置为 16MB，并使用自定义分区表：
+
+| 分区 | 大小 | 用途 |
+|---|---:|---|
+| `nvs` | 24KB | 保存 Wi-Fi、LLM/API、安全配置 |
+| `factory` | 4MB | DualEye 应用固件 |
+| `storage` | 4MB | 后续预留给资源、日志或文件系统 |
+
+V0.2 本地构建通过，应用镜像约 `0xca210` 字节，4MB app 分区仍有约 80% 空间。PSRAM 暂未在 V0.2 中启用，因为真实双屏/LVGL 工程需要跟随 Waveshare 官方示例确认 PSRAM 模式、缓存策略和显示缓冲区位置。

@@ -1,10 +1,17 @@
-# Atlas Rover Mk.1 配网、API 与控制端方案 V0.1
+# Atlas Rover Mk.1 配网、API 与控制端方案 V0.2
 
 本文档回答三个问题：
 
 1. 现有 DualEye 程序和 MimiClaw/miniClaw 是一起烧录，还是分开烧录？
 2. 烧录后如何配 Wi-Fi、配置大模型 API？
 3. 用户手机端、电脑端是否需要控制和管理界面？
+
+当前代码状态：
+
+- DualEye 固件 V0.2 已落地 `atlas_config`、`atlas_wifi`、`atlas_admin_http`、`atlas_pairing`、`atlas_llm_client`、`atlas_mimiclaw_adapter` 骨架。
+- 首次启动会在无 Wi-Fi 配置时开启 `AtlasRover-XXXX` SoftAP，管理地址为 `http://192.168.4.1`。
+- Web 管理页已支持状态查看、Wi-Fi 配置、LLM/API 配置、安全配置、STOP、短时移动和文本意图测试。
+- 真实 LLM 网络请求、真机双屏渲染、音频链路和底盘板固件尚未完成。
 
 ## 1. 烧录边界结论
 
@@ -27,7 +34,7 @@ Atlas Rover Mk.1 不按“表情程序一份、MimiClaw 再一份”拆烧录，
 | 阶段 | 模式 | 为什么这样做 |
 |---|---|---|
 | V0.1 | DualEye 本地命令 + UART | 先保证双目、页面、STOP、前进/后退/转向等基础链路稳定 |
-| V0.2 | DualEye 配网 + 手机/电脑 Web 管理界面 | 先解决 Wi-Fi、API Key、模型、日志、调试和安全开关 |
+| V0.2 | DualEye 配网 + 手机/电脑 Web 管理界面 | 已完成基础骨架：SoftAP/STA、NVS、Web 管理页、配对码、安全配置 |
 | V0.3 | MiniClaw 宿主或 MimiClaw 端侧 | 再接自然语言和大模型，避免一开始把硬件驱动、网络、语音、LLM 全绑在一起排错 |
 
 ## 3. 首次配网流程
@@ -38,7 +45,7 @@ Atlas Rover Mk.1 不按“表情程序一份、MimiClaw 再一份”拆烧录，
 启动
   -> 从 NVS 读取 Wi-Fi 配置
   -> 有配置：尝试连接路由器
-  -> 连接成功：显示 IP / atlas-rover.local / 状态页
+  -> 连接成功：显示 IP / 状态页
   -> 连接失败或无配置：进入配网模式
 ```
 
@@ -51,8 +58,10 @@ Atlas Rover Mk.1 不按“表情程序一份、MimiClaw 再一份”拆烧录，
 | 入口提示 | DualEye 双屏显示 Wi-Fi 名称、IP、二维码或短提示 |
 | 手机配网 | 手机连接 `AtlasRover-XXXX`，浏览器打开 `192.168.4.1` |
 | 电脑配网 | 电脑连接同一 AP，浏览器打开 `192.168.4.1` |
-| 可选增强 | 后续增加 BLE Provisioning，手机体验更好 |
-| 重置配网 | 长按触摸区域 8 秒，或串口命令 `AR1,CFG,RESET`，清除 Wi-Fi/API 配置 |
+| 可选增强 | 后续增加 mDNS / BLE Provisioning，手机体验更好 |
+| 重置配网 | 当前 V0.2 通过 Web 管理页清除 Wi-Fi/API；长按触摸和串口命令后续再补 |
+
+当前 V0.2 暂未硬编码 `atlas-rover.local`。原因是本地 ESP-IDF 工程里尚未确认可直接启用稳定的 mDNS 组件，先使用串口日志/页面显示的 IP 地址，避免文档写得比固件更超前。
 
 Wi-Fi 配置保存：
 
@@ -138,11 +147,11 @@ system.get_status()
 
 ```text
 手机/电脑浏览器
-  -> http://atlas-rover.local
+  -> DualEye SoftAP 地址或局域网 IP
   -> DualEye 内置 Web 管理界面
 ```
 
-如果 mDNS 不稳定，也显示 IP，例如 `http://192.168.1.23`。
+例如首次配网使用 `http://192.168.4.1`；连入路由器后使用串口日志中的局域网 IP，例如 `http://192.168.1.23`。mDNS 稳定后再补 `atlas-rover.local`。
 
 ### 页面规划
 
@@ -220,9 +229,9 @@ system.get_status()
 }
 ```
 
-## 9. 固件模块规划
+## 9. 固件模块规划与当前落地
 
-当前 V0.1 已有：
+V0.1 已有：
 
 - `atlas_expression.*`
 - `atlas_display.*`
@@ -230,7 +239,7 @@ system.get_status()
 - `atlas_voice.*`
 - `atlas_ui.*`
 
-V0.2 建议新增：
+V0.2 已新增：
 
 | 模块 | 职责 |
 |---|---|
@@ -241,13 +250,20 @@ V0.2 建议新增：
 | `atlas_llm_client.*` | 云端/宿主 API 调用封装，不直接输出运动指令 |
 | `atlas_mimiclaw_adapter.*` | 把 MimiClaw/MiniClaw 结果转为 `atlas_voice_intent_t` |
 
+当前限制：
+
+- `atlas_llm_client.*` 目前只做配置状态和就绪判断，还没有发起真实 HTTPS/HTTP LLM 请求。
+- `atlas_mimiclaw_adapter.*` 当前先做本地关键词意图识别；遇到无法本地理解但 LLM 已配置时，会进入 `thinking` 安全占位，不会直接控制电机。
+- 保存 Wi-Fi 后建议重启连接 STA；运行时热切 Wi-Fi 后续再补。
+- API Key 存入 NVS，但原型阶段尚未启用 NVS 加密，建议只使用低风险测试 Key。
+
 ## 10. 对当前问题的直接回答
 
 1. **现有程序和 MimiClaw 是否一起烧录？**  
    如果 MimiClaw 端侧运行，就和 DualEye 程序一起编译成一份 DualEye 固件烧录；如果 MiniClaw 跑在 Mac/电脑上，就不烧进 DualEye，DualEye 只通过 Wi-Fi 与宿主通信。底盘板永远是另一份独立固件。
 
 2. **烧录后怎么配网和配大模型 API？**  
-   第一版应进入 SoftAP 配网模式，手机/电脑连 `AtlasRover-XXXX`，打开 `192.168.4.1`，配置 Wi-Fi；入网后访问 `atlas-rover.local` 或设备 IP，配置 LLM 模式、Base URL、Model、API Key。API Key 只进 NVS，不进固件源码和 GitHub。
+   第一版应进入 SoftAP 配网模式，手机/电脑连 `AtlasRover-XXXX`，打开 `192.168.4.1`，配置 Wi-Fi；入网后先使用串口日志中的设备 IP，配置 LLM 模式、Base URL、Model、API Key。API Key 只进 NVS，不进固件源码和 GitHub。`atlas-rover.local` 等 mDNS 入口后续确认稳定后再补。
 
 3. **是否需要手机端/电脑端控制和管理界面？**  
    需要，而且应该优先做 Web 管理界面，不先做原生 App。手机端负责安全控制和配置；电脑端负责调试、日志、工具调用观察。STOP 按钮必须常驻，运动控制必须短时、限速、可随时打断。
