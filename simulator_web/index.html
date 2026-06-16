@@ -382,26 +382,42 @@
 
     .expr-idle .eye.left {
       --look-x: -4px;
+      --top-lid: -48%;
+      --bottom-lid: -54%;
     }
 
     .expr-idle .eye.right {
       --look-x: 4px;
+      --top-lid: -48%;
+      --bottom-lid: -54%;
     }
 
     .expr-happy .eye {
       --accent: var(--mint);
       --look-y: -8px;
-      --iris-scale: 0.72;
-      --top-lid: -14%;
-      --bottom-lid: -18%;
+      --iris-scale: 0.66;
+      --top-lid: -62%;
+      --bottom-lid: -62%;
     }
 
     .expr-happy .iris {
-      opacity: 0.16;
+      opacity: 0;
     }
 
     .expr-happy .smile {
       opacity: 1;
+      top: 30%;
+      height: 24%;
+      border-top: 8px solid var(--accent);
+      border-bottom: 0;
+      border-radius: 120px 120px 0 0;
+      z-index: 5;
+      animation: happybounce 1.6s ease-in-out infinite;
+    }
+
+    .expr-happy .spark {
+      opacity: 0.38;
+      animation: ringpulse 1.2s ease-in-out infinite;
     }
 
     .expr-listen .eye {
@@ -1102,6 +1118,11 @@
     @keyframes pulse {
       0%, 100% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(0.88) rotate(var(--eye-tilt)); }
       50% { transform: translate(calc(-50% + var(--look-x)), calc(-50% + var(--look-y))) scale(1.18) rotate(var(--eye-tilt)); }
+    }
+
+    @keyframes happybounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-5px); }
     }
 
     @keyframes ringpulse {
