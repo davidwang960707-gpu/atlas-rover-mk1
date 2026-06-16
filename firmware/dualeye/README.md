@@ -1,8 +1,8 @@
-# Atlas Rover Mk.1 DualEye 固件 V0.3
+# Atlas Rover Mk.1 DualEye 固件 V0.4
 
 这个目录是 `ESP32-S3-DualEye-Touch-LCD-1.28` 的 ESP-IDF 固件工程，目标芯片为 `esp32s3`。
 
-V0.3 已经从单文件脚手架升级为可配网、可管理、可日常控制的模块化程序：
+V0.4 已经从单文件脚手架升级为可配网、可管理、可日常控制、可驱动双屏的模块化程序：
 
 - 双目表情参数模型：每块实体屏幕对应一只眼睛。
 - 表情状态机：待机、开心、聆听、思考、说话、移动、好奇、困倦、惊讶、眨眼、拒绝、充电、错误。
@@ -16,8 +16,9 @@ V0.3 已经从单文件脚手架升级为可配网、可管理、可日常控制
 - 配对码：启动时生成 6 位配对码；STOP 不需要配对码，移动和配置修改需要配对码。
 - Web 入口拆分：`/app` 是日常应用页，`/admin` 是管理后台，根路径 `/` 默认进入应用页。
 - MimiClaw 适配层：当前先做本地关键词意图和 LLM 配置状态，真实云端/宿主调用后续接入。
-- 显示适配占位：当前用日志输出每只眼的参数，真机双屏绘制后续接入 `atlas_display.c`。
-- Flash 配置：已按 DualEye 官方规格设置为 16MB，并使用 4MB 应用分区；PSRAM 等真机显示示例接入时再启用。
+- 主题同步：`classic`、`amber`、`mint`、`alert`、`night` 已从 Web 评审页同步到 `atlas_expression` palette。
+- Waveshare 双屏后端：`atlas_display.c` 默认接入官方同款 GC9A01/LVGL 初始化；如果硬件初始化失败，会回退为串口日志渲染。
+- Flash/PSRAM 配置：已按 DualEye 官方规格设置为 16MB Flash、8MB PSRAM 方向，并使用 4MB 应用分区。
 - 开发演示：`main.c` 中 `ATLAS_ENABLE_DEV_EVENT_DEMO` 默认开启，只演示聆听/思考/说话/成功表情，不会发送移动指令；接入真实语音后可设为 `0`。
 
 ## 目录结构
@@ -26,7 +27,7 @@ V0.3 已经从单文件脚手架升级为可配网、可管理、可日常控制
 main/
   main.c                 程序入口和 FreeRTOS 任务
   atlas_expression.*     双眼表情参数帧
-  atlas_display.*        双屏显示适配层，当前是日志渲染器
+  atlas_display.*        双屏显示适配层，Waveshare GC9A01/LVGL + 日志回退
   atlas_rover_uart.*     AR1 UART 底盘协议
   atlas_voice.*          语音/miniClaw 事件入口
   atlas_ui.*             页面、表情、运动、安全状态机
@@ -60,10 +61,11 @@ main/
 | `/api/rover/move` | POST | 是 | 短时移动，受最大速度/最大时长限制 |
 | `/api/app/expression` | POST | 是 | 切换双眼表情 |
 | `/api/app/page` | POST | 是 | 切换显示页：双眼、时钟、闹钟、照片、状态等 |
-| `/api/app/action` | POST | 是 | 触发应用动作：音乐、故事、陪聊、闹钟；当前为 MimiClaw 占位入口 |
+| `/api/app/action` | POST | 是 | 触发应用动作：音乐、故事、陪聊、日历、番茄、闹钟；当前为 MimiClaw 占位入口 |
 | `/api/config/wifi` | POST | 是 | 保存 Wi-Fi |
 | `/api/config/llm` | POST | 是 | 保存 LLM 模式、Base URL、Model、API Key |
 | `/api/config/safety` | POST | 是 | 保存是否允许移动、最大速度、最大时长 |
+| `/api/config/ui` | POST | 是 | 保存主题、屏幕亮度、音量 |
 | `/api/voice/text` | POST | 是 | 文本意图测试，进入 MimiClaw 适配层 |
 | `/api/config/reset` | POST | 是 | 清除 Wi-Fi 和 LLM 配置 |
 | `/api/system/reboot` | POST | 是 | 重启设备 |
@@ -103,6 +105,33 @@ DualEye LCD1 Pin2/Pin6 GND  <-> 底盘板 GND
 - 底盘板如需 5 V 逻辑供电，可以另接 5 V，但电机供电不要从 DualEye 板取。
 - 底盘板必须忽略所有不带 `AR1,` 前缀的串口内容，避免启动日志或乱码误触发电机。
 
+## 双屏显示后端
+
+官方资料和示例确认 DualEye 使用双 1.28 英寸 240x240 圆屏，ESP-IDF 示例为 `esp_lcd_gc9a01` + LVGL。当前固件已把官方示例里的板级参数收束到 `main/atlas_display.c`：
+
+| 项目 | 左屏 | 右屏 | 共用 |
+|---|---:|---:|---:|
+| LCD 控制器 | GC9A01 | GC9A01 | SPI2 |
+| 分辨率 | 240x240 | 240x240 | - |
+| MOSI/SCLK/MISO | - | - | GPIO42 / GPIO41 / GPIO40 |
+| DC | - | - | GPIO45 |
+| CS | GPIO47 | GPIO38 | - |
+| RST | GPIO48 | GPIO8 | - |
+| 背光 | GPIO46 | GPIO39 | LEDC 0/1 |
+| 触摸 I2C | GPIO10/11 | GPIO2/3 | CST816S，后续接入事件层 |
+
+显示渲染仍然走我们自己的 `atlas_eye_pose_t`，不是直接复制官方 demo 的 UI。`atlas_expression_make_frame_with_theme()` 负责把表情、运动、音量和主题组合成左右眼参数；`atlas_display_render()` 再把左右眼分别画到两块实体屏。
+
+主题 ID：
+
+| ID | 中文名 | 说明 |
+|---|---|---|
+| `classic` | 经典蓝眼 | 默认开箱主题，黑底青蓝眼。 |
+| `amber` | 琥珀巡航 | 更接近黄铜车架和复古巡航感。 |
+| `mint` | 薄荷友好 | 更温和，适合陪伴/讲故事。 |
+| `alert` | 红色警戒 | 错误、拒绝、急停更醒目。 |
+| `night` | 低亮夜航 | 夜间低亮、柔蓝显示。 |
+
 ## 协议示例
 
 ```text
@@ -132,7 +161,7 @@ AR1,ACK,ERR
 命令行也可以：
 
 ```bash
-cd "/Users/macbook/Documents/Atlas One/firmware/dualeye"
+cd firmware/dualeye
 export IDF_PATH="$HOME/.espressif/esp-idf-v5.5.2"
 export IDF_PYTHON_ENV_PATH="$HOME/.espressif/python_env/idf5.5_py3.9_env"
 . "$IDF_PATH/export.sh"
@@ -140,10 +169,19 @@ idf.py set-target esp32s3
 idf.py build
 ```
 
+如果本机设置了 SOCKS 代理，ESP-IDF component manager 可能需要 Python 依赖：
+
+```bash
+env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
+  "$IDF_PYTHON_ENV_PATH/bin/python" -m pip install PySocks
+```
+
+本地已经验证过一次：`idf.py set-target esp32s3 build` 可以生成 `build/atlas_rover_dualeye.bin`，大小约 `0x10cef0`，4MB 应用分区剩余约 74%。
+
 ## 后续接入点
 
-1. 真机屏幕：替换 `main/atlas_display.c`，接入 Waveshare 官方 ESP-IDF/LVGL 双屏初始化。
-2. 触摸：触摸事件进入 `atlas_ui_handle_voice_intent()` 或新增 `atlas_ui_handle_touch_event()`。
+1. 真机屏幕：上电实测 GC9A01/LVGL 后端的旋转、左右眼方向、背光曲线和刷新稳定性。
+2. 触摸：接入 CST816S 双路触摸事件，进入 `atlas_ui_handle_voice_intent()` 或新增 `atlas_ui_handle_touch_event()`。
 3. miniClaw/MimiClaw：把语音理解结果映射成 `atlas_voice_event_t`，不要直接散落发送 UART。
 4. 音频：把麦克风 RMS/TTS 音量写入 `audio_level`，驱动聆听和说话表情脉冲。
 5. 底盘 ACK：底盘板回传 `AR1,ACK,*`，DualEye 会更新状态或进入错误表情。

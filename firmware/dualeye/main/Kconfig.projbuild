@@ -1,0 +1,12 @@
+menu "Atlas Rover Mk.1"
+
+    config ATLAS_DISPLAY_WAVESHARE_LVGL
+        bool "Use Waveshare DualEye GC9A01/LVGL display backend"
+        default y
+        help
+            Initialize the ESP32-S3-DualEye-Touch-LCD-1.28 dual GC9A01
+            240x240 LCDs and render Atlas expression frames with LVGL.
+            If hardware initialization fails at runtime, the firmware falls
+            back to the serial log renderer.
+
+endmenu

@@ -1,4 +1,4 @@
-# Atlas Rover Mk.1 双目表情设计方案 V0.5
+# Atlas Rover Mk.1 双目表情设计方案 V0.6
 
 本文档定义 Atlas Rover Mk.1 的双实体圆屏表情方案。核心约束是：左侧实体屏只显示左眼，右侧实体屏只显示右眼；两块 1.28 英寸圆屏组合成一个“脸”，不要在单块屏幕里再绘制一对小眼睛。
 
@@ -84,6 +84,11 @@ typedef struct {
 | 桌面时钟 | 机械模拟表盘：刻度、时/分/秒针、中心发光点。 | 数字时间、日期、秒数、连接状态。 | 夜间可切低亮夜航主题。 |
 | 语音输入 | 收音状态：REC 中心点、脉冲环、实时声波。 | 识别文本、意图状态、UART/系统命令、置信度。 | `LISTENING`、`INTENT OK`、`THINKING`、`ERROR`。 |
 | 状态页 | 电源仪表：电量、电压、温度、充放电状态。 | 系统健康：UART、Wi-Fi、电机保护、MimiClaw。 | 低电、UART 断连、电机保护。 |
+| 音乐播放 | 唱片/频谱/播放状态。 | 歌名、歌手/音源、进度、MimiClaw 播放命令。 | 播放、暂停、下一首、音量变化。 |
+| 讲故事 | 故事书/章节状态。 | 故事标题、段落进度、下一段提示。 | 开始、暂停、下一段、睡前模式。 |
+| 智能对话 | 对话状态/思考中。 | 回复摘要、意图、TTS/安全标签。 | 用户提问、模型回复、需要确认。 |
+| 日历提醒 | 日期大字和星期。 | 今日提醒列表、下一提醒、提醒确认。 | 日程提醒、闹钟、待办提示。 |
+| 番茄闹钟 | 专注倒计时环。 | 当前任务、轮次、休息提示。 | 开始、暂停、完成、休息。 |
 
 页面设计仍然遵守“一屏一眼/一屏一信息组”的原则：双眼页显示表情；时钟、语音、状态页可以显示文字和指标，但每块圆屏只承载一个清晰任务。主题、Wi-Fi、API Key、移动权限、配对码等设置只放在手机/PC 的 Web 应用和管理后台，不放在 DualEye 本体屏幕里。
 
@@ -92,16 +97,23 @@ typedef struct {
 | 候选页面 | 左实体屏 | 右实体屏 | 推荐优先级 |
 |---|---|---|---|
 | 巡航监控 | 小车方向/速度/避障扇区。 | 当前模式、路线、最近一次 UART ACK。 | 高 |
-| 音乐播放 | 音量脉冲/频谱。 | 歌名、播放状态、MimiClaw 音频源。 | 中 |
-| 讲故事/对话 | 叙事表情或小图标。 | 当前故事标题、段落进度。 | 中 |
-| 日程提醒 | 日历/闹钟图形。 | 下一提醒、倒计时、确认状态。 | 中 |
 | 相册/纪念日 | 圆形照片或像素化图案。 | 日期、标题、短句。 | 低 |
 | 充电睡眠 | 低亮充电动画。 | 预计充满时间、温度、电池保护状态。 | 高 |
 | 欢迎/访客 | 欢迎表情。 | 二维码/短码/房间提示。 | 低 |
 
-## 8. 主题皮肤候选 V0.2
+## 8. 应用能力映射 V0.1
 
-Web 评审阶段先保留 5 套主题，后续接入 Waveshare DualEye 官方 LCD/LVGL 初始化时，优先把这些颜色抽成 LVGL style token，而不是在每个控件里写死颜色。
+| 能力 | 屏端页面 | 手机/PC Web 端职责 | 设备侧依赖 |
+|---|---|---|---|
+| 音乐播放 | 展示播放状态、曲目信息、进度。 | 选择音源、歌单、音量、播放控制。 | MimiClaw 音频/TTS、扬声器、音量控制。 |
+| 讲故事 | 展示故事标题、章节、段落进度。 | 选择故事、年龄/语速/风格、续讲控制。 | MimiClaw TTS、LLM/本地故事库。 |
+| 智能对话 | 展示收音、理解、回复摘要和安全状态。 | 配置模型、API Key、上下文、隐私开关。 | 语音识别、LLM、TTS、联网配置。 |
+| 日历提醒 | 展示日期、今日提醒和下一提醒。 | 新增/编辑日程、同步日历、提醒规则。 | NVS/RTC、网络时间、Web 配置。 |
+| 番茄闹钟 | 展示倒计时、当前任务、轮次。 | 设置专注/休息时长、任务名、提醒方式。 | 本地计时器、蜂鸣/灯效/TTS 提醒。 |
+
+## 9. 主题皮肤候选 V0.2
+
+Web 评审阶段保留 5 套主题；固件 V0.4 已经把这些颜色抽成 `atlas_expression` palette，LVGL 后端和日志渲染都从同一个 theme id 取值，避免 Web 预览和真机固件各写一套颜色。
 
 | 主题 ID | 中文名 | 用途定位 | 主视觉 | 适合场景 |
 |---|---|---|---|---|
@@ -111,26 +123,34 @@ Web 评审阶段先保留 5 套主题，后续接入 Waveshare DualEye 官方 LC
 | alert | 红色警戒 | 安全与拒绝状态更明确。 | 红橙眼睛、暖黄辅助、暗红背景。 | 错误、拒绝危险指令、急停、底盘保护。 |
 | night | 低亮夜航 | 降低亮度和刺眼感。 | 深色低亮背景、柔蓝眼睛、低饱和边框。 | 夜间时钟、低功耗待机、安静陪伴。 |
 
-每套主题至少包含这些 token：`bg`、`panel`、`eye_bg`、`line`、`cyan`、`mint`、`red`、`amber`、`text`、`muted`。表情 ID 不跟主题绑定，同一个 `happy/listen/moving/error` 可以套用任意主题。
+每套主题在固件里包含这些 token：`bg`、`panel`、`panel_2`、`stage_bg`、`eye_bg`、`line`、`primary`、`positive`、`danger`、`amber`、`rose`、`tear`、`text`、`muted`。表情 ID 不跟主题绑定，同一个 `happy/listen/moving/error` 可以套用任意主题。
 
-## 9. 实现建议
+## 10. 实现建议
 
 1. 第一阶段：Web Preview 确认表情语言，所有表情先用 CSS/Canvas 参数实现。
-2. 第二阶段：ESP-IDF/LVGL 中实现同样的 `atlas_eye_pose_t`，双屏分别调用 `render_left_eye()` 和 `render_right_eye()`。
+2. 第二阶段：ESP-IDF/LVGL 中实现同样的 `atlas_eye_pose_t`，双屏分别调用 `render_left_eye()` 和 `render_right_eye()`。（V0.4 已开始落地）
 3. 第三阶段：miniClaw/MimiClaw 输出语义事件，如 `VOICE_LISTENING`、`THINKING`、`MOVE_FORWARD`、`STOPPED`，UI 状态机统一映射到表情。
 4. 第四阶段：增加音频驱动，让 listen/speaking 的虹膜脉冲跟随麦克风输入和 TTS 音量。
 5. 第五阶段：固化 5 套主题 token，并在 LVGL 端实现主题切换、NVS 保存和 Web 管理页同步。
 
-## 10. 当前已落地
+## 11. 当前已落地
 
-已更新 `/Users/macbook/Documents/Atlas One/simulator_web/index.html`：
+已更新 `simulator_web/index.html`：
 
 - 每块圆屏只显示一只眼睛。
 - 支持 idle、happy、listen、thinking、speaking、moving、curious、sleepy、surprised、wink、love、money、angry、charging、error、cry。
-- 支持 classic、amber、mint、alert、night 5 套 Web 主题候选，切换结果会保存在浏览器本地。
+- 支持 classic、amber、mint、alert、night 5 套主题；Web 预览保存在浏览器本地，固件通过 NVS 保存并可由 `/api/config/ui` 修改。
 - 桌面时钟页已细化为左侧模拟表盘、右侧数字时间/日期/状态。
 - 语音输入页已细化为左侧 REC 脉冲声波、右侧识别文本/意图/UART 命令。
 - 状态页已细化为左侧电源仪表、右侧连接/底盘安全健康卡。
+- 音乐播放、讲故事、智能对话、日历提醒、番茄闹钟已补入 Web 预览。
 - 设置页已从 DualEye 屏幕预览中移除，后续只保留手机/PC Web 控制与管理。
 - 底盘方向指令会改变移动表情的目光方向。
 - 继续使用 VS Code Live Preview 即可快速查看效果。
+
+已更新 `firmware/dualeye`：
+
+- `atlas_expression` 已同步 5 套主题 palette，并新增 `atlas_expression_make_frame_with_theme()`。
+- `atlas_display` 已接 Waveshare 官方同款 GC9A01/LVGL 双屏初始化，左屏/右屏分别绘制一只眼睛。
+- Web 管理页新增 UI 设置：主题、屏幕亮度、音量。
+- 应用页/固件枚举补齐音乐、故事、对话、日历、番茄页面。

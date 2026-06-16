@@ -53,6 +53,7 @@ esp_err_t atlas_config_load(atlas_config_t *config);
 esp_err_t atlas_config_save_wifi(const char *ssid, const char *password);
 esp_err_t atlas_config_save_llm(const atlas_llm_config_t *llm);
 esp_err_t atlas_config_save_safety(const atlas_safety_config_t *safety);
+esp_err_t atlas_config_save_ui(const atlas_ui_config_t *ui);
 esp_err_t atlas_config_reset_network_and_llm(void);
 
 bool atlas_config_has_wifi(const atlas_config_t *config);

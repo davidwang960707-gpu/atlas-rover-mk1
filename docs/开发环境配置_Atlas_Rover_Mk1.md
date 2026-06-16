@@ -13,7 +13,7 @@
 ## 打开工作区
 
 ```bash
-/Users/macbook/Documents/Atlas\ One/scripts/open_vscode.sh
+./scripts/open_vscode.sh
 ```
 
 如果你想在终端里直接用 `code` 命令，打开 VS Code 后执行：

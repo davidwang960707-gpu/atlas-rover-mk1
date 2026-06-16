@@ -73,6 +73,12 @@ static bool page_from_name(const char *name, atlas_page_t *page)
         *page = ATLAS_PAGE_MUSIC;
     } else if (strcmp(name, "story") == 0) {
         *page = ATLAS_PAGE_STORY;
+    } else if (strcmp(name, "chat") == 0) {
+        *page = ATLAS_PAGE_CHAT;
+    } else if (strcmp(name, "calendar") == 0) {
+        *page = ATLAS_PAGE_CALENDAR;
+    } else if (strcmp(name, "pomodoro") == 0) {
+        *page = ATLAS_PAGE_POMODORO;
     } else {
         return false;
     }
@@ -225,9 +231,9 @@ static esp_err_t app_handler(httpd_req_t *req)
         "<section><h2>配对</h2><div class=\"grid\"><input id=\"pin\" inputmode=\"numeric\" placeholder=\"6 位配对码\"><button onclick=\"savePin()\">保存配对码</button><button class=\"warn\" onclick=\"stopNow()\">STOP</button></div></section>"
         "<section><h2>模式</h2><div class=\"grid\"><button class=\"primary\" onclick=\"setMode('manual')\">手动模式</button><button onclick=\"setMode('ai')\">AI 模式</button><button onclick=\"refresh()\">刷新状态</button></div><div id=\"status\" class=\"status\">加载中...</div></section>"
         "<section><h2>双眼表情</h2><div class=\"grid\"><button onclick=\"expr('happy')\">开心</button><button onclick=\"expr('thinking')\">思考</button><button onclick=\"expr('listen')\">聆听</button><button onclick=\"expr('speaking')\">说话</button><button onclick=\"expr('sleepy')\">困倦</button><button onclick=\"expr('wink')\">眨眼</button></div></section>"
-        "<section><h2>显示</h2><div class=\"grid\"><button onclick=\"page('eyes')\">双眼</button><button onclick=\"page('clock')\">时钟</button><button onclick=\"page('alarm')\">闹钟</button><button onclick=\"page('photo')\">照片</button><button onclick=\"page('status')\">状态</button></div></section>"
+        "<section><h2>显示</h2><div class=\"grid\"><button onclick=\"page('eyes')\">双眼</button><button onclick=\"page('clock')\">时钟</button><button onclick=\"page('status')\">状态</button><button onclick=\"page('voice')\">语音</button><button onclick=\"page('music')\">音乐</button><button onclick=\"page('story')\">故事</button><button onclick=\"page('chat')\">对话</button><button onclick=\"page('calendar')\">日历</button><button onclick=\"page('pomodoro')\">番茄</button><button onclick=\"page('photo')\">照片</button></div></section>"
         "<section><h2>移动</h2><div class=\"pad\"><button></button><button onclick=\"move('F')\">前进</button><button></button><button onclick=\"move('L')\">左转</button><button class=\"warn\" onclick=\"stopNow()\">停止</button><button onclick=\"move('R')\">右转</button><button class=\"wide\" onclick=\"move('B')\">后退</button></div></section>"
-        "<section><h2>MimiClaw 应用</h2><div class=\"grid\"><button onclick=\"act('music')\">听音乐</button><button onclick=\"act('story')\">讲故事</button><button onclick=\"act('chat')\">陪我说话</button><button onclick=\"act('alarm')\">设置闹钟</button></div></section>"
+        "<section><h2>MimiClaw 应用</h2><div class=\"grid\"><button onclick=\"act('music')\">听音乐</button><button onclick=\"act('story')\">讲故事</button><button onclick=\"act('chat')\">陪我说话</button><button onclick=\"act('calendar')\">看日历</button><button onclick=\"act('pomodoro')\">番茄专注</button><button onclick=\"act('alarm')\">设置闹钟</button></div></section>"
         "</main><script>"
         "const enc=encodeURIComponent,$=id=>document.getElementById(id);let st=null;$('pin').value=localStorage.getItem('atlas_pin')||'';function savePin(){localStorage.setItem('atlas_pin',$('pin').value);alert('已保存')}"
         "async function post(u,b=''){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b});const t=await r.text();try{return JSON.parse(t)}catch(e){return {raw:t}}}"
@@ -267,6 +273,8 @@ static esp_err_t admin_handler(httpd_req_t *req)
         "<button class=\"primary\" onclick=\"saveLlm()\">保存 API 设置</button></section>"
         "<section><h2>安全</h2><label><input id=\"motion_enabled\" type=\"checkbox\"> 允许运动</label><label>控制模式<select id=\"control_mode\"><option value=\"manual\">手动模式：Web 控制</option><option value=\"ai\">AI 模式：语音/MimiClaw</option></select></label><label>最大速度 %<input id=\"max_speed\" type=\"number\" min=\"1\" max=\"80\" value=\"40\"></label>"
         "<label>最大时长 ms<input id=\"max_duration\" type=\"number\" min=\"100\" max=\"2000\" value=\"700\"></label><button class=\"primary\" onclick=\"saveSafety()\">保存安全设置</button></section>"
+        "<section><h2>界面/主题</h2><label>主题<select id=\"ui_theme\"><option value=\"classic\">经典蓝眼</option><option value=\"amber\">琥珀巡航</option><option value=\"mint\">薄荷友好</option><option value=\"alert\">红色警戒</option><option value=\"night\">低亮夜航</option></select></label>"
+        "<label>屏幕亮度 %<input id=\"brightness\" type=\"number\" min=\"0\" max=\"100\" value=\"70\"></label><label>音量 %<input id=\"volume\" type=\"number\" min=\"0\" max=\"100\" value=\"60\"></label><button class=\"primary\" onclick=\"saveUi()\">保存界面设置</button></section>"
         "<section><h2>文本意图测试</h2><label>文本<input id=\"voice_text\" placeholder=\"forward / stop / left\"></label><button onclick=\"sendText()\">发送到意图层</button></section>"
         "<section><h2>系统</h2><div class=\"row\"><button onclick=\"resetCfg()\">清除 Wi-Fi/API</button><button onclick=\"reboot()\">重启</button></div></section></div></main>"
         "<script>"
@@ -274,12 +282,14 @@ static esp_err_t admin_handler(httpd_req_t *req)
         "async function post(u,b=''){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b});const t=await r.text();try{return JSON.parse(t)}catch(e){return {raw:t}}}"
         "async function refresh(){const s=await (await fetch('/api/status')).json();document.getElementById('status').textContent=JSON.stringify(s,null,2);"
         "document.getElementById('max_speed').value=s.safety.max_speed_percent;document.getElementById('max_duration').value=s.safety.max_duration_ms;document.getElementById('motion_enabled').checked=s.safety.motion_enabled;document.getElementById('control_mode').value=s.safety.control_mode||'manual';"
+        "document.getElementById('ui_theme').value=s.ui.theme||'classic';document.getElementById('brightness').value=s.ui.brightness;document.getElementById('volume').value=s.ui.volume;"
         "document.getElementById('llm_mode').value=s.llm.mode||'off';document.getElementById('provider').value=s.llm.provider||'';document.getElementById('base_url').value=s.llm.base_url||'';document.getElementById('model').value=s.llm.model||''}"
         "async function stopNow(){alert(JSON.stringify(await post('/api/rover/stop')));refresh()}"
         "async function move(d){const b=`pin=${enc(pin())}&dir=${d}&speed=${enc(speed.value)}&duration=${enc(duration.value)}`;alert(JSON.stringify(await post('/api/rover/move',b)));refresh()}"
         "async function saveWifi(){const b=`pin=${enc(pin())}&ssid=${enc(ssid.value)}&password=${enc(wifi_pass.value)}`;alert(JSON.stringify(await post('/api/config/wifi',b)));refresh()}"
         "async function saveLlm(){const b=`pin=${enc(pin())}&mode=${enc(llm_mode.value)}&provider=${enc(provider.value)}&base_url=${enc(base_url.value)}&model=${enc(model.value)}&api_key=${enc(api_key.value)}`;alert(JSON.stringify(await post('/api/config/llm',b)));api_key.value='';refresh()}"
         "async function saveSafety(){const b=`pin=${enc(pin())}&motion_enabled=${motion_enabled.checked?1:0}&control_mode=${enc(control_mode.value)}&max_speed=${enc(max_speed.value)}&max_duration=${enc(max_duration.value)}`;alert(JSON.stringify(await post('/api/config/safety',b)));refresh()}"
+        "async function saveUi(){const b=`pin=${enc(pin())}&theme=${enc(ui_theme.value)}&brightness=${enc(brightness.value)}&volume=${enc(volume.value)}`;alert(JSON.stringify(await post('/api/config/ui',b)));refresh()}"
         "async function sendText(){const b=`pin=${enc(pin())}&text=${enc(voice_text.value)}`;alert(JSON.stringify(await post('/api/voice/text',b)));refresh()}"
         "async function resetCfg(){if(confirm('清除 Wi-Fi/API 配置？'))alert(JSON.stringify(await post('/api/config/reset',`pin=${enc(pin())}`)))}"
         "async function reboot(){if(confirm('重启设备？'))alert(JSON.stringify(await post('/api/system/reboot',`pin=${enc(pin())}`)))}refresh();setInterval(refresh,4000);</script></body></html>";
@@ -300,18 +310,21 @@ static esp_err_t status_handler(httpd_req_t *req)
     char mode[ATLAS_LLM_MODE_MAX * 2];
     char model[ATLAS_LLM_MODEL_MAX * 2];
     char provider[ATLAS_LLM_PROVIDER_MAX * 2];
+    char ui_theme[ATLAS_UI_THEME_MAX * 2];
     json_escape(base_url, sizeof(base_url), llm.base_url);
     json_escape(mode, sizeof(mode), llm.mode);
     json_escape(model, sizeof(model), llm.model);
     json_escape(provider, sizeof(provider), llm.provider);
+    json_escape(ui_theme, sizeof(ui_theme), s_ctx.config->ui.theme);
 
-    char json[1500];
+    char json[1700];
     snprintf(json,
              sizeof(json),
              "{"
              "\"ok\":true,"
              "\"pairing_hint\":\"see DualEye screen or serial log\","
-             "\"ui\":{\"page\":\"%s\",\"expression\":\"%s\",\"motion\":\"%s\",\"moving\":%s,\"last_ack\":%d},"
+             "\"ui\":{\"page\":\"%s\",\"expression\":\"%s\",\"motion\":\"%s\",\"moving\":%s,\"last_ack\":%d,"
+             "\"theme\":\"%s\",\"brightness\":%u,\"volume\":%u},"
              "\"wifi\":{\"mode\":\"%s\",\"sta_connected\":%s,\"sta_ip\":\"%s\",\"ap_started\":%s,\"ap_ip\":\"%s\",\"ap_ssid\":\"%s\"},"
              "\"llm\":{\"mode\":\"%s\",\"label\":\"%s\",\"provider\":\"%s\",\"base_url\":\"%s\",\"model\":\"%s\",\"configured\":%s,\"api_key_set\":%s},"
              "\"safety\":{\"motion_enabled\":%s,\"control_mode\":\"%s\",\"max_speed_percent\":%u,\"max_duration_ms\":%u}"
@@ -321,6 +334,9 @@ static esp_err_t status_handler(httpd_req_t *req)
              atlas_motion_name(s_ctx.ui_state->motion),
              s_ctx.ui_state->moving ? "true" : "false",
              (int)s_ctx.ui_state->last_ack,
+             ui_theme,
+             s_ctx.config->ui.brightness,
+             s_ctx.config->ui.volume,
              atlas_wifi_mode_name(wifi.mode),
              wifi.sta_connected ? "true" : "false",
              wifi.sta_ip,
@@ -383,7 +399,11 @@ static esp_err_t app_page_handler(httpd_req_t *req)
     if (page == ATLAS_PAGE_VOICE) {
         s_ctx.ui_state->expression = ATLAS_EXPR_LISTEN;
         s_ctx.ui_state->audio_level = 24;
-    } else if (page == ATLAS_PAGE_ALARM || page == ATLAS_PAGE_PHOTO) {
+    } else if (page == ATLAS_PAGE_MUSIC || page == ATLAS_PAGE_STORY || page == ATLAS_PAGE_CHAT) {
+        s_ctx.ui_state->expression = page == ATLAS_PAGE_CHAT ? ATLAS_EXPR_LISTEN : ATLAS_EXPR_SPEAKING;
+        s_ctx.ui_state->audio_level = page == ATLAS_PAGE_CHAT ? 28 : 58;
+    } else if (page == ATLAS_PAGE_CALENDAR || page == ATLAS_PAGE_POMODORO ||
+               page == ATLAS_PAGE_ALARM || page == ATLAS_PAGE_PHOTO) {
         s_ctx.ui_state->expression = ATLAS_EXPR_CURIOUS;
         s_ctx.ui_state->audio_level = 0;
     } else if (!s_ctx.ui_state->moving) {
@@ -419,9 +439,17 @@ static esp_err_t app_action_handler(httpd_req_t *req)
         s_ctx.ui_state->expression = ATLAS_EXPR_SPEAKING;
         s_ctx.ui_state->audio_level = 58;
     } else if (strcmp(action, "chat") == 0) {
-        s_ctx.ui_state->page = ATLAS_PAGE_VOICE;
+        s_ctx.ui_state->page = ATLAS_PAGE_CHAT;
         s_ctx.ui_state->expression = ATLAS_EXPR_LISTEN;
         s_ctx.ui_state->audio_level = 28;
+    } else if (strcmp(action, "calendar") == 0) {
+        s_ctx.ui_state->page = ATLAS_PAGE_CALENDAR;
+        s_ctx.ui_state->expression = ATLAS_EXPR_CURIOUS;
+        s_ctx.ui_state->audio_level = 0;
+    } else if (strcmp(action, "pomodoro") == 0) {
+        s_ctx.ui_state->page = ATLAS_PAGE_POMODORO;
+        s_ctx.ui_state->expression = ATLAS_EXPR_THINKING;
+        s_ctx.ui_state->audio_level = 0;
     } else if (strcmp(action, "alarm") == 0) {
         s_ctx.ui_state->page = ATLAS_PAGE_ALARM;
         s_ctx.ui_state->expression = ATLAS_EXPR_CURIOUS;
@@ -590,6 +618,38 @@ static esp_err_t save_safety_handler(httpd_req_t *req)
     return send_json(req, "{\"ok\":true,\"saved\":\"safety\"}");
 }
 
+static esp_err_t save_ui_handler(httpd_req_t *req)
+{
+    char body[256];
+    ESP_RETURN_ON_ERROR(read_body(req, body, sizeof(body)), TAG, "read body failed");
+    if (!authorize_body(body)) {
+        return send_error(req, "403 Forbidden", "pairing required");
+    }
+
+    char value[32] = "";
+    atlas_ui_config_t ui = s_ctx.config->ui;
+    if (form_get_value(body, "theme", value, sizeof(value))) {
+        strlcpy(ui.theme, value, sizeof(ui.theme));
+    }
+    if (form_get_value(body, "brightness", value, sizeof(value))) {
+        ui.brightness = (uint8_t)atoi(value);
+    }
+    if (form_get_value(body, "volume", value, sizeof(value))) {
+        ui.volume = (uint8_t)atoi(value);
+    }
+
+    esp_err_t err = atlas_config_save_ui(&ui);
+    if (err == ESP_OK) {
+        (void)atlas_config_load(s_ctx.config);
+        atlas_display_set_theme(s_ctx.config->ui.theme);
+        atlas_display_set_brightness(s_ctx.config->ui.brightness);
+    }
+    if (err != ESP_OK) {
+        return send_error(req, "500 Internal Server Error", esp_err_to_name(err));
+    }
+    return send_json(req, "{\"ok\":true,\"saved\":\"ui\"}");
+}
+
 static esp_err_t voice_text_handler(httpd_req_t *req)
 {
     char body[320];
@@ -681,7 +741,7 @@ esp_err_t atlas_admin_http_start(atlas_config_t *config,
     httpd_config_t http_config = HTTPD_DEFAULT_CONFIG();
     http_config.server_port = 80;
     http_config.stack_size = 8192;
-    http_config.max_uri_handlers = 18;
+    http_config.max_uri_handlers = 20;
 
     ESP_RETURN_ON_ERROR(httpd_start(&s_ctx.server, &http_config), TAG, "httpd_start failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/", HTTP_GET, app_handler), TAG, "route / failed");
@@ -696,6 +756,7 @@ esp_err_t atlas_admin_http_start(atlas_config_t *config,
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/wifi", HTTP_POST, save_wifi_handler), TAG, "route wifi failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/llm", HTTP_POST, save_llm_handler), TAG, "route llm failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/safety", HTTP_POST, save_safety_handler), TAG, "route safety failed");
+    ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/ui", HTTP_POST, save_ui_handler), TAG, "route ui failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/voice/text", HTTP_POST, voice_text_handler), TAG, "route voice failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/reset", HTTP_POST, reset_handler), TAG, "route reset failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/system/reboot", HTTP_POST, reboot_handler), TAG, "route reboot failed");

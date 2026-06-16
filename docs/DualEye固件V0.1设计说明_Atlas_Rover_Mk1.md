@@ -127,7 +127,7 @@ flowchart LR
 本版应至少通过：
 
 ```bash
-cd "/Users/macbook/Documents/Atlas One/firmware/dualeye"
+cd firmware/dualeye
 export IDF_PATH="$HOME/.espressif/esp-idf-v5.5.2"
 export IDF_PYTHON_ENV_PATH="$HOME/.espressif/python_env/idf5.5_py3.9_env"
 . "$IDF_PATH/export.sh"

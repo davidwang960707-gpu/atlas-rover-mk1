@@ -94,7 +94,7 @@ static void dev_event_demo_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Atlas Rover Mk.1 DualEye firmware V0.3");
+    ESP_LOGI(TAG, "Atlas Rover Mk.1 DualEye firmware V0.4");
     ESP_LOGI(TAG, "DualEye role: HMI, expressions, voice events, UART motion intent");
     ESP_LOGI(TAG, "Chassis role: motor closed-loop, DRV8833/PWM, limit, timeout stop");
     ESP_LOGI(TAG, "UART wiring: LCD1 Pin10 TXD -> chassis RX, LCD1 Pin9 RXD <- chassis TX, GND common");
@@ -102,6 +102,8 @@ void app_main(void)
 
     ESP_ERROR_CHECK(atlas_config_init());
     ESP_ERROR_CHECK(atlas_config_load(&s_config));
+    atlas_display_set_theme(s_config.ui.theme);
+    atlas_display_set_brightness(s_config.ui.brightness);
     atlas_pairing_init();
     atlas_ui_init(&s_ui_state);
 

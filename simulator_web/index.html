@@ -872,8 +872,16 @@
       justify-content: center;
     }
 
+    .app-page {
+      display: none;
+      gap: clamp(28px, 5vw, 56px);
+      align-items: center;
+      justify-content: center;
+    }
+
     .voice-disc,
-    .status-disc {
+    .status-disc,
+    .app-disc {
       width: clamp(190px, 28vw, 280px);
       aspect-ratio: 1;
       border-radius: 50%;
@@ -892,6 +900,216 @@
       background:
         radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--mint) 10%, transparent), transparent 44%),
         var(--eye-bg);
+    }
+
+    .app-disc {
+      background:
+        radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--cyan) 10%, transparent), transparent 44%),
+        var(--eye-bg);
+    }
+
+    .app-stack {
+      width: 76%;
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-kicker {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .app-title {
+      color: var(--text);
+      font-size: 24px;
+      font-weight: 850;
+      line-height: 1.16;
+    }
+
+    .app-value {
+      color: var(--cyan);
+      font-size: 42px;
+      font-weight: 850;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 18px color-mix(in srgb, var(--cyan) 58%, transparent);
+    }
+
+    .app-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .app-chip-row,
+    .app-progress-labels {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .app-chip,
+    .app-command,
+    .app-list-row {
+      border: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
+      color: var(--muted);
+      background: color-mix(in srgb, var(--panel) 72%, transparent);
+      font-size: 11px;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .app-chip {
+      padding: 5px 7px;
+    }
+
+    .app-command {
+      width: 100%;
+      padding: 8px 9px;
+      color: var(--mint);
+      border-color: color-mix(in srgb, var(--mint) 42%, transparent);
+      overflow-wrap: anywhere;
+    }
+
+    .app-progress {
+      width: 100%;
+      height: 7px;
+      border: 1px solid color-mix(in srgb, var(--line) 58%, transparent);
+      background: color-mix(in srgb, var(--panel) 72%, transparent);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-progress::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: var(--progress, 50%);
+      background: linear-gradient(90deg, var(--cyan), var(--mint));
+      box-shadow: 0 0 12px color-mix(in srgb, var(--cyan) 62%, transparent);
+    }
+
+    .app-progress-labels {
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .app-list {
+      width: 100%;
+      display: grid;
+      gap: 7px;
+    }
+
+    .app-list-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 9px;
+      text-align: left;
+    }
+
+    .app-list-row b {
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .music-vinyl {
+      width: 62%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--cyan) 46%, transparent);
+      background:
+        radial-gradient(circle, var(--amber) 0 10%, transparent 11% 100%),
+        repeating-radial-gradient(circle, color-mix(in srgb, var(--cyan) 24%, transparent) 0 2px, transparent 3px 12px);
+      display: grid;
+      place-items: center;
+      color: var(--cyan);
+      font-size: 54px;
+      font-weight: 850;
+      text-shadow: 0 0 18px color-mix(in srgb, var(--cyan) 62%, transparent);
+      animation: spin 8s linear infinite;
+    }
+
+    .story-book {
+      width: 58%;
+      aspect-ratio: 1.2;
+      border: 2px solid color-mix(in srgb, var(--amber) 58%, transparent);
+      background:
+        linear-gradient(90deg, transparent 49%, color-mix(in srgb, var(--line) 62%, transparent) 50%, transparent 51%),
+        color-mix(in srgb, var(--panel) 82%, transparent);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--amber) 28%, transparent);
+      display: grid;
+      place-items: center;
+      color: var(--amber);
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .chat-bubble {
+      width: 68%;
+      padding: 14px 16px;
+      border: 2px solid color-mix(in srgb, var(--cyan) 54%, transparent);
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel) 72%, transparent);
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.25;
+      box-shadow: 0 0 18px color-mix(in srgb, var(--cyan) 20%, transparent);
+    }
+
+    .calendar-date {
+      color: var(--cyan);
+      font-size: 74px;
+      font-weight: 900;
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 18px color-mix(in srgb, var(--cyan) 56%, transparent);
+    }
+
+    .calendar-month {
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .pomodoro-ring {
+      --progress: 72%;
+      width: 66%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: conic-gradient(var(--red) 0 var(--progress), color-mix(in srgb, var(--line) 22%, transparent) var(--progress) 100%);
+      display: grid;
+      place-items: center;
+      position: relative;
+      box-shadow: 0 0 22px color-mix(in srgb, var(--red) 28%, transparent);
+    }
+
+    .pomodoro-ring::before {
+      content: "";
+      position: absolute;
+      inset: 13%;
+      border-radius: 50%;
+      background: var(--eye-bg);
+      border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+    }
+
+    .pomodoro-ring .app-value {
+      color: var(--red);
+      font-size: 34px;
+      position: relative;
+      z-index: 1;
     }
 
     .status-stack {
@@ -1078,7 +1296,12 @@
     .active-eyes .eyes,
     .active-clock .clock,
     .active-status .status,
-    .active-voice .voice {
+    .active-voice .voice,
+    .active-music .music,
+    .active-story .story,
+    .active-chat .chat,
+    .active-calendar .calendar,
+    .active-pomodoro .pomodoro {
       display: flex;
     }
 
@@ -1202,6 +1425,11 @@
       50% { transform: translateX(-50%) translateY(-5px); }
     }
 
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     @keyframes ringpulse {
       0%, 100% { transform: scale(0.92); opacity: 0.32; }
       50% { transform: scale(1.12); opacity: 0.82; }
@@ -1276,14 +1504,16 @@
       .eyes,
       .clock,
       .voice,
-      .status {
+      .status,
+      .app-page {
         gap: 14px;
       }
 
       .eye,
       .dial,
       .voice-disc,
-      .status-disc {
+      .status-disc,
+      .app-disc {
         width: clamp(132px, 39vw, 180px);
         border-width: 4px;
       }
@@ -1303,6 +1533,23 @@
 
       .status-value {
         font-size: 28px;
+      }
+
+      .app-title,
+      .voice-text {
+        font-size: 15px;
+      }
+
+      .app-value {
+        font-size: 30px;
+      }
+
+      .music-vinyl {
+        font-size: 34px;
+      }
+
+      .calendar-date {
+        font-size: 48px;
       }
 
       .clock-label {
@@ -1415,6 +1662,109 @@
         </div>
       </div>
 
+      <div class="app-page music" aria-label="双屏音乐播放预览">
+        <div class="app-disc" aria-label="左实体屏幕：音乐播放状态">
+          <div class="app-stack">
+            <span class="app-kicker">音乐播放</span>
+            <div class="music-vinyl">♪</div>
+            <span class="app-subtitle">MimiClaw · 外放</span>
+          </div>
+        </div>
+        <div class="app-disc" aria-label="右实体屏幕：歌曲信息">
+          <div class="app-stack">
+            <span class="app-kicker">正在播放</span>
+            <strong class="app-title">桌面巡游小调</strong>
+            <span class="app-subtitle">Lo-fi Rover Beats</span>
+            <div class="app-progress" style="--progress:42%"></div>
+            <div class="app-progress-labels"><span>01:18</span><span>03:08</span></div>
+            <span class="app-command">MIMICLAW,MUSIC,PLAY</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-page story" aria-label="双屏讲故事预览">
+        <div class="app-disc" aria-label="左实体屏幕：故事章节">
+          <div class="app-stack">
+            <span class="app-kicker">讲故事</span>
+            <div class="story-book">第 03 章</div>
+            <span class="app-subtitle">睡前故事 · 温柔语速</span>
+          </div>
+        </div>
+        <div class="app-disc" aria-label="右实体屏幕：故事进度">
+          <div class="app-stack">
+            <span class="app-kicker">当前故事</span>
+            <strong class="app-title">黄铜小车去月台</strong>
+            <span class="app-subtitle">下一段：遇见发光路标</span>
+            <div class="app-progress" style="--progress:58%"></div>
+            <span class="app-command">MIMICLAW,STORY,NEXT</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-page chat" aria-label="双屏对话预览">
+        <div class="app-disc" aria-label="左实体屏幕：对话状态">
+          <div class="app-stack">
+            <span class="app-kicker">智能对话</span>
+            <div class="chat-bubble">我在想</div>
+            <span class="app-subtitle">上下文 4 轮 · 语音回复</span>
+          </div>
+        </div>
+        <div class="app-disc" aria-label="右实体屏幕：回复摘要">
+          <div class="app-stack">
+            <span class="app-kicker">回复摘要</span>
+            <strong class="app-title">可以，先慢速巡航。</strong>
+            <span class="app-subtitle">意图：陪伴 + 移动确认</span>
+            <span class="app-command">AI,CHAT,RESPOND</span>
+            <div class="app-chip-row">
+              <span class="app-chip">安全</span>
+              <span class="app-chip">TTS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-page calendar" aria-label="双屏日历预览">
+        <div class="app-disc" aria-label="左实体屏幕：日期">
+          <div class="app-stack">
+            <span class="app-kicker">日历</span>
+            <strong class="calendar-date" id="calendarDay">16</strong>
+            <span class="calendar-month" id="calendarMonth">06 月 · 周二</span>
+          </div>
+        </div>
+        <div class="app-disc" aria-label="右实体屏幕：日程提醒">
+          <div class="app-stack">
+            <span class="app-kicker">今日提醒</span>
+            <div class="app-list">
+              <span class="app-list-row"><b>15:30</b><span>喝水 + 活动一下</span></span>
+              <span class="app-list-row"><b>18:00</b><span>检查电池电量</span></span>
+              <span class="app-list-row"><b>21:30</b><span>讲故事模式</span></span>
+            </div>
+            <span class="app-command">CALENDAR,NEXT,3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-page pomodoro" aria-label="双屏番茄闹钟预览">
+        <div class="app-disc" aria-label="左实体屏幕：番茄计时">
+          <div class="app-stack">
+            <span class="app-kicker">番茄闹钟</span>
+            <div class="pomodoro-ring">
+              <strong class="app-value" id="pomodoroTime">18:42</strong>
+            </div>
+            <span class="app-subtitle">专注中 · 第 2 轮</span>
+          </div>
+        </div>
+        <div class="app-disc" aria-label="右实体屏幕：番茄状态">
+          <div class="app-stack">
+            <span class="app-kicker">专注任务</span>
+            <strong class="app-title">焊接车架复核</strong>
+            <span class="app-subtitle">结束后：休息 5 分钟</span>
+            <div class="app-progress" style="--progress:28%"></div>
+            <span class="app-command">TIMER,POMODORO,RUNNING</span>
+          </div>
+        </div>
+      </div>
+
     </section>
   </main>
 
@@ -1440,6 +1790,11 @@
         <button data-page="clock">时钟</button>
         <button data-page="status">状态</button>
         <button data-page="voice">语音</button>
+        <button data-page="music">音乐</button>
+        <button data-page="story">故事</button>
+        <button data-page="chat">对话</button>
+        <button data-page="calendar">日历</button>
+        <button data-page="pomodoro">番茄</button>
       </div>
     </section>
 
@@ -1481,7 +1836,7 @@
       <code id="log">AR1,STOP</code>
     </section>
 
-    <p>快捷键：1-4 切页面，H/L/T/S/M/C/Y/U/W/V/P/A/G/E/R 切表情，方向键输出移动指令，空格 STOP。</p>
+    <p>快捷键：1-9 切页面，H/L/T/S/M/C/Y/U/W/V/P/A/G/E/R 切表情，方向键输出移动指令，空格 STOP。</p>
   </aside>
 
   <script>
@@ -1496,6 +1851,8 @@
     const voicePhrase = document.querySelector("#voicePhrase");
     const voiceCommand = document.querySelector("#voiceCommand");
     const voiceConfidence = document.querySelector("#voiceConfidence");
+    const calendarDay = document.querySelector("#calendarDay");
+    const calendarMonth = document.querySelector("#calendarMonth");
     const themeStorageKey = "atlas_rover_theme";
     const themeNames = {
       classic: "经典蓝眼",
@@ -1617,8 +1974,8 @@
 
     document.addEventListener("keydown", (event) => {
       const key = event.key.toLowerCase();
-      if (["1", "2", "3", "4"].includes(key)) {
-        setPage(["eyes", "clock", "status", "voice"][Number(key) - 1]);
+      if (["1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(key)) {
+        setPage(["eyes", "clock", "status", "voice", "music", "story", "chat", "calendar", "pomodoro"][Number(key) - 1]);
       }
       if (key === "h") setExpression("happy");
       if (key === "l") setExpression("listen");
@@ -1669,6 +2026,8 @@
       digitalDate.textContent = `${month}.${date} ${dayNames[now.getDay()]}`;
       clockSecond.textContent = `${ss}s`;
       clockPeriod.textContent = now.getHours() < 12 ? "早上好" : "桌面时钟";
+      calendarDay.textContent = date;
+      calendarMonth.textContent = `${month} 月 · ${dayNames[now.getDay()]}`;
     }
 
     updateClock();

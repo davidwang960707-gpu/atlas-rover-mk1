@@ -270,7 +270,7 @@ Mk.1 的 Web 端分成两个入口：
     "require_confirm_for_patrol": true
   },
   "ui": {
-    "theme": "atlas_blue",
+    "theme": "classic",
     "brightness": 70,
     "volume": 60
   }

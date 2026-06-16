@@ -16,6 +16,19 @@ static bool is_motion_intent(atlas_voice_event_t event)
            event == ATLAS_VOICE_EVENT_TURN_RIGHT;
 }
 
+static bool is_persistent_page(atlas_page_t page)
+{
+    return page == ATLAS_PAGE_CLOCK ||
+           page == ATLAS_PAGE_STATUS ||
+           page == ATLAS_PAGE_ALARM ||
+           page == ATLAS_PAGE_PHOTO ||
+           page == ATLAS_PAGE_MUSIC ||
+           page == ATLAS_PAGE_STORY ||
+           page == ATLAS_PAGE_CHAT ||
+           page == ATLAS_PAGE_CALENDAR ||
+           page == ATLAS_PAGE_POMODORO;
+}
+
 void atlas_ui_init(atlas_ui_state_t *state)
 {
     if (state == NULL) {
@@ -219,7 +232,7 @@ void atlas_ui_tick(atlas_ui_state_t *state, uint32_t now_ms)
         (void)atlas_ui_stop(state, now_ms);
     }
 
-    if (!state->moving && state->expression != ATLAS_EXPR_IDLE &&
+    if (!state->moving && !is_persistent_page(state->page) && state->expression != ATLAS_EXPR_IDLE &&
         state->expression != ATLAS_EXPR_CHARGING && state->expression != ATLAS_EXPR_ERROR &&
         now_ms - state->last_event_ms > 3500) {
         state->page = ATLAS_PAGE_EYES;

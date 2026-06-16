@@ -15,10 +15,15 @@ idf_component_register(
     INCLUDE_DIRS "."
     REQUIRES
         driver
+        esp_lcd
         esp_event
         esp_http_server
         esp_netif
         esp_timer
         esp_wifi
+        esp_lcd_gc9a01
+        esp_lcd_touch
+        esp_lcd_touch_cst816s
+        lvgl
         nvs_flash
 )

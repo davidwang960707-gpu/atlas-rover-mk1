@@ -1,11 +1,100 @@
 #include "atlas_expression.h"
 
 #include <stddef.h>
+#include <string.h>
 
-#define RGB_CYAN   0x3FC9FFu
-#define RGB_MINT   0x5FE1B4u
-#define RGB_AMBER  0xF5DC96u
-#define RGB_RED    0xFF6B4Bu
+static const atlas_theme_palette_t s_theme_palettes[ATLAS_THEME_COUNT] = {
+    [ATLAS_THEME_CLASSIC] = {
+        .id = "classic",
+        .name_zh = "经典蓝眼",
+        .bg_rgb = 0x07080Au,
+        .panel_rgb = 0x111318u,
+        .panel_2_rgb = 0x0D0F13u,
+        .stage_bg_rgb = 0x07080Au,
+        .eye_bg_rgb = 0x07080Au,
+        .line_rgb = 0xA66C2Au,
+        .primary_rgb = 0x3FC9FFu,
+        .positive_rgb = 0x5FE1B4u,
+        .danger_rgb = 0xFF6B4Bu,
+        .amber_rgb = 0xF5DC96u,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0x6ED7FFu,
+        .text_rgb = 0xEFE9DFu,
+        .muted_rgb = 0x9C958Cu,
+    },
+    [ATLAS_THEME_AMBER] = {
+        .id = "amber",
+        .name_zh = "琥珀巡航",
+        .bg_rgb = 0x0B0906u,
+        .panel_rgb = 0x15120Du,
+        .panel_2_rgb = 0x100D09u,
+        .stage_bg_rgb = 0x090807u,
+        .eye_bg_rgb = 0x090706u,
+        .line_rgb = 0xCC8742u,
+        .primary_rgb = 0xFFC15Fu,
+        .positive_rgb = 0x70D7FFu,
+        .danger_rgb = 0xFF6D4Fu,
+        .amber_rgb = 0xFFC15Fu,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0x70D7FFu,
+        .text_rgb = 0xFFF1DCu,
+        .muted_rgb = 0xC0AA8Fu,
+    },
+    [ATLAS_THEME_MINT] = {
+        .id = "mint",
+        .name_zh = "薄荷友好",
+        .bg_rgb = 0x06100Fu,
+        .panel_rgb = 0x0D1917u,
+        .panel_2_rgb = 0x091310u,
+        .stage_bg_rgb = 0x06100Fu,
+        .eye_bg_rgb = 0x04100Eu,
+        .line_rgb = 0x8F9F7Au,
+        .primary_rgb = 0x62F0B5u,
+        .positive_rgb = 0xB8F477u,
+        .danger_rgb = 0xFF7066u,
+        .amber_rgb = 0xE2D478u,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0x62F0B5u,
+        .text_rgb = 0xEAFFF6u,
+        .muted_rgb = 0x9FC2B3u,
+    },
+    [ATLAS_THEME_ALERT] = {
+        .id = "alert",
+        .name_zh = "红色警戒",
+        .bg_rgb = 0x0D0808u,
+        .panel_rgb = 0x171011u,
+        .panel_2_rgb = 0x110B0Cu,
+        .stage_bg_rgb = 0x0D0808u,
+        .eye_bg_rgb = 0x0B0707u,
+        .line_rgb = 0xB57C3Bu,
+        .primary_rgb = 0xFF7B61u,
+        .positive_rgb = 0xFFD36Au,
+        .danger_rgb = 0xFF4F45u,
+        .amber_rgb = 0xFFC45Fu,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0xFF7B61u,
+        .text_rgb = 0xFFF0EAu,
+        .muted_rgb = 0xC29B93u,
+    },
+    [ATLAS_THEME_NIGHT] = {
+        .id = "night",
+        .name_zh = "低亮夜航",
+        .bg_rgb = 0x05080Du,
+        .panel_rgb = 0x0C1118u,
+        .panel_2_rgb = 0x080D13u,
+        .stage_bg_rgb = 0x05080Du,
+        .eye_bg_rgb = 0x03060Au,
+        .line_rgb = 0x7C826Eu,
+        .primary_rgb = 0x88BFFFu,
+        .positive_rgb = 0x74DCB2u,
+        .danger_rgb = 0xFF6C6Cu,
+        .amber_rgb = 0xD6C784u,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0x88BFFFu,
+        .text_rgb = 0xDFE9F7u,
+        .muted_rgb = 0x93A0ADu,
+    },
+};
 
 static int16_t triangle_wave(uint32_t now_ms, uint32_t period_ms, int16_t amplitude)
 {
@@ -78,18 +167,89 @@ const char *atlas_motion_name(atlas_motion_t motion)
     }
 }
 
+const atlas_theme_palette_t *atlas_expression_theme_palette(atlas_theme_t theme)
+{
+    if (theme < 0 || theme >= ATLAS_THEME_COUNT) {
+        return &s_theme_palettes[ATLAS_THEME_CLASSIC];
+    }
+    return &s_theme_palettes[theme];
+}
+
+atlas_theme_t atlas_expression_theme_from_id(const char *theme_id)
+{
+    if (theme_id == NULL || theme_id[0] == '\0' || strcmp(theme_id, "atlas_blue") == 0) {
+        return ATLAS_THEME_CLASSIC;
+    }
+    for (atlas_theme_t theme = ATLAS_THEME_CLASSIC; theme < ATLAS_THEME_COUNT; ++theme) {
+        if (strcmp(theme_id, s_theme_palettes[theme].id) == 0) {
+            return theme;
+        }
+    }
+    return ATLAS_THEME_CLASSIC;
+}
+
+const atlas_theme_palette_t *atlas_expression_theme_palette_by_id(const char *theme_id)
+{
+    return atlas_expression_theme_palette(atlas_expression_theme_from_id(theme_id));
+}
+
+const atlas_theme_palette_t *atlas_expression_default_theme(void)
+{
+    return &s_theme_palettes[ATLAS_THEME_CLASSIC];
+}
+
+const char *atlas_expression_theme_id(atlas_theme_t theme)
+{
+    return atlas_expression_theme_palette(theme)->id;
+}
+
+bool atlas_expression_theme_is_valid(const char *theme_id)
+{
+    if (theme_id == NULL || theme_id[0] == '\0') {
+        return false;
+    }
+    if (strcmp(theme_id, "atlas_blue") == 0) {
+        return true;
+    }
+    for (atlas_theme_t theme = ATLAS_THEME_CLASSIC; theme < ATLAS_THEME_COUNT; ++theme) {
+        if (strcmp(theme_id, s_theme_palettes[theme].id) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void atlas_expression_make_frame(atlas_expression_t expression,
                                  atlas_motion_t motion,
                                  uint32_t now_ms,
                                  uint8_t audio_level,
                                  atlas_eye_frame_t *frame)
 {
+    atlas_expression_make_frame_with_theme(expression,
+                                           motion,
+                                           now_ms,
+                                           audio_level,
+                                           atlas_expression_default_theme(),
+                                           frame);
+}
+
+void atlas_expression_make_frame_with_theme(atlas_expression_t expression,
+                                            atlas_motion_t motion,
+                                            uint32_t now_ms,
+                                            uint8_t audio_level,
+                                            const atlas_theme_palette_t *theme,
+                                            atlas_eye_frame_t *frame)
+{
     if (frame == NULL) {
         return;
     }
 
-    frame->left = base_eye(RGB_CYAN);
-    frame->right = base_eye(RGB_CYAN);
+    if (theme == NULL) {
+        theme = atlas_expression_default_theme();
+    }
+
+    frame->left = base_eye(theme->primary_rgb);
+    frame->right = base_eye(theme->primary_rgb);
 
     const int16_t breathe = triangle_wave(now_ms, 3800, 4);
     const int16_t pulse = triangle_wave(now_ms, 900, 14);
@@ -105,8 +265,8 @@ void atlas_expression_make_frame(atlas_expression_t expression,
         break;
 
     case ATLAS_EXPR_HAPPY:
-        frame->left = base_eye(RGB_MINT);
-        frame->right = base_eye(RGB_MINT);
+        frame->left = base_eye(theme->positive_rgb);
+        frame->right = base_eye(theme->positive_rgb);
         frame->left.look_y = -10;
         frame->right.look_y = -10;
         frame->left.iris_scale = 72;
@@ -193,7 +353,7 @@ void atlas_expression_make_frame(atlas_expression_t expression,
         break;
 
     case ATLAS_EXPR_WINK:
-        frame->left = base_eye(RGB_MINT);
+        frame->left = base_eye(theme->positive_rgb);
         frame->left.visible = false;
         frame->left.top_lid = 100;
         frame->left.bottom_lid = 100;
@@ -202,8 +362,8 @@ void atlas_expression_make_frame(atlas_expression_t expression,
         break;
 
     case ATLAS_EXPR_ANGRY:
-        frame->left = base_eye(RGB_RED);
-        frame->right = base_eye(RGB_RED);
+        frame->left = base_eye(theme->danger_rgb);
+        frame->right = base_eye(theme->danger_rgb);
         frame->left.iris_scale = 88;
         frame->right.iris_scale = 88;
         frame->left.top_lid = 70;
@@ -215,8 +375,8 @@ void atlas_expression_make_frame(atlas_expression_t expression,
         break;
 
     case ATLAS_EXPR_CHARGING:
-        frame->left = base_eye(RGB_AMBER);
-        frame->right = base_eye(RGB_AMBER);
+        frame->left = base_eye(theme->amber_rgb);
+        frame->right = base_eye(theme->amber_rgb);
         frame->left.look_y = 8;
         frame->right.look_y = 8;
         frame->left.effect = ATLAS_EYE_EFFECT_CHARGE;
@@ -224,8 +384,8 @@ void atlas_expression_make_frame(atlas_expression_t expression,
         break;
 
     case ATLAS_EXPR_ERROR:
-        frame->left = base_eye(RGB_RED);
-        frame->right = base_eye(RGB_RED);
+        frame->left = base_eye(theme->danger_rgb);
+        frame->right = base_eye(theme->danger_rgb);
         frame->left.iris_scale = 92;
         frame->right.iris_scale = 92;
         frame->left.top_lid = 45;

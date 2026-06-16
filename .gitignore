@@ -10,7 +10,11 @@
 
 # Local build outputs
 firmware/**/build/
+firmware/**/managed_components/
+firmware/**/sdkconfig.old
 simulator_mac/build/
+.playwright-cli/
+output/playwright/
 
 # Node dependencies
 node_modules

@@ -7,6 +7,8 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 
+#include "atlas_expression.h"
+
 static const char *TAG = "atlas_config";
 static const char *NS = "atlas";
 
@@ -56,7 +58,7 @@ void atlas_config_defaults(atlas_config_t *config)
     copy_string(config->device_name, sizeof(config->device_name), "Atlas Rover Mk.1");
     copy_string(config->llm.mode, sizeof(config->llm.mode), "off");
     copy_string(config->llm.provider, sizeof(config->llm.provider), "openai_compatible");
-    copy_string(config->ui.theme, sizeof(config->ui.theme), "atlas_blue");
+    copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
     config->ui.brightness = 70;
     config->ui.volume = 60;
     config->safety.motion_enabled = true;
@@ -107,7 +109,12 @@ esp_err_t atlas_config_load(atlas_config_t *config)
     (void)nvs_get_string_default(handle, "llm_base", config->llm.base_url, sizeof(config->llm.base_url), "");
     (void)nvs_get_string_default(handle, "llm_model", config->llm.model, sizeof(config->llm.model), "");
     (void)nvs_get_string_default(handle, "llm_key", config->llm.api_key, sizeof(config->llm.api_key), "");
-    (void)nvs_get_string_default(handle, "ui_theme", config->ui.theme, sizeof(config->ui.theme), "atlas_blue");
+    (void)nvs_get_string_default(handle, "ui_theme", config->ui.theme, sizeof(config->ui.theme), "classic");
+    if (!atlas_expression_theme_is_valid(config->ui.theme)) {
+        copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
+    } else if (strcmp(config->ui.theme, "atlas_blue") == 0) {
+        copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
+    }
     (void)nvs_get_string_default(handle, "ctrl_mode", config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     if (strcmp(config->safety.control_mode, "manual") != 0 && strcmp(config->safety.control_mode, "ai") != 0) {
         copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
@@ -245,6 +252,46 @@ esp_err_t atlas_config_save_safety(const atlas_safety_config_t *safety)
              clipped.control_mode,
              clipped.max_speed_percent,
              clipped.max_duration_ms);
+    return err;
+}
+
+esp_err_t atlas_config_save_ui(const atlas_ui_config_t *ui)
+{
+    if (ui == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    atlas_ui_config_t clipped = *ui;
+    if (!atlas_expression_theme_is_valid(clipped.theme)) {
+        copy_string(clipped.theme, sizeof(clipped.theme), "classic");
+    } else if (strcmp(clipped.theme, "atlas_blue") == 0) {
+        copy_string(clipped.theme, sizeof(clipped.theme), "classic");
+    }
+    if (clipped.brightness > 100) {
+        clipped.brightness = 100;
+    }
+    if (clipped.volume > 100) {
+        clipped.volume = 100;
+    }
+
+    nvs_handle_t handle;
+    ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &handle), TAG, "nvs_open failed");
+    esp_err_t err = nvs_set_string_checked(handle, "ui_theme", clipped.theme);
+    if (err == ESP_OK) {
+        err = nvs_set_u8(handle, "brightness", clipped.brightness);
+    }
+    if (err == ESP_OK) {
+        err = nvs_set_u8(handle, "volume", clipped.volume);
+    }
+    if (err == ESP_OK) {
+        err = nvs_commit(handle);
+    }
+    nvs_close(handle);
+    ESP_LOGI(TAG,
+             "ui config saved: theme=%s brightness=%u volume=%u",
+             clipped.theme,
+             clipped.brightness,
+             clipped.volume);
     return err;
 }
 
