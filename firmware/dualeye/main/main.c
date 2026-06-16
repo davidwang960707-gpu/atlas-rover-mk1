@@ -96,7 +96,7 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Atlas Rover Mk.1 DualEye firmware V0.5");
     ESP_LOGI(TAG, "DualEye role: HMI, expressions, voice events, UART motion intent");
-    ESP_LOGI(TAG, "Chassis role: motor closed-loop, DRV8833/PWM, limit, timeout stop");
+    ESP_LOGI(TAG, "Chassis role: open-loop timed N20 differential drive, DRV8833/PWM, limit, timeout stop");
     ESP_LOGI(TAG, "UART wiring: LCD1 Pin10 TXD -> chassis RX, LCD1 Pin9 RXD <- chassis TX, GND common");
     ESP_LOGI(TAG, "Power rule: never power motors from DualEye");
 

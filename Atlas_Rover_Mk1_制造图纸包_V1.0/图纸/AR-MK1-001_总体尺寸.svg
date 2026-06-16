@@ -16,7 +16,7 @@
 <rect x="49" y="57" width="76" height="21" rx="2" stroke="#777" fill="#f1f1f1"/>
 <text x="87" y="70" fill="#333" stroke="none" text-anchor="middle">18650 电池盒</text>
 <rect x="62" y="84" width="62" height="25" rx="2" stroke="#777" fill="#eef6ff"/>
-<text x="93" y="99" fill="#333" stroke="none" text-anchor="middle">DRV8833 + PCA9685</text>
+<text x="93" y="99" fill="#333" stroke="none" text-anchor="middle">底盘板 + DRV8833</text>
 <rect x="43" y="22" width="104" height="10" rx="5" stroke="#333" fill="#111"/>
 <circle cx="69" cy="27" r="18.25" stroke="#111" fill="#222"/>
 <circle cx="121.5" cy="27" r="18.25" stroke="#111" fill="#222"/>

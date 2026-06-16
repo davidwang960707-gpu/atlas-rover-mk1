@@ -24,6 +24,6 @@ esp_err_t atlas_rover_uart_init(void);
 esp_err_t atlas_rover_uart_send_line(const char *line);
 esp_err_t atlas_rover_uart_send_stop(void);
 esp_err_t atlas_rover_uart_send_move(atlas_motion_t motion, uint8_t speed, uint16_t duration_ms);
-esp_err_t atlas_rover_uart_send_turn(atlas_motion_t motion, uint8_t speed);
+esp_err_t atlas_rover_uart_send_turn(atlas_motion_t motion, uint8_t speed, uint16_t duration_ms);
 int atlas_rover_uart_read_line(char *buffer, size_t buffer_size, TickType_t timeout_ticks);
 atlas_rover_ack_t atlas_rover_uart_parse_ack(const char *line);

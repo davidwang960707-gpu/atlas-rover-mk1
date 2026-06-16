@@ -29,6 +29,18 @@ static bool is_persistent_page(atlas_page_t page)
            page == ATLAS_PAGE_POMODORO;
 }
 
+static uint32_t safety_stop_delay_ms(uint16_t duration_ms)
+{
+    uint32_t delay_ms = (uint32_t)duration_ms + 200u;
+    if (delay_ms < ATLAS_DEFAULT_SAFETY_STOP_MS) {
+        delay_ms = ATLAS_DEFAULT_SAFETY_STOP_MS;
+    }
+    if (delay_ms > 2200u) {
+        delay_ms = 2200u;
+    }
+    return delay_ms;
+}
+
 void atlas_ui_init(atlas_ui_state_t *state)
 {
     if (state == NULL) {
@@ -60,7 +72,7 @@ static esp_err_t send_motion(atlas_ui_state_t *state, atlas_voice_intent_t inten
     if (intent.motion == ATLAS_MOTION_FORWARD || intent.motion == ATLAS_MOTION_BACKWARD) {
         err = atlas_rover_uart_send_move(intent.motion, intent.speed, intent.duration_ms);
     } else if (intent.motion == ATLAS_MOTION_LEFT || intent.motion == ATLAS_MOTION_RIGHT) {
-        err = atlas_rover_uart_send_turn(intent.motion, intent.speed);
+        err = atlas_rover_uart_send_turn(intent.motion, intent.speed, intent.duration_ms);
     } else {
         return ESP_ERR_INVALID_ARG;
     }
@@ -80,7 +92,7 @@ static esp_err_t send_motion(atlas_ui_state_t *state, atlas_voice_intent_t inten
     state->last_speed = intent.speed;
     state->last_motion_ms = now_ms;
     state->last_event_ms = now_ms;
-    state->safety_stop_due_ms = now_ms + ATLAS_DEFAULT_SAFETY_STOP_MS;
+    state->safety_stop_due_ms = now_ms + safety_stop_delay_ms(intent.duration_ms);
     state->moving = true;
 
     ESP_LOGI(TAG,

@@ -7,8 +7,8 @@ V0.5 已经从单文件脚手架升级为可配网、可管理、可日常控制
 - 双目表情参数模型：每块实体屏幕对应一只眼睛。
 - 表情状态机：待机、开心、聆听、思考、说话、移动、好奇、困倦、惊讶、眨眼、爱心、爱钱、生气、充电、错误、大哭。
 - UART 底盘协议：只发送 `AR1,` 开头的运动/停止指令。
-- 双板职责划分：DualEye 负责 HMI/语音/意图，底盘板负责电机闭环/限速/超时停车/DRV8833。
-- 安全超时：DualEye 发出移动指令后会在约 700 ms 后主动补发 `AR1,STOP`。
+- 双板职责划分：DualEye 负责 HMI/语音/意图，底盘板负责普通 N20 + DRV8833 的开环短时差速控制、限速和超时停车。
+- 安全超时：DualEye 发出移动指令后会按动作时长延后补发 `AR1,STOP`，防止底盘板异常时持续移动。
 - 语音事件接口：MimiClaw 可输出标准事件、tool-call 或 `atlas.mimiclaw.v1` 意图来驱动表情、页面、应用和底盘指令。
 - NVS 配置：保存 Wi-Fi、LLM 模式、Base URL、Model、API Key 和安全限制。
 - Wi-Fi 配网：无配置时开启 `AtlasRover-XXXX` SoftAP；有配置时优先连接路由器，失败后回落 APSTA。
@@ -140,9 +140,11 @@ DualEye LCD1 Pin2/Pin6 GND  <-> 底盘板 GND
 AR1,STOP
 AR1,MOVE,F,40,500
 AR1,MOVE,B,35,400
-AR1,TURN,L,30
-AR1,TURN,R,30
+AR1,TURN,L,30,350
+AR1,TURN,R,30,350
 ```
+
+`MOVE` 和 `TURN` 都使用方向、速度百分比和持续时间。Mk.1 先按开环时间/PWM 标定，不承诺精确距离或精确角度。
 
 建议底盘板 ACK：
 

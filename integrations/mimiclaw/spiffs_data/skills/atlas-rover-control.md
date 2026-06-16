@@ -18,6 +18,8 @@ Use this skill when the user asks Atlas Rover to:
 - Never output raw UART.
 - Always use Atlas Rover tools.
 - `atlas_rover_stop` is always allowed and has highest priority.
+- Current Mk.1 chassis is ordinary N20 motors + DRV8833 + front caster, using open-loop timed differential drive.
+- Do not request exact distance, exact angle, odometry, encoder control, or IMU correction.
 - For movement, use short low-speed commands:
   - speed: 20-40 by default
   - duration_ms: 300-800 by default

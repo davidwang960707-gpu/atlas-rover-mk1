@@ -109,14 +109,23 @@ esp_err_t atlas_rover_uart_send_move(atlas_motion_t motion, uint8_t speed, uint1
     return atlas_rover_uart_send_line(line);
 }
 
-esp_err_t atlas_rover_uart_send_turn(atlas_motion_t motion, uint8_t speed)
+esp_err_t atlas_rover_uart_send_turn(atlas_motion_t motion, uint8_t speed, uint16_t duration_ms)
 {
     if (motion != ATLAS_MOTION_LEFT && motion != ATLAS_MOTION_RIGHT) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    char line[32];
-    snprintf(line, sizeof(line), "AR1,TURN,%s,%u", motion_token(motion), clamp_speed(speed));
+    if (duration_ms > 5000) {
+        duration_ms = 5000;
+    }
+
+    char line[40];
+    snprintf(line,
+             sizeof(line),
+             "AR1,TURN,%s,%u,%u",
+             motion_token(motion),
+             clamp_speed(speed),
+             duration_ms);
     return atlas_rover_uart_send_line(line);
 }
 

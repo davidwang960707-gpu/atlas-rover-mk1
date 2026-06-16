@@ -10,7 +10,7 @@
 所有地线必须共地：
 
 - ESP32 GND
-- PCA9685 GND
+- 底盘控制板 GND
 - DRV8833 GND
 - 升压模块 GND
 - 电池负极
@@ -23,12 +23,11 @@
 | --- | --- | --- | --- | --- |
 | 电池主支路 | 18650 电池盒 BAT+ / BAT- | ESP32 电池接口 BAT+ / BAT- | MX1.25 2P 或原厂电池线 | 先用万用表确认极性。若做 Y 线，主控支路仍接电池口，不要把 5 V 升压输出接进电池口。 |
 | 电机电源支路 | 18650 BAT+ | 电机支路开关 -> 5 V 升压 IN+ | 22-24 AWG 红线 | 这一路给电机和车灯供电；建议只在电机支路加独立开关。 |
-| 电源共地 | 电池 BAT- / 升压 OUT- / ESP32 GND | PCA9685 GND / DRV8833 GND / WS2812B GND | 22-24 AWG 黑线或小分线板 | 所有 GND 必须共地，否则电机和灯的控制信号会不稳定。 |
+| 电源共地 | 电池 BAT- / 升压 OUT- / ESP32 GND | 底盘控制板 GND / DRV8833 GND / WS2812B GND | 22-24 AWG 黑线或小分线板 | 所有 GND 必须共地，否则 UART、电机和灯的控制信号会不稳定。 |
 | 升压到电机驱动 | 5 V 升压 OUT+ / OUT- | DRV8833 VM / GND | 22-24 AWG 红黑线 | VM 只接电机电源。不要从 ESP32 3.3 V 给电机供电。 |
-| ESP32 到 PCA9685 | ESP32 SDA / SCL / 3V3 / GND | PCA9685 SDA / SCL / VCC / GND | SH1.0/FPC 转接后用 26-28 AWG | PCA9685 逻辑电源用 3.3 V。常见舵机板上的 V+ 端子本项目可不接。 |
-| PCA9685 到 DRV8833 | CH0 / CH1 / CH2 / CH3 | AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | PCA9685 只发控制信号，真正给电机电流的是 DRV8833。若模块有 SLEEP/STBY，引到 3V3 使能。 |
+| DualEye 到底盘板 | LCD1 Pin10 UART_TXD / Pin9 UART_RXD / GND | 底盘控制板 RX / TX / GND | SH1.0 14P 转接线 + 26-28 AWG 信号线 | Pin10 接底盘板 RX，Pin9 接底盘板 TX，GND 必须共地；若底盘板 TX 是 5 V，先分压或电平转换。 |
+| 底盘板到 DRV8833 | 底盘板 4 路 PWM/DIR GPIO | AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | 底盘板只发控制信号，真正给电机电流的是 DRV8833。若模块有 SLEEP/STBY，引到 3V3 或底盘板使能脚。 |
 | DRV8833 到电机 | AOUT1/AOUT2；BOUT1/BOUT2 | 左 N20；右 N20 | 电机自带线或 24-26 AWG | 如果前进时某个轮子反转，交换该电机两根线即可。 |
-| 双板 UART 控制（可选） | LCD1 SH1.0 14PIN：Pin10 UART_TXD / Pin9 UART_RXD / Pin2 或 Pin6 GND | 底盘控制板 RX / TX / GND | 26-28 AWG 信号线 + SH1.0 14P 转接线 | Pin10 接底盘板 RX，Pin9 接底盘板 TX，GND 必须共地。ESP32-S3 UART 是 3.3 V TTL，不要接 RS232；若底盘板 TX 是 5 V，先做分压或电平转换再进 DualEye RX。 |
 | 底盘板逻辑供电（可选） | 5 V 升压 OUT+ / GND | 底盘控制板 5V/VIN / GND | 24-26 AWG 红黑线 | 仅在底盘板需要外部逻辑电源且确认可接 5 V 时使用。电机供电仍走底盘板电机电源端/DRV8833 VM，不要从 DualEye 板取电。 |
 | WS2812B 数据转换 | ESP32 空闲数据 GPIO | AHCT/HCT 电平转换器 A 输入 | 26-28 AWG 信号线 | 电平转换器 VCC 接 5 V，GND 共地；若使用 74AHCT1G125，OE 按模块说明使能。短线直连只适合临时测试。 |
 | WS2812B 车灯 | 5 V 升压 OUT+ / GND；电平转换器 Y 输出 | WS2812B 5V / GND / DIN | 电源 24-26 AWG；数据 26-28 AWG | Y 输出经 330 欧电阻到 DIN，灯板 5 V/GND 旁并 470-1000 uF 电容。亮度限制在 20-40%。 |
@@ -40,30 +39,21 @@
 | --- | --- | --- |
 | 22-24 AWG 红线 | 约 0.8-1.0 m | 电池正极、电机支路、升压到 DRV8833/WS2812B |
 | 22-24 AWG 黑线 | 约 0.8-1.0 m | 共地母线、电机支路负极 |
-| 26-28 AWG 多色信号线 | 约 1.5-2.0 m | I2C、PCA9685 到 DRV8833、WS2812B 数据和电平转换 |
+| 26-28 AWG 多色信号线 | 约 1.5-2.0 m | UART、底盘板到 DRV8833、WS2812B 数据和电平转换 |
 | 细软双绞线 | 约 0.3 m | 小喇叭线，尽量远离电机线 |
 | 热缩管 | 1-5 mm 混装 | 每个焊点、线束穿过黄铜处、灯条背面都做绝缘 |
 
 ## 推荐电机控制接线
 
-解决电机的新增板子是 DRV8833。ESP32 不能直接接 N20 电机，只能输出控制信号；DRV8833 才是给电机供电和换向的功率驱动板。
-PCA9685 是推荐的控制信号扩展板，不是必须的功率驱动板。
+解决电机的新增板子是 DRV8833。ESP32/DualEye 不能直接接 N20 电机，只能输出控制信号；DRV8833 才是给电机供电和换向的功率驱动板。
+Mk.1 当前推荐“双板 UART”路径：DualEye 负责语音和 HMI，底盘控制板负责把 `AR1,` 串口命令转换成 4 路 PWM/DIR 信号。
 
-ESP32 通过 I2C 总线连接 PCA9685：
+底盘板连接 DRV8833：
 
-- ESP32 SDA -> PCA9685 SDA
-- ESP32 SCL -> PCA9685 SCL
-- ESP32 3V3 -> PCA9685 VCC
-- ESP32 GND -> PCA9685 GND
-
-常见 PCA9685 舵机模块会有 V+ 端子。Mk.1 不接舵机，不需要给 V+ 供电；本项目只用 VCC、GND、SDA、SCL 和 CH0-CH3 信号。
-
-PCA9685 连接 DRV8833：
-
-- PCA9685 CH0 -> DRV8833 AIN1
-- PCA9685 CH1 -> DRV8833 AIN2
-- PCA9685 CH2 -> DRV8833 BIN1
-- PCA9685 CH3 -> DRV8833 BIN2
+- 底盘板 LEFT_IN1/PWM -> DRV8833 AIN1
+- 底盘板 LEFT_IN2/DIR -> DRV8833 AIN2
+- 底盘板 RIGHT_IN1/PWM -> DRV8833 BIN1
+- 底盘板 RIGHT_IN2/DIR -> DRV8833 BIN2
 
 DRV8833 连接电机：
 
@@ -74,9 +64,11 @@ DRV8833 连接电机：
 
 若 DRV8833 模块带 SLEEP、nSLEEP、STBY 或 EN 引脚，把它接到 3V3 或按模块说明拉高，否则电机可能不转。
 
-## 可选双板 UART 语音控制
+如果底盘板 GPIO 不够，PCA9685 可以作为可选 PWM 扩展板接在底盘板侧；它不是电机驱动板，也不是 DualEye 当前固件的主路径。
 
-如果后续使用成品轮式/履带底盘，或增加第二块底盘控制板，DualEye 建议只做语音入口和 HMI，不直接执行电机闭环。
+## DualEye UART 语音控制
+
+Mk.1 先使用普通 N20 + DRV8833 + 前万向轮，DualEye 建议只做语音入口和 HMI，不直接执行电机控制。
 Waveshare 官方接口表确认 DualEye 外露 UART 位于 LCD1-Board SH1.0 14PIN 接口。施工时先用 SH1.0 14P 转杜邦/排针转接线引出，再接到底盘板。
 
 | DualEye 接口针位 | 信号 | 接法/用途 |
@@ -96,7 +88,7 @@ Waveshare 官方接口表确认 DualEye 外露 UART 位于 LCD1-Board SH1.0 14PI
 电机供电仍接到底盘板电机电源端、DRV8833 VM 或成品底盘的电机电源端，不要从 DualEye 板取电，也不要让电机电流经过 DualEye。
 若底盘板 TX 是 5 V TTL，进入 DualEye RX 前要加分压或电平转换。
 
-推荐串口命令使用一行一条文本协议，并统一以 `AR1,` 开头，例如 `AR1,MOVE,F,60,800`、`AR1,TURN,L,45`、`AR1,STOP`。
+推荐串口命令使用一行一条文本协议，并统一以 `AR1,` 开头，例如 `AR1,MOVE,F,60,800`、`AR1,TURN,L,30,350`、`AR1,STOP`。
 底盘板必须丢弃所有不带 `AR1,` 前缀的串口内容，避免 DualEye 启动日志、调试打印或乱码误触发电机；同时做 300-500 ms 指令超时停车。
 
 ## 推荐外接车灯/RGB

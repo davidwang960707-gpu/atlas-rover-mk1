@@ -72,7 +72,7 @@ DualEye LCD1 Pin2/Pin6 GND  <-> 底盘板 GND
 
 ```text
 AR1,MOVE,F,40,500
-AR1,TURN,L,35
+AR1,TURN,L,35,350
 AR1,STOP
 ```
 
