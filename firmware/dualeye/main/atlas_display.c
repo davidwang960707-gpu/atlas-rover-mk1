@@ -38,6 +38,14 @@ const char *atlas_page_name(atlas_page_t page)
         return "voice";
     case ATLAS_PAGE_SETTINGS:
         return "settings";
+    case ATLAS_PAGE_ALARM:
+        return "alarm";
+    case ATLAS_PAGE_PHOTO:
+        return "photo";
+    case ATLAS_PAGE_MUSIC:
+        return "music";
+    case ATLAS_PAGE_STORY:
+        return "story";
     default:
         return "unknown";
     }

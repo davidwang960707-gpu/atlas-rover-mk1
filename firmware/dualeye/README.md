@@ -1,8 +1,8 @@
-# Atlas Rover Mk.1 DualEye 固件 V0.2
+# Atlas Rover Mk.1 DualEye 固件 V0.3
 
 这个目录是 `ESP32-S3-DualEye-Touch-LCD-1.28` 的 ESP-IDF 固件工程，目标芯片为 `esp32s3`。
 
-V0.2 已经从单文件脚手架升级为可配网、可管理的模块化程序：
+V0.3 已经从单文件脚手架升级为可配网、可管理、可日常控制的模块化程序：
 
 - 双目表情参数模型：每块实体屏幕对应一只眼睛。
 - 表情状态机：待机、开心、聆听、思考、说话、移动、好奇、困倦、惊讶、眨眼、拒绝、充电、错误。
@@ -14,6 +14,7 @@ V0.2 已经从单文件脚手架升级为可配网、可管理的模块化程序
 - Wi-Fi 配网：无配置时开启 `AtlasRover-XXXX` SoftAP；有配置时优先连接路由器，失败后回落 APSTA。
 - Web 管理页：手机/电脑访问设备 IP，可查看状态、保存配置、STOP、短时移动和测试文本意图。
 - 配对码：启动时生成 6 位配对码；STOP 不需要配对码，移动和配置修改需要配对码。
+- Web 入口拆分：`/app` 是日常应用页，`/admin` 是管理后台，根路径 `/` 默认进入应用页。
 - MimiClaw 适配层：当前先做本地关键词意图和 LLM 配置状态，真实云端/宿主调用后续接入。
 - 显示适配占位：当前用日志输出每只眼的参数，真机双屏绘制后续接入 `atlas_display.c`。
 - Flash 配置：已按 DualEye 官方规格设置为 16MB，并使用 4MB 应用分区；PSRAM 等真机显示示例接入时再启用。
@@ -42,8 +43,9 @@ main/
 1. 烧录后打开串口监视器，查看启动日志中的 6 位配对码。
 2. 如果没有保存过 Wi-Fi，DualEye 会开启 `AtlasRover-XXXX` 热点。
 3. 手机或电脑连接该热点，浏览器打开 `http://192.168.4.1`。
-4. 在管理页保存 Wi-Fi、LLM/API 和安全设置。
-5. 保存 Wi-Fi 后建议重启，设备会优先连接路由器；如果连接失败，会回落到 SoftAP/APSTA。
+4. 默认入口 `/` 是用户应用页；后台设置入口是 `/admin`。
+5. 在管理页保存 Wi-Fi、LLM/API 和安全设置。
+6. 保存 Wi-Fi 后建议重启，设备会优先连接路由器；如果连接失败，会回落到 SoftAP/APSTA。
 
 当前没有硬编码 `atlas-rover.local`，请优先使用页面或串口日志显示的 IP 地址。后续如果确认 ESP-IDF 工程可稳定接入 mDNS，再补本地域名。
 
@@ -51,10 +53,14 @@ main/
 
 | 接口 | 方法 | 配对码 | 说明 |
 |---|---|---|---|
-| `/` | GET | 否 | 管理页面 |
+| `/` / `/app` | GET | 否 | 用户应用页：表情、显示、移动、MimiClaw 应用入口 |
+| `/admin` | GET | 否 | 管理后台：配网、API、安全和调试 |
 | `/api/status` | GET | 否 | 查看 Wi-Fi、UI、LLM、安全状态，不返回 API Key 明文 |
 | `/api/rover/stop` | POST | 否 | 立即发送 `AR1,STOP` |
 | `/api/rover/move` | POST | 是 | 短时移动，受最大速度/最大时长限制 |
+| `/api/app/expression` | POST | 是 | 切换双眼表情 |
+| `/api/app/page` | POST | 是 | 切换显示页：双眼、时钟、闹钟、照片、状态等 |
+| `/api/app/action` | POST | 是 | 触发应用动作：音乐、故事、陪聊、闹钟；当前为 MimiClaw 占位入口 |
 | `/api/config/wifi` | POST | 是 | 保存 Wi-Fi |
 | `/api/config/llm` | POST | 是 | 保存 LLM 模式、Base URL、Model、API Key |
 | `/api/config/safety` | POST | 是 | 保存是否允许移动、最大速度、最大时长 |
@@ -75,7 +81,7 @@ main/
 
 | 模式 | 允许的运动来源 | 说明 |
 |---|---|---|
-| `manual` | Web 手动控制 | 用户在管理页点前进/后退/转向；DualEye 裁剪速度和时长后通过 UART 下发 |
+| `manual` | Web 手动控制 | 用户在应用页点前进/后退/转向；DualEye 裁剪速度和时长后通过 UART 下发 |
 | `ai` | 语音 / MimiClaw / LLM | AI 产生结构化运动意图；DualEye 做 Safety Guard 后通过 UART 下发 |
 
 无论哪种模式，底盘板看到的仍是 `AR1,` UART 指令；底盘板不直接访问 Web 管理页。

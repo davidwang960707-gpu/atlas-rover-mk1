@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local preview server for the DualEye embedded admin page.
+"""Local preview server for the DualEye embedded Web UI.
 
 The ESP32 firmware keeps the page as C string literals. This helper extracts
 that HTML and serves a tiny mock API, so the page can be previewed on a Mac
@@ -31,12 +31,14 @@ MOCK_FETCH_SCRIPT = r"""
 (() => {
   const previewPin = "123456";
   const state = {
-    ui: { page: "home", expression: "idle", motion: "stop", moving: false, last_ack: 0 },
+    ui: { page: "eyes", expression: "idle", motion: "stop", moving: false, last_ack: 0 },
     wifi: { mode: "ap", sta_connected: false, sta_ip: "", ap_started: true, ap_ip: "192.168.4.1", ap_ssid: "AtlasRover-PREVIEW" },
     llm: { mode: "off", label: "关闭", provider: "openai_compatible", base_url: "", model: "", configured: false, api_key_set: false },
     safety: { motion_enabled: true, control_mode: "manual", max_speed_percent: 40, max_duration_ms: 700 }
   };
   const labels = { off: "关闭", host: "电脑宿主 MiniClaw", cloud: "云端大模型", embedded: "端侧 MimiClaw" };
+  const expressions = new Set(["idle", "happy", "listen", "thinking", "speaking", "moving", "curious", "sleepy", "surprised", "wink", "angry", "charging", "error"]);
+  const pages = new Set(["eyes", "clock", "status", "voice", "settings", "alarm", "photo", "music", "story"]);
   const jsonResponse = (payload, status = 200) => new Response(JSON.stringify(payload), {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8" }
@@ -77,6 +79,37 @@ MOCK_FETCH_SCRIPT = r"""
       if (!form.get("ssid")) return jsonResponse({ ok: false, error: "ssid required" }, 400);
       Object.assign(state.wifi, { mode: "sta", sta_connected: true, sta_ip: "192.168.1.88" });
       return jsonResponse({ ok: true, saved: "wifi", note: `preview saved ssid ${form.get("ssid")}` });
+    }
+    if (path === "/api/app/expression") {
+      const denied = requirePin(form);
+      if (denied) return jsonResponse(denied.payload, denied.status);
+      const expression = form.get("expression") || "idle";
+      if (!expressions.has(expression)) return jsonResponse({ ok: false, error: "bad expression" }, 400);
+      Object.assign(state.ui, { page: "eyes", expression });
+      return jsonResponse({ ok: true, app: "expression" });
+    }
+    if (path === "/api/app/page") {
+      const denied = requirePin(form);
+      if (denied) return jsonResponse(denied.payload, denied.status);
+      const page = form.get("page") || "eyes";
+      if (!pages.has(page)) return jsonResponse({ ok: false, error: "bad page" }, 400);
+      state.ui.page = page;
+      state.ui.expression = page === "voice" ? "listen" : ["alarm", "photo"].includes(page) ? "curious" : "idle";
+      return jsonResponse({ ok: true, app: "page" });
+    }
+    if (path === "/api/app/action") {
+      const denied = requirePin(form);
+      if (denied) return jsonResponse(denied.payload, denied.status);
+      const action = form.get("action") || "";
+      const map = {
+        music: ["music", "speaking"],
+        story: ["story", "speaking"],
+        chat: ["voice", "listen"],
+        alarm: ["alarm", "curious"]
+      };
+      if (!map[action]) return jsonResponse({ ok: false, error: "bad action" }, 400);
+      Object.assign(state.ui, { page: map[action][0], expression: map[action][1], moving: false, motion: "stop" });
+      return jsonResponse({ ok: true, app: "action", note: "mimiclaw placeholder" });
     }
     if (path === "/api/config/llm") {
       const denied = requirePin(form);
@@ -167,7 +200,7 @@ def make_standalone_html() -> str:
 
 STATE = {
     "ui": {
-        "page": "home",
+        "page": "eyes",
         "expression": "idle",
         "motion": "stop",
         "moving": False,
@@ -197,6 +230,24 @@ STATE = {
         "max_duration_ms": 700,
     },
 }
+
+EXPRESSIONS = {
+    "idle",
+    "happy",
+    "listen",
+    "thinking",
+    "speaking",
+    "moving",
+    "curious",
+    "sleepy",
+    "surprised",
+    "wink",
+    "angry",
+    "charging",
+    "error",
+}
+
+PAGES = {"eyes", "clock", "status", "voice", "settings", "alarm", "photo", "music", "story"}
 
 
 def llm_label(mode: str) -> str:
@@ -247,7 +298,7 @@ class PreviewHandler(BaseHTTPRequestHandler):
         return False
 
     def do_GET(self) -> None:
-        if self.path == "/" or self.path.startswith("/?"):
+        if self.path == "/" or self.path == "/app" or self.path.startswith("/?"):
             self.send_text(self.html, "text/html; charset=utf-8")
             return
         if self.path == "/api/status":
@@ -292,6 +343,47 @@ class PreviewHandler(BaseHTTPRequestHandler):
                 return
             STATE["wifi"].update({"mode": "sta", "sta_connected": True, "sta_ip": "192.168.1.88"})
             self.send_json({"ok": True, "saved": "wifi", "note": f"preview saved ssid {ssid}"})
+            return
+
+        if self.path == "/api/app/expression":
+            if not self.require_pin(form):
+                return
+            expression = form.get("expression", "idle")
+            if expression not in EXPRESSIONS:
+                self.send_json({"ok": False, "error": "bad expression"}, HTTPStatus.BAD_REQUEST)
+                return
+            STATE["ui"].update({"page": "eyes", "expression": expression})
+            self.send_json({"ok": True, "app": "expression"})
+            return
+
+        if self.path == "/api/app/page":
+            if not self.require_pin(form):
+                return
+            page = form.get("page", "eyes")
+            if page not in PAGES:
+                self.send_json({"ok": False, "error": "bad page"}, HTTPStatus.BAD_REQUEST)
+                return
+            expression = "listen" if page == "voice" else "curious" if page in {"alarm", "photo"} else "idle"
+            STATE["ui"].update({"page": page, "expression": expression})
+            self.send_json({"ok": True, "app": "page"})
+            return
+
+        if self.path == "/api/app/action":
+            if not self.require_pin(form):
+                return
+            action = form.get("action", "")
+            mapping = {
+                "music": ("music", "speaking"),
+                "story": ("story", "speaking"),
+                "chat": ("voice", "listen"),
+                "alarm": ("alarm", "curious"),
+            }
+            if action not in mapping:
+                self.send_json({"ok": False, "error": "bad action"}, HTTPStatus.BAD_REQUEST)
+                return
+            page, expression = mapping[action]
+            STATE["ui"].update({"page": page, "expression": expression, "moving": False, "motion": "stop"})
+            self.send_json({"ok": True, "app": "action", "note": "mimiclaw placeholder"})
             return
 
         if self.path == "/api/config/llm":
@@ -387,7 +479,7 @@ def main() -> int:
 
     PreviewHandler.html = extract_embedded_html()
     with socketserver.TCPServer((args.host, args.port), PreviewHandler) as server:
-        print(f"Atlas Rover 管理页预览: http://{args.host}:{args.port}")
+        print(f"Atlas Rover Web 预览: http://{args.host}:{args.port}")
         print(f"预览配对码: {PREVIEW_PIN}")
         server.serve_forever()
     return 0

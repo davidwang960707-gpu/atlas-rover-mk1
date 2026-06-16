@@ -12,6 +12,10 @@ typedef enum {
     ATLAS_PAGE_STATUS,
     ATLAS_PAGE_VOICE,
     ATLAS_PAGE_SETTINGS,
+    ATLAS_PAGE_ALARM,
+    ATLAS_PAGE_PHOTO,
+    ATLAS_PAGE_MUSIC,
+    ATLAS_PAGE_STORY,
 } atlas_page_t;
 
 esp_err_t atlas_display_init(void);

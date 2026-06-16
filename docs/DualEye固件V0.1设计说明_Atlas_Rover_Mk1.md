@@ -16,6 +16,7 @@ V0.2 在 V0.1 上继续补齐“烧录后怎么配置和调试”的骨架：
 - NVS 保存 Wi-Fi、LLM/API 和安全设置。
 - SoftAP/STA/APSTA 网络启动。
 - 手机/电脑 Web 管理页。
+- 用户应用页 `/app` 和管理后台 `/admin` 分离，根路径 `/` 默认进入应用页。
 - 6 位配对码。
 - STOP、短时移动、文本意图测试 API。
 - MimiClaw/MiniClaw 适配层占位。
