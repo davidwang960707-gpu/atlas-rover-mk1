@@ -130,7 +130,10 @@ def main() -> None:
         "不能直接写 UART",
         "64T 钢齿轮",
         "3 mm D 孔轮毂",
-        "左右两个 N20 独立半桥",
+        "四个 N20",
+        "两块 DRV8833",
+        "前后同侧",
+        "左右两侧差速",
         "不使用贯穿通轴",
     ]
     for phrase in required_phrases:

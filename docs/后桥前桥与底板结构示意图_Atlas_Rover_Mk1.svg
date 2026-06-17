@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1500" height="950" viewBox="0 0 1500 950">
   <rect width="1500" height="950" fill="#f7f5ef"/>
-  <text x="60" y="62" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#242424">Atlas Rover Mk.1 后桥 / 前桥 / 底板结构示意</text>
-  <text x="62" y="96" font-family="Arial, sans-serif" font-size="17" fill="#605a50">两轮差速：左右 N20 独立半桥；前方万向轮支撑；64T 钢齿轮需通过 3mm D 轮毂或夹片连接。</text>
+  <text x="60" y="62" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#242424">Atlas Rover Mk.1 四轮底板与 64T 齿轮轮示意</text>
+  <text x="62" y="96" font-family="Arial, sans-serif" font-size="17" fill="#605a50">四个 N20 物理电机；两块 DRV8833；控制上仍按左右两侧差速，前后同侧输入并联。</text>
 
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
@@ -10,81 +10,92 @@
   </defs>
 
   <g transform="translate(90 150)">
-    <text x="280" y="-24" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2b2b2b">底板顶视图 V1.1</text>
+    <text x="280" y="-24" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2b2b2b">底板顶视图 V1.2</text>
     <rect x="0" y="0" width="560" height="720" rx="16" fill="#fffdf8" stroke="#333" stroke-width="4"/>
     <rect x="-24" y="-24" width="608" height="768" rx="26" fill="none" stroke="#b87333" stroke-width="5"/>
-    <text x="280" y="34" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#7a4b22">外黄铜框约 120 x 90 mm，底板约 110 x 72 mm</text>
+    <text x="280" y="34" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#7a4b22">外黄铜框约 120 x 90 mm；底板 110 x 72 mm，可放宽到 110 x 78-80 mm</text>
 
-    <line x1="0" y1="610" x2="560" y2="610" stroke="#d14b3a" stroke-width="3" stroke-dasharray="10 8"/>
-    <text x="280" y="596" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#b33429">后轮轴线：距底板后边约 20 mm</text>
+    <line x1="0" y1="120" x2="560" y2="120" stroke="#d14b3a" stroke-width="3" stroke-dasharray="10 8"/>
+    <line x1="0" y1="600" x2="560" y2="600" stroke="#d14b3a" stroke-width="3" stroke-dasharray="10 8"/>
+    <text x="280" y="104" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#b33429">前轮轴线：距底板前边约 20 mm</text>
+    <text x="280" y="586" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#b33429">后轮轴线：距底板后边约 20 mm</text>
 
-    <rect x="112" y="546" width="132" height="56" rx="8" fill="#273238" stroke="#57866b" stroke-width="3"/>
-    <rect x="316" y="546" width="132" height="56" rx="8" fill="#273238" stroke="#57866b" stroke-width="3"/>
-    <text x="178" y="580" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#fff">左 N20</text>
-    <text x="382" y="580" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#fff">右 N20</text>
+    <rect x="112" y="64" width="132" height="56" rx="8" fill="#273238" stroke="#57866b" stroke-width="3"/>
+    <rect x="316" y="64" width="132" height="56" rx="8" fill="#273238" stroke="#57866b" stroke-width="3"/>
+    <rect x="112" y="600" width="132" height="56" rx="8" fill="#273238" stroke="#57866b" stroke-width="3"/>
+    <rect x="316" y="600" width="132" height="56" rx="8" fill="#273238" stroke="#57866b" stroke-width="3"/>
+    <text x="178" y="98" font-family="Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">左前 N20</text>
+    <text x="382" y="98" font-family="Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">右前 N20</text>
+    <text x="178" y="634" font-family="Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">左后 N20</text>
+    <text x="382" y="634" font-family="Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">右后 N20</text>
 
-    <circle cx="72" cy="610" r="50" fill="#222" stroke="#777" stroke-width="4"/>
-    <circle cx="488" cy="610" r="50" fill="#222" stroke="#777" stroke-width="4"/>
-    <circle cx="72" cy="610" r="31" fill="#5b5f66" stroke="#d9d9d9" stroke-width="3"/>
-    <circle cx="488" cy="610" r="31" fill="#5b5f66" stroke="#d9d9d9" stroke-width="3"/>
-    <text x="72" y="616" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">64T</text>
-    <text x="488" y="616" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">64T</text>
+    <g fill="#222" stroke="#777" stroke-width="4">
+      <circle cx="72" cy="120" r="50"/>
+      <circle cx="488" cy="120" r="50"/>
+      <circle cx="72" cy="600" r="50"/>
+      <circle cx="488" cy="600" r="50"/>
+    </g>
+    <g fill="#5b5f66" stroke="#d9d9d9" stroke-width="3">
+      <circle cx="72" cy="120" r="31"/>
+      <circle cx="488" cy="120" r="31"/>
+      <circle cx="72" cy="600" r="31"/>
+      <circle cx="488" cy="600" r="31"/>
+    </g>
+    <g font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">
+      <text x="72" y="126">64T</text>
+      <text x="488" y="126">64T</text>
+      <text x="72" y="606">64T</text>
+      <text x="488" y="606">64T</text>
+    </g>
 
-    <rect x="206" y="330" width="148" height="178" rx="12" fill="#dfe7ee" stroke="#7a8794" stroke-width="3"/>
-    <text x="280" y="420" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#2e3a44">18650</text>
-    <text x="280" y="446" font-family="Arial, sans-serif" font-size="15" text-anchor="middle" fill="#2e3a44">纵向电池盒</text>
+    <rect x="205" y="326" width="150" height="176" rx="12" fill="#dfe7ee" stroke="#7a8794" stroke-width="3"/>
+    <text x="280" y="414" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#2e3a44">18650</text>
+    <text x="280" y="440" font-family="Arial, sans-serif" font-size="15" text-anchor="middle" fill="#2e3a44">纵向电池盒</text>
 
-    <rect x="80" y="225" width="150" height="74" rx="10" fill="#fff0dc" stroke="#b87333" stroke-width="3"/>
-    <text x="155" y="258" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#6e421b">XIAO / DRV8833</text>
-    <text x="155" y="280" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#6e421b">按实物开孔</text>
-    <rect x="330" y="225" width="150" height="74" rx="10" fill="#fff0dc" stroke="#b87333" stroke-width="3"/>
-    <text x="405" y="258" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#6e421b">升压 / 开关</text>
-    <text x="405" y="280" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#6e421b">远离轮胎</text>
+    <rect x="72" y="226" width="142" height="70" rx="10" fill="#fff0dc" stroke="#b87333" stroke-width="3"/>
+    <text x="143" y="256" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#6e421b">XIAO</text>
+    <text x="143" y="278" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#6e421b">底盘控制板</text>
+    <rect x="232" y="226" width="112" height="70" rx="10" fill="#fff0dc" stroke="#b87333" stroke-width="3"/>
+    <text x="288" y="256" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" fill="#6e421b">前 DRV8833</text>
+    <text x="288" y="278" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#6e421b">左前/右前</text>
+    <rect x="362" y="226" width="112" height="70" rx="10" fill="#fff0dc" stroke="#b87333" stroke-width="3"/>
+    <text x="418" y="256" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" fill="#6e421b">后 DRV8833</text>
+    <text x="418" y="278" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#6e421b">左后/右后</text>
+    <rect x="84" y="512" width="392" height="52" rx="10" fill="#eef7ff" stroke="#4e83a9" stroke-width="3"/>
+    <text x="280" y="545" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" fill="#315a76">5 V 大电流升压 + 电机支路开关；DualEye 不给电机供电</text>
 
-    <circle cx="280" cy="112" r="34" fill="#eef7ff" stroke="#4e83a9" stroke-width="4"/>
-    <circle cx="280" cy="112" r="15" fill="#d2e6f5" stroke="#4e83a9" stroke-width="2"/>
-    <text x="280" y="166" font-family="Arial, sans-serif" font-size="17" text-anchor="middle" fill="#315a76">前万向轮</text>
     <line x1="280" y1="0" x2="280" y2="720" stroke="#9a9a9a" stroke-width="2" stroke-dasharray="8 8"/>
     <text x="298" y="705" font-family="Arial, sans-serif" font-size="14" fill="#606060">中心线</text>
-
-    <circle cx="44" cy="44" r="9" fill="#fff" stroke="#333" stroke-width="3"/>
-    <circle cx="516" cy="44" r="9" fill="#fff" stroke="#333" stroke-width="3"/>
-    <circle cx="44" cy="676" r="9" fill="#fff" stroke="#333" stroke-width="3"/>
-    <circle cx="516" cy="676" r="9" fill="#fff" stroke="#333" stroke-width="3"/>
-    <text x="82" y="48" font-family="Arial, sans-serif" font-size="14" fill="#333">M2 铜柱孔</text>
   </g>
 
-  <g transform="translate(780 175)">
-    <text x="290" y="-24" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2b2b2b">后桥侧视 / 连接结构</text>
-    <rect x="0" y="360" width="590" height="36" rx="8" fill="#d7d0c2" stroke="#6a6256" stroke-width="3"/>
-    <text x="295" y="388" font-family="Arial, sans-serif" font-size="15" text-anchor="middle" fill="#4a4034">底板 1.5-2.0 mm FR4 / 亚克力</text>
+  <g transform="translate(780 150)">
+    <text x="290" y="-24" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2b2b2b">信号扇出与轮子连接</text>
 
-    <rect x="92" y="240" width="220" height="88" rx="14" fill="#273238" stroke="#57866b" stroke-width="3"/>
-    <text x="202" y="276" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#fff">N20 电机</text>
-    <text x="202" y="303" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#fff">输出轴朝外，电机夹固定</text>
+    <rect x="0" y="0" width="590" height="270" rx="16" fill="#fffdf8" stroke="#333" stroke-width="3"/>
+    <text x="28" y="42" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#2b2b2b">XIAO D2-D5 同时接到前/后 DRV8833</text>
+    <text x="40" y="86" font-family="Arial, sans-serif" font-size="17" fill="#333">D2/GPIO4 -> 前 AIN1 + 后 AIN1：左侧正转</text>
+    <text x="40" y="122" font-family="Arial, sans-serif" font-size="17" fill="#333">D3/GPIO5 -> 前 AIN2 + 后 AIN2：左侧反转</text>
+    <text x="40" y="158" font-family="Arial, sans-serif" font-size="17" fill="#333">D4/GPIO6 -> 前 BIN1 + 后 BIN1：右侧正转</text>
+    <text x="40" y="194" font-family="Arial, sans-serif" font-size="17" fill="#333">D5/GPIO7 -> 前 BIN2 + 后 BIN2：右侧反转</text>
+    <text x="40" y="232" font-family="Arial, sans-serif" font-size="16" fill="#8a3a25">不要用一块 DRV8833 长期并联四个电机。</text>
 
-    <rect x="56" y="328" width="292" height="48" rx="8" fill="#f5eadb" stroke="#b87333" stroke-width="3"/>
-    <text x="202" y="358" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#6e421b">N20 夹板 / 电机座</text>
+    <rect x="0" y="320" width="590" height="260" rx="16" fill="#fff7e8" stroke="#c58b3a" stroke-width="3"/>
+    <text x="28" y="362" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#6b421a">64T 齿轮与 N20 连接</text>
+    <rect x="70" y="430" width="210" height="72" rx="12" fill="#273238" stroke="#57866b" stroke-width="3"/>
+    <text x="175" y="462" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#fff">N20 电机</text>
+    <text x="175" y="488" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#fff">3 mm D 轴朝外</text>
+    <line x1="280" y1="466" x2="380" y2="466" stroke="#333" stroke-width="8"/>
+    <text x="330" y="448" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#333">3mm D 轴</text>
+    <circle cx="462" cy="466" r="58" fill="#30343b" stroke="#888" stroke-width="5"/>
+    <circle cx="462" cy="466" r="35" fill="#555d67" stroke="#d7d7d7" stroke-width="3"/>
+    <text x="462" y="472" font-family="Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="#fff">64T</text>
+    <circle cx="462" cy="466" r="66" fill="none" stroke="#111" stroke-width="7" stroke-dasharray="12 8"/>
+    <text x="28" y="552" font-family="Arial, sans-serif" font-size="16" fill="#4b3b2d">优先 3 mm D 孔齿轮直接压入；外圈套 O 型圈/热缩圈；四轮高度误差尽量 <= 1 mm。</text>
 
-    <line x1="312" y1="284" x2="392" y2="284" stroke="#333" stroke-width="8"/>
-    <text x="352" y="268" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#333">3mm D 轴</text>
-    <rect x="392" y="246" width="58" height="76" rx="8" fill="#6c7b84" stroke="#283238" stroke-width="3"/>
-    <text x="421" y="292" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#fff">轮毂</text>
-    <circle cx="492" cy="284" r="64" fill="#30343b" stroke="#888" stroke-width="5"/>
-    <circle cx="492" cy="284" r="40" fill="#555d67" stroke="#d7d7d7" stroke-width="3"/>
-    <text x="492" y="290" font-family="Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="#fff">64T</text>
-    <circle cx="492" cy="284" r="72" fill="none" stroke="#111" stroke-width="8" stroke-dasharray="12 8"/>
-    <text x="492" y="378" font-family="Arial, sans-serif" font-size="15" text-anchor="middle" fill="#333">外圈 O 型圈 / 热缩胶圈增加摩擦</text>
-
-    <line x1="421" y1="246" x2="421" y2="214" stroke="#333" stroke-width="3" marker-end="url(#arrow)"/>
-    <text x="318" y="208" font-family="Arial, sans-serif" font-size="15" fill="#333">3mm D 孔轮毂或夹紧轮毂</text>
-    <line x1="492" y1="220" x2="492" y2="172" stroke="#333" stroke-width="3" marker-end="url(#arrow)"/>
-    <text x="400" y="160" font-family="Arial, sans-serif" font-size="15" fill="#333">齿轮不可只靠胶水固定</text>
-
-    <rect x="0" y="470" width="590" height="150" rx="14" fill="#fff7e8" stroke="#c58b3a" stroke-width="3"/>
-    <text x="28" y="506" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#6b421a">后桥原则</text>
-    <text x="28" y="540" font-family="Arial, sans-serif" font-size="16" fill="#4b3b2d">1. 左右 N20 独立半桥，不做贯通硬轴。</text>
-    <text x="28" y="570" font-family="Arial, sans-serif" font-size="16" fill="#4b3b2d">2. 输出轴中心落在同一后轮轴线上。</text>
-    <text x="28" y="600" font-family="Arial, sans-serif" font-size="16" fill="#4b3b2d">3. 齿轮离底板和轮拱至少 2 mm，先悬空测试再落地。</text>
+    <rect x="0" y="635" width="590" height="150" rx="14" fill="#eef7ff" stroke="#4e83a9" stroke-width="3"/>
+    <text x="28" y="674" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#315a76">调试顺序</text>
+    <text x="28" y="708" font-family="Arial, sans-serif" font-size="16" fill="#315a76">1. 车轮悬空，先测左前/左后同向，再测右前/右后同向。</text>
+    <text x="28" y="738" font-family="Arial, sans-serif" font-size="16" fill="#315a76">2. 落地只用 20-35% PWM 短时转向，确认驱动板不过热。</text>
+    <text x="28" y="768" font-family="Arial, sans-serif" font-size="16" fill="#315a76">3. 若跑偏，先调四轮同心、轮径、电机高度，再调固件补偿。</text>
   </g>
 </svg>

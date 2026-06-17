@@ -5,13 +5,14 @@
 单节 18650 电池正极分为两条支路。推荐做一条短 Y 线，或者用小分线板分出主控支路和电机支路：
 
 - 主控支路：18650 接 ESP32 主控板电池接口，注意 MX1.25 极性。
-- 电机支路：18650 经电机支路开关进入 5 V 升压模块，升压后接 DRV8833 的 VM，并给 WS2812B 供 5 V。
+- 电机支路：18650 经电机支路开关进入 5 V 大电流升压模块，升压后接前/后两块 DRV8833 的 VM，并给 WS2812B 供 5 V。
 
 所有地线必须共地：
 
 - ESP32 GND
 - 底盘控制板 GND
-- DRV8833 GND
+- 前 DRV8833 GND
+- 后 DRV8833 GND
 - 升压模块 GND
 - 电池负极
 
@@ -24,11 +25,12 @@
 | 电池主支路 | 18650 电池盒 BAT+ / BAT- | ESP32 电池接口 BAT+ / BAT- | MX1.25 2P 或原厂电池线 | 先用万用表确认极性。若做 Y 线，主控支路仍接电池口，不要把 5 V 升压输出接进电池口。 |
 | 电机电源支路 | 18650 BAT+ | 电机支路开关 -> 5 V 升压 IN+ | 22-24 AWG 红线 | 这一路给电机和车灯供电；建议只在电机支路加独立开关。 |
 | 电源共地 | 电池 BAT- / 升压 OUT- / ESP32 GND | 底盘控制板 GND / DRV8833 GND / WS2812B GND | 22-24 AWG 黑线或小分线板 | 所有 GND 必须共地，否则 UART、电机和灯的控制信号会不稳定。 |
-| 升压到电机驱动 | 5 V 升压 OUT+ / OUT- | DRV8833 VM / GND | 22-24 AWG 红黑线 | VM 只接电机电源。不要从 ESP32 3.3 V 给电机供电。 |
+| 升压到电机驱动 | 5 V 升压 OUT+ / OUT- | 前 DRV8833 VM/GND；后 DRV8833 VM/GND | 20-22 AWG 主电源线，分到模块可用 22-24 AWG | VM 只接电机电源。四电机建议 4-5 A 峰值升压；不要从 ESP32 3.3 V 给电机供电。 |
 | DualEye 到 XIAO ESP32C3 | LCD1 Pin10 UART_TXD / Pin9 UART_RXD / Pin2 或 Pin6 GND | XIAO D7(GPIO20/RX) / D6(GPIO21/TX) / GND | SH1.0 14P 转接线 + 26-28 AWG 信号线 | TX/RX 交叉连接；两边都是 3.3 V TTL。DualEye Pin5 3V3 只作参考，不给底盘板供电。 |
 | XIAO ESP32C3 逻辑供电 | 5 V 升压 OUT+ / GND | XIAO 5V / GND | 24-26 AWG 红黑线 | 从电机/底盘 5 V 支路取电，不从 DualEye 取电。若电机噪声导致重启，给 XIAO 单独加稳压或滤波。 |
-| XIAO 到 DRV8833 | XIAO D2/D3/D4/D5 | AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | D2=GPIO4 左正转，D3=GPIO5 左反转，D4=GPIO6 右正转，D5=GPIO7 右反转。 |
-| DRV8833 到电机 | AOUT1/AOUT2；BOUT1/BOUT2 | 左 N20；右 N20 | 电机自带线或 24-26 AWG | 如果前进时某个轮子反转，交换该电机两根线即可。 |
+| XIAO 到两块 DRV8833 | XIAO D2/D3/D4/D5 | 前/后 DRV8833 的 AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | D2=GPIO4 左侧正转，D3=GPIO5 左侧反转，D4=GPIO6 右侧正转，D5=GPIO7 右侧反转；同一根信号线扇出到两块驱动板。 |
+| 前 DRV8833 到电机 | AOUT1/AOUT2；BOUT1/BOUT2 | 左前 N20；右前 N20 | 电机自带线或 24-26 AWG | 如果前进时某个轮子反转，交换该电机两根线即可。 |
+| 后 DRV8833 到电机 | AOUT1/AOUT2；BOUT1/BOUT2 | 左后 N20；右后 N20 | 电机自带线或 24-26 AWG | 左前/左后应同向，右前/右后应同向。 |
 | WS2812B 数据转换 | ESP32 空闲数据 GPIO | AHCT/HCT 电平转换器 A 输入 | 26-28 AWG 信号线 | 电平转换器 VCC 接 5 V，GND 共地；若使用 74AHCT1G125，OE 按模块说明使能。短线直连只适合临时测试。 |
 | WS2812B 车灯 | 5 V 升压 OUT+ / GND；电平转换器 Y 输出 | WS2812B 5V / GND / DIN | 电源 24-26 AWG；数据 26-28 AWG | Y 输出经 330 欧电阻到 DIN，灯板 5 V/GND 旁并 470-1000 uF 电容。亮度限制在 20-40%。 |
 | 小喇叭 | ESP32 SPK+ / SPK- | 4 欧 3 W 或 8 欧 1-2 W 小喇叭 | 细软双绞线 | 不要把喇叭任一端接 GND，按主控板喇叭接口两端直接接。 |
@@ -37,8 +39,8 @@
 
 | 线材 | 建议准备 | 用途 |
 | --- | --- | --- |
-| 22-24 AWG 红线 | 约 0.8-1.0 m | 电池正极、电机支路、升压到 DRV8833/WS2812B |
-| 22-24 AWG 黑线 | 约 0.8-1.0 m | 共地母线、电机支路负极 |
+| 20-22 AWG 红线 | 约 0.8-1.0 m | 电池正极、电机支路、升压到两块 DRV8833 主电源母线 |
+| 20-22 AWG 黑线 | 约 0.8-1.0 m | 共地母线、电机支路负极 |
 | 26-28 AWG 多色信号线 | 约 1.5-2.0 m | UART、底盘板到 DRV8833、WS2812B 数据和电平转换 |
 | 细软双绞线 | 约 0.3 m | 小喇叭线，尽量远离电机线 |
 | 热缩管 | 1-5 mm 混装 | 每个焊点、线束穿过黄铜处、灯条背面都做绝缘 |
@@ -48,28 +50,34 @@
 解决电机的新增板子是 DRV8833。ESP32/DualEye 不能直接接 N20 电机，只能输出控制信号；DRV8833 才是给电机供电和换向的功率驱动板。
 Mk.1 当前推荐“双板 UART”路径：DualEye 负责语音和 HMI，XIAO ESP32C3 底盘板负责把 `AR1,` 串口命令转换成 4 路 PWM/DIR 信号。
 
-XIAO ESP32C3 连接 DRV8833：
+四电机方案使用两块 DRV8833。前后两块驱动板的输入脚并联，输出脚分别接前后四个电机。
 
-- XIAO D2 / GPIO4 -> DRV8833 AIN1
-- XIAO D3 / GPIO5 -> DRV8833 AIN2
-- XIAO D4 / GPIO6 -> DRV8833 BIN1
-- XIAO D5 / GPIO7 -> DRV8833 BIN2
-- DRV8833 nSLEEP/STBY/EN -> 3V3 上拉，若模块有该引脚
+XIAO ESP32C3 连接两块 DRV8833：
+
+- XIAO D2 / GPIO4 -> 前 DRV8833 AIN1 + 后 DRV8833 AIN1
+- XIAO D3 / GPIO5 -> 前 DRV8833 AIN2 + 后 DRV8833 AIN2
+- XIAO D4 / GPIO6 -> 前 DRV8833 BIN1 + 后 DRV8833 BIN1
+- XIAO D5 / GPIO7 -> 前 DRV8833 BIN2 + 后 DRV8833 BIN2
+- 两块 DRV8833 nSLEEP/STBY/EN -> 3V3 上拉，若模块有该引脚
 
 DRV8833 连接电机：
 
-- AOUT1/AOUT2 -> 左侧 N20 电机
-- BOUT1/BOUT2 -> 右侧 N20 电机
-- VM -> 升压模块输出的电机 5 V
-- GND -> 共地
+- 前 DRV8833 AOUT1/AOUT2 -> 左前 N20
+- 前 DRV8833 BOUT1/BOUT2 -> 右前 N20
+- 后 DRV8833 AOUT1/AOUT2 -> 左后 N20
+- 后 DRV8833 BOUT1/BOUT2 -> 右后 N20
+- 两块 DRV8833 VM -> 升压模块输出的电机 5 V
+- 两块 DRV8833 GND -> 共地
 
 若 DRV8833 模块带 SLEEP、nSLEEP、STBY 或 EN 引脚，把它接到 3V3 或按模块说明拉高，否则电机可能不转。
+每块 DRV8833 的 VM/GND 附近并 470-1000 uF 电解电容和 0.1 uF 陶瓷电容。
+不要把两个左电机并联到同一个 DRV8833 通道作为正式方案；四电机版用两块驱动板分担电流和热量。
 
 如果底盘板 GPIO 不够，PCA9685 可以作为可选 PWM 扩展板接在底盘板侧；它不是电机驱动板，也不是 DualEye 当前固件的主路径。
 
 ## DualEye UART 语音控制
 
-Mk.1 先使用普通 N20 + DRV8833 + 前万向轮，DualEye 建议只做语音入口和 HMI，不直接执行电机控制。
+Mk.1 先使用普通 N20 + 两块 DRV8833 + 四轮差速，DualEye 建议只做语音入口和 HMI，不直接执行电机控制。
 Waveshare 官方接口表确认 DualEye 外露 UART 位于 LCD1-Board SH1.0 14PIN 接口。施工时先用 SH1.0 14P 转杜邦/排针转接线引出，再接到底盘板。
 
 | DualEye 接口针位 | 信号 | 接法/用途 |

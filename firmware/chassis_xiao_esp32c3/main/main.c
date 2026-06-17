@@ -17,10 +17,10 @@
 #define CHASSIS_UART_RX_GPIO GPIO_NUM_20  // XIAO D7 <- DualEye Pin10 TXD
 #define CHASSIS_UART_BAUD 115200
 
-#define MOTOR_LEFT_IN1_GPIO GPIO_NUM_4   // XIAO D2 -> DRV8833 AIN1
-#define MOTOR_LEFT_IN2_GPIO GPIO_NUM_5   // XIAO D3 -> DRV8833 AIN2
-#define MOTOR_RIGHT_IN1_GPIO GPIO_NUM_6  // XIAO D4 -> DRV8833 BIN1
-#define MOTOR_RIGHT_IN2_GPIO GPIO_NUM_7  // XIAO D5 -> DRV8833 BIN2
+#define MOTOR_LEFT_IN1_GPIO GPIO_NUM_4   // XIAO D2 -> front/rear DRV8833 AIN1
+#define MOTOR_LEFT_IN2_GPIO GPIO_NUM_5   // XIAO D3 -> front/rear DRV8833 AIN2
+#define MOTOR_RIGHT_IN1_GPIO GPIO_NUM_6  // XIAO D4 -> front/rear DRV8833 BIN1
+#define MOTOR_RIGHT_IN2_GPIO GPIO_NUM_7  // XIAO D5 -> front/rear DRV8833 BIN2
 
 #define PWM_FREQ_HZ 20000
 #define PWM_TIMER LEDC_TIMER_0
@@ -406,7 +406,7 @@ static void watchdog_task(void *arg)
 void app_main(void)
 {
     ESP_LOGI(TAG, "Atlas Rover Mk.1 chassis firmware for Seeed XIAO ESP32C3");
-    ESP_LOGI(TAG, "UART1 TX=D6/GPIO21 RX=D7/GPIO20, DRV8833 pins D2-D5");
+    ESP_LOGI(TAG, "UART1 TX=D6/GPIO21 RX=D7/GPIO20, D2-D5 fan out to front/rear DRV8833");
 
     ESP_ERROR_CHECK(init_pwm());
     ESP_ERROR_CHECK(init_uart());
