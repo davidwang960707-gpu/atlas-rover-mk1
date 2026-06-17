@@ -1825,8 +1825,8 @@
       <div class="row">
         <button data-cmd="AR1,MOVE,F,40,500">前进</button>
         <button data-cmd="AR1,MOVE,B,35,400">后退</button>
-        <button data-cmd="AR1,TURN,L,30">左转</button>
-        <button data-cmd="AR1,TURN,R,30">右转</button>
+        <button data-cmd="AR1,TURN,L,30,350">左转</button>
+        <button data-cmd="AR1,TURN,R,30,350">右转</button>
         <button data-cmd="AR1,STOP">停止</button>
       </div>
     </section>
@@ -1865,8 +1865,8 @@
     const voiceSamples = {
       forward: ["向前走一点", "AR1,MOVE,F,40,500", "94%"],
       back: ["往后退一点", "AR1,MOVE,B,35,400", "91%"],
-      left: ["左转一下", "AR1,TURN,L,30", "93%"],
-      right: ["右转一下", "AR1,TURN,R,30", "93%"],
+      left: ["左转一下", "AR1,TURN,L,30,350", "93%"],
+      right: ["右转一下", "AR1,TURN,R,30,350", "93%"],
       stop: ["停下来", "AR1,STOP", "99%"],
       listen: ["我在听", "VOICE,LISTENING", "LIVE"],
     };
@@ -1994,8 +1994,8 @@
       if (key === "r") setExpression("cry");
       if (event.key === "ArrowUp") send("AR1,MOVE,F,40,500");
       if (event.key === "ArrowDown") send("AR1,MOVE,B,35,400");
-      if (event.key === "ArrowLeft") send("AR1,TURN,L,30");
-      if (event.key === "ArrowRight") send("AR1,TURN,R,30");
+      if (event.key === "ArrowLeft") send("AR1,TURN,L,30,350");
+      if (event.key === "ArrowRight") send("AR1,TURN,R,30,350");
       if (event.key === " ") send("AR1,STOP");
       if (key === "[") {
         const themes = Object.keys(themeNames);

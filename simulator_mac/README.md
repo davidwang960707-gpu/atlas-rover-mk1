@@ -26,5 +26,5 @@ cmake --build simulator_mac/build
 | `m` | 移动中 |
 | `e` | 错误 |
 | `space` | 停止，终端打印 `AR1,STOP` |
-| 方向键 | 模拟移动命令，终端打印 `AR1,MOVE/TURN` |
+| 方向键 | 模拟移动命令，终端打印带持续时间的 `AR1,MOVE/TURN` |
 | `q` / `Esc` | 退出 |

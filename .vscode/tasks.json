@@ -68,6 +68,48 @@
         }
       },
       "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF: 构建 XIAO 底盘固件",
+      "type": "shell",
+      "command": "export IDF_PYTHON_ENV_PATH=\"$HOME/.espressif/python_env/idf5.5_py3.9_env\" && source \"$HOME/.espressif/esp-idf-v5.5.2/export.sh\" >/dev/null && idf.py -C \"${workspaceFolder}/firmware/chassis_xiao_esp32c3\" set-target esp32c3 build",
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF: 烧录 XIAO 底盘固件",
+      "type": "shell",
+      "command": "export IDF_PYTHON_ENV_PATH=\"$HOME/.espressif/python_env/idf5.5_py3.9_env\" && source \"$HOME/.espressif/esp-idf-v5.5.2/export.sh\" >/dev/null && idf.py -C \"${workspaceFolder}/firmware/chassis_xiao_esp32c3\" -p \"${input:chassisSerialPort}\" flash",
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF: 监视 XIAO 底盘串口",
+      "type": "shell",
+      "command": "export IDF_PYTHON_ENV_PATH=\"$HOME/.espressif/python_env/idf5.5_py3.9_env\" && source \"$HOME/.espressif/esp-idf-v5.5.2/export.sh\" >/dev/null && idf.py -C \"${workspaceFolder}/firmware/chassis_xiao_esp32c3\" -p \"${input:chassisSerialPort}\" monitor",
+      "options": {
+        "shell": {
+          "executable": "/bin/zsh",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "problemMatcher": []
     }
   ],
   "inputs": [
@@ -76,6 +118,12 @@
       "type": "promptString",
       "description": "DualEye 串口设备，例如 /dev/cu.usbmodem1101 或 /dev/cu.wchusbserialXXXX",
       "default": "/dev/cu.usbmodem1101"
+    },
+    {
+      "id": "chassisSerialPort",
+      "type": "promptString",
+      "description": "XIAO ESP32C3 底盘板串口设备，例如 /dev/cu.usbmodem2101",
+      "default": "/dev/cu.usbmodem2101"
     }
   ]
 }

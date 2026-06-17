@@ -39,6 +39,7 @@ REQUIRED_TERMS = [
     "WS2812B 数据电平转换器（推荐）",
     "M2 铜柱套装",
     "黄铜丝/黄铜棒",
+    "Seeed Studio XIAO ESP32C3 底盘控制板",
 ]
 
 TEXT_FILES = [
@@ -113,14 +114,15 @@ def main() -> None:
         "可以做出接近参考图的三层黄铜笼架效果",
         "Pin 9 为 UART_RXD",
         "Pin 10 为 UART_TXD",
-        "DualEye LCD1 Pin10 UART_TXD  -> 底盘板 RX",
+        "DualEye LCD1 Pin10 UART_TXD  -> XIAO D7 / GPIO20 / RX",
+        "XIAO D2 / GPIO4",
         "电机供电不要从 DualEye 板上取",
-        "300-500 ms 指令超时停车",
+        "每条运动命令都必须带 `duration_ms`",
         "AR1,STOP",
         "不带 `AR1,` 前缀",
         "双目表情程序",
         "多主题页面",
-        "miniClaw/MimiClaw",
+        "MimiClaw",
         "RoverIntent",
         "不能直接写 UART",
     ]

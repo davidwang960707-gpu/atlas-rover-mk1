@@ -8,7 +8,7 @@
 - ESP-IDF: `~/.espressif/esp-idf-v5.5.2`
 - ESP-IDF Python: `~/.espressif/python_env/idf5.5_py3.9_env`
 - CMake / Ninja / SDL2: 已安装
-- 目标芯片：ESP32-S3
+- 目标芯片：DualEye 为 ESP32-S3；底盘控制板为 XIAO ESP32C3
 
 ## 打开工作区
 
@@ -41,6 +41,9 @@ Cmd+Shift+P -> Tasks: Run Task
 | `ESP-IDF: 构建 DualEye 固件` | 编译 ESP32-S3 固件骨架 |
 | `ESP-IDF: 烧录 DualEye 固件` | 烧录到 DualEye |
 | `ESP-IDF: 监视 DualEye 串口` | 查看串口日志 |
+| `ESP-IDF: 构建 XIAO 底盘固件` | 编译 XIAO ESP32C3 底盘固件 |
+| `ESP-IDF: 烧录 XIAO 底盘固件` | 烧录到底盘控制板 |
+| `ESP-IDF: 监视 XIAO 底盘串口` | 查看底盘固件日志 |
 
 ## 开发路线
 
@@ -60,6 +63,13 @@ Cmd+Shift+P -> Tasks: Run Task
 2. 固件侧先保持 `AR1,` UART 协议稳定。
 3. 真机联调时，DualEye 只发结构化指令，底盘板负责电机安全。
 
+两个固件分别烧录：
+
+```text
+DualEye 固件：firmware/dualeye，target esp32s3
+XIAO 底盘固件：firmware/chassis_xiao_esp32c3，target esp32c3
+```
+
 DualEye 到底盘板接线：
 
 ```text
@@ -72,7 +82,7 @@ DualEye LCD1 Pin2/Pin6 GND  <-> XIAO ESP32C3 GND
 
 ```text
 AR1,MOVE,F,40,500
-AR1,TURN,L,35,350
+AR1,TURN,L,30,350
 AR1,STOP
 ```
 

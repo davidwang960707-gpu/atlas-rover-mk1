@@ -95,16 +95,16 @@ main/
 DualEye 官方接口表确认 LCD1-Board SH1.0 14PIN 暴露 UART：
 
 ```text
-DualEye LCD1 Pin10 UART_TXD -> 底盘板 RX
-DualEye LCD1 Pin9  UART_RXD <- 底盘板 TX
-DualEye LCD1 Pin2/Pin6 GND  <-> 底盘板 GND
+DualEye LCD1 Pin10 UART_TXD -> XIAO D7 / GPIO20 / RX
+DualEye LCD1 Pin9  UART_RXD <- XIAO D6 / GPIO21 / TX
+DualEye LCD1 Pin2/Pin6 GND  <-> XIAO GND
 ```
 
 注意事项：
 
 - 这是 3.3 V TTL UART，不是 RS232。
-- 若底盘板 TX 是 5 V TTL，进入 DualEye RX 前必须做分压或电平转换。
-- 底盘板如需 5 V 逻辑供电，可以另接 5 V，但电机供电不要从 DualEye 板取。
+- XIAO ESP32C3 是 3.3 V TTL，可与 DualEye UART 直连；若换成 5 V TTL 底盘板，进入 DualEye RX 前必须做分压或电平转换。
+- XIAO 可由 5 V 升压支路供电，但电机供电不要从 DualEye 板取。
 - 底盘板必须忽略所有不带 `AR1,` 前缀的串口内容，避免启动日志或乱码误触发电机。
 
 ## 双屏显示后端
@@ -172,6 +172,8 @@ export IDF_PYTHON_ENV_PATH="$HOME/.espressif/python_env/idf5.5_py3.9_env"
 idf.py set-target esp32s3
 idf.py build
 ```
+
+底盘固件在 `firmware/chassis_xiao_esp32c3`，目标芯片 `esp32c3`。DualEye 与底盘板分别烧录，MimiClaw 接口层随 DualEye 固件构建。
 
 如果本机设置了 SOCKS 代理，ESP-IDF component manager 可能需要 Python 依赖：
 

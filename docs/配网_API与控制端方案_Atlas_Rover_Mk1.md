@@ -11,7 +11,7 @@
 - DualEye 固件 V0.2 已落地 `atlas_config`、`atlas_wifi`、`atlas_admin_http`、`atlas_pairing`、`atlas_llm_client`、`atlas_mimiclaw_adapter` 骨架。
 - 首次启动会在无 Wi-Fi 配置时开启 `AtlasRover-XXXX` SoftAP，管理地址为 `http://192.168.4.1`。
 - Web 管理页已支持状态查看、Wi-Fi 配置、LLM/API 配置、安全配置、STOP、短时移动和文本意图测试。
-- 真实 LLM 网络请求、真机双屏渲染、音频链路和底盘板固件尚未完成。
+- 真实 LLM 网络请求、真机触摸/音频链路尚未完成；底盘固件 V0.1 已补齐，待上车标定。
 
 ## 1. 烧录边界结论
 
@@ -20,7 +20,7 @@ Atlas Rover Mk.1 不按“表情程序一份、MimiClaw 再一份”拆烧录，
 | 设备 | 烧录内容 | 说明 |
 |---|---|---|
 | DualEye 板 | 一份 DualEye 固件 | 包含双目 UI、表情、触摸、音频、Wi-Fi/BLE、配网、管理界面、语音事件入口、MimiClaw 适配层、UART 底盘协议 |
-| 底盘板 | 一份底盘固件 | 包含电机控制、DRV8833/PWM、限速、加减速、超时停车、ACK 回传 |
+| XIAO ESP32C3 底盘板 | 一份底盘固件 | 包含电机控制、DRV8833/PWM、限速、按动作时长停车、ACK 回传 |
 | Mac/电脑宿主 | 不烧录到 DualEye | 如果选择外部宿主/调试桥模式，宿主程序跑在 Mac/电脑上，DualEye 通过 Wi-Fi HTTP/WebSocket 与宿主通信 |
 
 所以：

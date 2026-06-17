@@ -244,7 +244,7 @@ FILE_INDEX = [
     ("装配指南_Atlas_Rover_Mk1_V1.0.md", "层级结构、黄铜下料、机械步骤", "制作车架"),
     ("接线说明_Atlas_Rover_Mk1_V1.0.md", "电源拓扑、接线作业表、极性安全", "焊线和通电"),
     ("详细组装与接线手册_Atlas_Rover_Mk1_V1.0.md", "完整施工手册：下料、弯焊、走线、调试", "实操主文档"),
-    ("程序设计_Atlas_Rover_Mk1_V1.0.md", "双目表情、多主题页面、miniClaw/MimiClaw 语音与运动意图设计", "固件开发"),
+    ("程序设计_Atlas_Rover_Mk1_V1.0.md", "双目表情、多主题页面、MimiClaw 语音与运动意图设计", "固件开发"),
     ("语音与双板UART控制方案_Atlas_Rover_Mk1_V1.0.md", "DualEye 语音入口、UART 下发运动指令、底盘板执行", "双板/成品底盘"),
     ("组装模拟与效果确认_Atlas_Rover_Mk1_V1.0.md", "按参考图模拟三层装配、外观还原度和风险点", "开工前推演"),
     ("一致性复审报告_Atlas_Rover_Mk1_V1.0.md", "跨文件一致性结论和仍需实测项", "最终复查"),
@@ -261,7 +261,7 @@ DECISION_MATRIX = [
     ("电机功率驱动", "DRV8833 双路 H 桥", "必买", "ESP32/PCA9685 不直接带电机"),
     ("控制信号扩展", "PCA9685 I2C PWM", "推荐", "减少占用 GPIO；若省略必须确认 4 个安全 GPIO"),
     ("双目程序", "表情主页 + 时钟/状态/语音/设置多主题页面", "必做", "DualEye 是项目第一视觉入口"),
-    ("miniClaw/MimiClaw", "本地安全意图层 + agent 工具调用适配层", "推荐", "运动命令先经规则和超时保护，再下发底盘"),
+    ("MimiClaw", "本地安全意图层 + agent 工具调用适配层", "推荐", "运动命令先经规则和超时保护，再下发底盘"),
     ("双板语音控制", "DualEye 通过 UART 控制底盘板", "可选", "成品底盘/履带底盘优先采用，电机电流不走 DualEye"),
     ("车灯/RGB", "WS2812B 灯条或灯环", "推荐", "主控板无集成装饰 RGB"),
     ("WS2812B 数据可靠性", "AHCT/HCT 电平转换器", "推荐", "5 V 灯板下推荐把 ESP32 3.3 V 数据提升到 5 V 逻辑"),
@@ -360,23 +360,23 @@ DUALEYE_UART_PIN_ROWS = [
 
 VOICE_UART_ROWS = [
     ("角色分工", "DualEye 板", "语音入口、唤醒/命令词识别、双眼表情、Wi-Fi/BLE 交互、串口下发动作命令"),
-    ("角色分工", "底盘控制板", "接收 UART 指令，做限速/超时保护，控制 DRV8833/TB6612/成品底盘电机驱动"),
+    ("角色分工", "底盘控制板", "接收 UART 指令，做限速/超时保护，控制普通 N20 + DRV8833 开环短时差速底盘"),
     ("官方接口确认", "LCD1-Board SH1.0 14PIN", "Pin 9 = UART_RXD，Pin 10 = UART_TXD，Pin 2/Pin 6 = GND，Pin 5 = 3V3；施工建议用 SH1.0 14P 转杜邦/排针转接线。"),
-    ("信号连接", "DualEye Pin10 UART_TXD -> 底盘板 RX", "3.3 V TTL 串口，短线即可；不要接 RS232 电平"),
-    ("信号连接", "DualEye Pin9 UART_RXD <- 底盘板 TX", "若底盘板 TX 为 5 V TTL，需要分压或电平转换后再进 DualEye RX"),
+    ("信号连接", "DualEye Pin10 UART_TXD -> XIAO D7/GPIO20/RX", "3.3 V TTL 串口，短线即可；不要接 RS232 电平"),
+    ("信号连接", "DualEye Pin9 UART_RXD <- XIAO D6/GPIO21/TX", "XIAO 是 3.3 V TTL，可直连；若替换成 5 V TTL 底盘板才需要分压或电平转换"),
     ("信号连接", "DualEye Pin2/Pin6 GND <-> 底盘板 GND", "必须共地，否则串口和电机控制会不稳定"),
     ("逻辑供电", "5 V 支路 -> 底盘板 5V/VIN", "只在底盘板需要外部逻辑供电且接口允许 5 V 时使用；不要反灌 DualEye"),
     ("电机供电", "电池/升压/底盘板 VM -> 电机驱动", "电机电流不经过 DualEye；DualEye 只发命令"),
     ("协议防误触发", "命令必须以 AR1, 开头", "底盘板丢弃所有不带 AR1 前缀的串口内容，避免 DualEye 启动日志、调试打印或乱码误触发电机。"),
-    ("安全策略", "底盘板 300-500 ms 指令超时停车", "语音识别卡住、串口断开或 DualEye 重启时，小车自动停下"),
+    ("安全策略", "底盘板按 duration_ms 截止停车", "每条运动命令都必须带持续时间；语音识别卡住、串口断开或 DualEye 重启时，小车也会到时自动停下"),
 ]
 
 
 VOICE_COMMAND_ROWS = [
     ("AR1,MOVE,F,60,800", "前进，速度 60%，持续 800 ms"),
     ("AR1,MOVE,B,50,500", "后退，速度 50%，持续 500 ms"),
-    ("AR1,TURN,L,45", "左转约 45 度，具体角度由底盘板按时间/PWM 标定"),
-    ("AR1,TURN,R,45", "右转约 45 度，具体角度由底盘板按时间/PWM 标定"),
+    ("AR1,TURN,L,30,350", "左轮后退/右轮前进或差速左转，速度 30%，持续 350 ms"),
+    ("AR1,TURN,R,30,350", "左轮前进/右轮后退或差速右转，速度 30%，持续 350 ms"),
     ("AR1,STOP", "立即停车"),
     ("AR1,LIGHT,BREATH", "切换前灯/状态灯呼吸效果"),
 ]
@@ -399,10 +399,10 @@ PROGRAM_MODULES = [
 UI_PAGES = [
     ("双目表情主页", "默认页面", "开心、思考、聆听、说话、惊讶、生气、困倦、睡眠、移动中、错误", "低延迟渲染，适合巡游时常驻"),
     ("时钟主题页", "桌面陪伴/待机", "双圆屏分别显示小时/分钟、模拟表盘、日期、电量、Wi-Fi", "触摸或语音“显示时间/回到眼睛”切换"),
-    ("语音交互页", "聆听/思考/回答", "左眼显示输入波形，右眼显示状态环；回答时恢复说话表情", "miniClaw/MimiClaw 进入思考时切换 Thinking"),
+    ("语音交互页", "聆听/思考/回答", "左眼显示输入波形，右眼显示状态环；回答时恢复说话表情", "MimiClaw 进入思考时切换 Thinking"),
     ("小车状态页", "调试和运行", "速度、方向、底盘板在线、UART 延迟、电池电压、灯光模式", "调试阶段常用，正式巡游可隐藏"),
     ("主题设置页", "触摸操作", "主题、亮度、音量、表情风格、时钟样式、语音开关", "长按或双击进入，避免误触"),
-    ("错误/安全页", "异常状态", "串口断开、低电量、底盘超时、语音未联网、miniClaw 不可用", "必须提供 STOP 和回到主页"),
+    ("错误/安全页", "异常状态", "串口断开、低电量、底盘超时、语音未联网、MimiClaw 不可用", "必须提供 STOP 和回到主页"),
 ]
 
 
@@ -410,7 +410,7 @@ EXPRESSION_STATES = [
     ("idle", "待机", "轻微呼吸、随机眨眼、瞳孔慢速漂移", "巡游空闲、桌面陪伴"),
     ("happy", "开心", "上弧笑眼、蓝色高光增强", "识别成功、完成指令"),
     ("listen", "聆听", "瞳孔放大、外圈脉冲、低亮波形", "唤醒词后录音"),
-    ("thinking", "思考", "眼睛向上/侧看、加载弧线", "miniClaw/MimiClaw 推理中"),
+    ("thinking", "思考", "眼睛向上/侧看、加载弧线", "MimiClaw 推理中"),
     ("speaking", "说话", "眼皮随音量轻动、嘴形可用前灯辅助", "TTS 或提示音输出"),
     ("moving", "移动中", "瞳孔朝运动方向偏移，边缘流光", "前进/后退/转向"),
     ("surprised", "惊讶", "圆眼放大、短闪", "突发障碍/命令冲突"),
@@ -433,8 +433,8 @@ MIMICLAW_INTEGRATION_ROWS = [
 ROVER_INTENT_ROWS = [
     ("前进/往前走/向前一点", "AR1,MOVE,F,40,500", "默认低速短时，避免从桌面冲出"),
     ("后退/退一点", "AR1,MOVE,B,35,400", "默认更低速，防止后方线束或障碍"),
-    ("左转/向左看/左拐", "AR1,TURN,L,30", "角度需底盘板标定，可先按时间估算"),
-    ("右转/向右看/右拐", "AR1,TURN,R,30", "角度需底盘板标定，可先按时间估算"),
+    ("左转/向左看/左拐", "AR1,TURN,L,30,350", "普通 N20 + 万向轮开环转向，只按时间/PWM 标定"),
+    ("右转/向右看/右拐", "AR1,TURN,R,30,350", "普通 N20 + 万向轮开环转向，只按时间/PWM 标定"),
     ("停下/别动/急停", "AR1,STOP", "最高优先级，任何状态立即执行"),
     ("开心一点/生气/睡觉", "EXPR,happy / EXPR,angry / EXPR,sleepy", "只改表情，不动底盘"),
     ("显示时间/切换时钟", "PAGE,clock", "切换到时钟主题页"),
@@ -447,7 +447,7 @@ PROGRAM_MILESTONES = [
     ("P1", "表情引擎", "idle/happy/listen/thinking/speaking/moving/error 八个核心表情可平滑切换"),
     ("P2", "UART 底盘协议", "DualEye 能发 AR1,MOVE/AR1,TURN/AR1,STOP，底盘板能超时停车"),
     ("P3", "本地语音命令", "固定命令词可离线或弱联网触发 STOP/移动/页面切换"),
-    ("P4", "miniClaw/MimiClaw 适配", "自然语言转 RoverIntent，tool call 通过白名单和安全裁剪后下发"),
+    ("P4", "MimiClaw 适配", "自然语言转 RoverIntent，tool call 通过白名单和安全裁剪后下发"),
     ("P5", "整车联调", "语音、表情、灯光、底盘动作联动；低电量/断线/误识别进入安全状态"),
 ]
 
@@ -569,7 +569,7 @@ def write_docs() -> None:
         - `装配指南_Atlas_Rover_Mk1_V1.0.md`：机械装配顺序
         - `接线说明_Atlas_Rover_Mk1_V1.0.md`：电源与信号接线
         - `详细组装与接线手册_Atlas_Rover_Mk1_V1.0.md`：黄铜下料、弯焊、走线和通电步骤
-        - `程序设计_Atlas_Rover_Mk1_V1.0.md`：双目表情、多主题页面、miniClaw/MimiClaw 语音交互和运动意图设计
+        - `程序设计_Atlas_Rover_Mk1_V1.0.md`：双目表情、多主题页面、MimiClaw 语音交互和运动意图设计
         - `语音与双板UART控制方案_Atlas_Rover_Mk1_V1.0.md`：DualEye 语音入口通过 UART 控制底盘板
         - `组装模拟与效果确认_Atlas_Rover_Mk1_V1.0.md`：按参考图推演能否达到效果
         - `一致性复审报告_Atlas_Rover_Mk1_V1.0.md`：跨文件一致性结论和仍需实测项
@@ -596,7 +596,7 @@ def write_docs() -> None:
         电机链路是：ESP32 发控制信号 -> PCA9685 分配 PWM/方向信号 -> DRV8833 输出电机电流 -> N20 电机转动。
         灯光链路是：ESP32 数据 GPIO -> AHCT/HCT 电平转换 -> 330 欧电阻 -> WS2812B DIN，5 V/GND 从电机/灯光电源支路提供。
         双板语音链路是：DualEye 板载麦克风/语音识别 -> UART 文本指令 -> 底盘控制板 -> 电机驱动。底盘板逻辑可另接 5 V，但电机供电不要从 DualEye 板上取。
-        程序链路是：双目 UI 事件/语音事件 -> 本地安全意图解析 -> miniClaw/MimiClaw 工具调用适配 -> RoverIntent -> UART/DRV8833 执行。
+        程序链路是：双目 UI 事件/语音事件 -> 本地安全意图解析 -> MimiClaw 工具调用适配 -> RoverIntent -> UART -> 底盘板/DRV8833 执行。
         """,
     )
 
@@ -772,16 +772,16 @@ def write_docs() -> None:
 
         双板连接使用 3.3 V TTL UART：
 
-        - DualEye Pin10 UART_TXD -> 底盘板 RX
-        - DualEye Pin9 UART_RXD <- 底盘板 TX
-        - DualEye Pin2/Pin6 GND <-> 底盘板 GND
+        - DualEye Pin10 UART_TXD -> XIAO D7 / GPIO20 / RX
+        - DualEye Pin9 UART_RXD <- XIAO D6 / GPIO21 / TX
+        - DualEye Pin2/Pin6 GND <-> XIAO GND
 
         若底盘板需要逻辑供电，可以从 5 V 升压支路给底盘板 5V/VIN 供电，但必须先确认该底盘板接口允许 5 V。
         电机供电仍接到底盘板电机电源端、DRV8833 VM 或成品底盘的电机电源端，不要从 DualEye 板取电，也不要让电机电流经过 DualEye。
         若底盘板 TX 是 5 V TTL，进入 DualEye RX 前要加分压或电平转换。
 
-        推荐串口命令使用一行一条文本协议，并统一以 `AR1,` 开头，例如 `AR1,MOVE,F,60,800`、`AR1,TURN,L,45`、`AR1,STOP`。
-        底盘板必须丢弃所有不带 `AR1,` 前缀的串口内容，避免 DualEye 启动日志、调试打印或乱码误触发电机；同时做 300-500 ms 指令超时停车。
+        推荐串口命令使用一行一条文本协议，并统一以 `AR1,` 开头，例如 `AR1,MOVE,F,60,800`、`AR1,TURN,L,30,350`、`AR1,STOP`。
+        底盘板必须丢弃所有不带 `AR1,` 前缀的串口内容，避免 DualEye 启动日志、调试打印或乱码误触发电机；每条运动命令都必须带 `duration_ms`，底盘板按截止时间自动停车。
 
         ## 推荐外接车灯/RGB
 
@@ -920,9 +920,9 @@ def write_docs() -> None:
         软件分成两个核心能力：
 
         1. 双目表情程序：两块圆屏显示眼睛、表情和动画效果，并支持切换时钟、状态、语音、设置等多主题页面。
-        2. miniClaw/MimiClaw 语音交互：接入语音理解和自然语言指令，把“往前走一点”“停下”“显示时间”等话语转换成安全的 RoverIntent，再通过 UART 或本地驱动控制小车。
+        2. MimiClaw 语音交互：接入语音理解和自然语言指令，把“往前走一点”“停下”“显示时间”等话语转换成安全的 RoverIntent，再通过 UART 控制底盘板。
 
-        注意：运动类命令必须先经过本地安全意图层。miniClaw/MimiClaw 或 LLM 只能产生结构化意图，不能直接写 UART、不能绕过 STOP/超时/限速保护。
+        注意：运动类命令必须先经过本地安全意图层。MimiClaw 或 LLM 只能产生结构化意图，不能直接写 UART、不能绕过 STOP/超时/限速保护。
 
         ## 总体架构
 
@@ -930,7 +930,7 @@ def write_docs() -> None:
         触摸/语音/Wi-Fi
             -> EventBus
             -> UI Shell + Eye Engine
-            -> 本地命令词/miniClaw Adapter
+            -> 本地命令词/MimiClaw Adapter
             -> Intent Router + Safety Watchdog
             -> Rover Link(UART 或本地 DRV8833/PCA9685)
             -> 底盘板/电机驱动
@@ -948,9 +948,9 @@ def write_docs() -> None:
 
         {md_table(["状态 ID", "中文名", "视觉效果", "触发场景"], expression_rows)}
 
-        ## miniClaw / MimiClaw 接入策略
+        ## MimiClaw 接入策略
 
-        这里把用户口中的 miniClaw 按两类兼容处理：
+        本项目优先适配 `memovai/mimiclaw`，不再按 MiniClaw 替代方案设计：
 
         - MimiClaw：ESP32-S3 端 OpenClaw-like 方案，适合未来直接嵌入固件；但直接集成前必须确认 DualEye 实际 flash/PSRAM 是否满足目标版本需求。
         - 外部宿主/调试桥：可作为端侧 MimiClaw 合并前的临时联调方式；DualEye 作为语音、表情和串口控制终端。
@@ -978,7 +978,7 @@ def write_docs() -> None:
         ## 页面与表情联动规则
 
         - 唤醒词触发：切到 `listen` 表情，语音页显示输入状态。
-        - miniClaw/MimiClaw 推理中：切到 `thinking`，前灯可低亮呼吸。
+        - MimiClaw 推理中：切到 `thinking`，前灯可低亮呼吸。
         - 回答中：切到 `speaking`，眼皮或高光随音量变化。
         - 小车移动中：切到 `moving`，瞳孔偏向运动方向。
         - 收到 STOP：立即切 `idle` 或 `surprised`，底盘停车。
@@ -992,7 +992,7 @@ def write_docs() -> None:
         ## 实施建议
 
         第一版先做“表情 + 页面 + UART + 本地命令词”，确保小车能稳定听懂固定动作命令。
-        第二版再接 miniClaw/MimiClaw，把自然语言、记忆和工具调用叠上去。这样研发风险最低：就算 agent 不在线，STOP、前进、后退、左转、右转、显示时间这些核心功能仍可用。
+        第二版再接 MimiClaw，把自然语言、记忆和工具调用叠上去。这样研发风险最低：就算 agent 不在线，STOP、前进、后退、左转、右转、显示时间这些核心功能仍可用。
         """,
     )
 
@@ -1021,15 +1021,15 @@ def write_docs() -> None:
         ## 推荐接线
 
         ```text
-        DualEye LCD1 Pin10 UART_TXD  -> 底盘板 RX
-        DualEye LCD1 Pin9  UART_RXD  <- 底盘板 TX
-        DualEye LCD1 Pin2/Pin6 GND   <-> 底盘板 GND
-        5 V 升压 OUT+                -> 底盘板 5V/VIN（仅当底盘板需要且允许 5 V）
-        电池/升压 VM                 -> 电机驱动 VM 或成品底盘电机电源端
+        DualEye LCD1 Pin10 UART_TXD  -> XIAO D7 / GPIO20 / RX
+        DualEye LCD1 Pin9  UART_RXD  <- XIAO D6 / GPIO21 / TX
+        DualEye LCD1 Pin2/Pin6 GND   <-> XIAO GND
+        5 V 升压 OUT+                -> XIAO 5V / DRV8833 VM / WS2812B 5V
+        5 V 升压 OUT-                -> XIAO GND / DRV8833 GND / WS2812B GND
         ```
 
-        注意：ESP32-S3 的 UART 是 3.3 V TTL。不要接 RS232 电平。若底盘板 TX 是 5 V TTL，进入 DualEye RX 前必须加分压或电平转换。
-        底盘板可以另接 5 V 逻辑电源，但电机供电不要从 DualEye 板上取。
+        注意：ESP32-S3 的 UART 是 3.3 V TTL。不要接 RS232 电平。若替换成 5 V TTL 底盘板，进入 DualEye RX 前必须加分压或电平转换。
+        XIAO 可以另接 5 V 逻辑电源，但电机供电不要从 DualEye 板上取。
 
         ## 推荐串口命令
 
@@ -1679,7 +1679,7 @@ def build_pdf() -> None:
     ]
 
     story += [
-        p("程序设计：表情、miniClaw 与运动意图", "AtlasH1"),
+        p("程序设计：表情、MimiClaw 与运动意图", "AtlasH1"),
         table(
             [["状态 ID", "中文名", "视觉效果", "触发场景"]] + [list(row) for row in EXPRESSION_STATES],
             widths=[28 * mm, 28 * mm, 118 * mm, 82 * mm],
@@ -1690,7 +1690,7 @@ def build_pdf() -> None:
             widths=[60 * mm, 62 * mm, 132 * mm],
         ),
         Spacer(1, 6),
-        p("miniClaw/MimiClaw 只产生结构化 RoverIntent；运动命令必须先经过本地规则、限速、限时、二次确认和 STOP/超时保护，不能直接写 UART。"),
+        p("MimiClaw 只产生结构化 RoverIntent；运动命令必须先经过本地规则、限速、限时、二次确认和 STOP/超时保护，不能直接写 UART。"),
         PageBreak(),
     ]
 
@@ -1717,7 +1717,7 @@ def build_pdf() -> None:
             widths=[55 * mm, 198 * mm],
         ),
         Spacer(1, 6),
-        p("底盘板必须丢弃所有不带 AR1 前缀的串口内容，避免 DualEye 启动日志、调试打印或乱码误触发电机。必须实现 300-500 ms 指令超时停车；收到 AR1,STOP 立即停车；上电默认停车。若底盘板 TX 是 5 V TTL，进入 DualEye RX 前需要分压或电平转换。"),
+        p("底盘板必须丢弃所有不带 AR1 前缀的串口内容，避免 DualEye 启动日志、调试打印或乱码误触发电机。每条运动命令都必须带 duration_ms，到时自动停车；收到 AR1,STOP 立即停车；上电默认停车。XIAO ESP32C3 是 3.3 V TTL，若换成 5 V TTL 底盘板，进入 DualEye RX 前需要分压或电平转换。"),
         PageBreak(),
     ]
 

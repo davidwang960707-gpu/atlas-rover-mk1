@@ -26,7 +26,7 @@ V0.2 在 V0.1 上继续补齐“烧录后怎么配置和调试”的骨架：
 | 板子 | 职责 | 不做什么 |
 |---|---|---|
 | DualEye | 双目表情、页面、触摸、语音、MimiClaw、向底盘板发送运动意图 | 不直接驱动电机，不从自身给电机供电，不绕过安全裁剪 |
-| 底盘板 | 普通 N20 + DRV8833 开环短时差速、限速、超时停车、灯光执行、ACK 回传 | 不做复杂语音理解，不负责双目 UI，不承诺精确距离/角度 |
+| XIAO ESP32C3 底盘板 | 普通 N20 + DRV8833 开环短时差速、限速、按 `duration_ms` 超时停车、ACK 回传 | 不做复杂语音理解，不负责双目 UI，不承诺精确距离/角度，不直接驱动灯光主题 |
 
 ## 3. 程序结构
 
@@ -99,7 +99,7 @@ flowchart LR
 1. DualEye 只主动发送 `AR1,` 开头的指令。
 2. 上电后先发送 `AR1,STOP`。
 3. 每次移动指令后，DualEye 按动作时长延后补发 `AR1,STOP`。
-4. 底盘板仍必须独立实现 300-500 ms 级别的通信看门狗和超时停车。
+4. 底盘板仍必须独立实现动作截止看门狗：每条运动命令必须带 `duration_ms`，到时自动停车；异常命令立即停车。
 5. 底盘板必须忽略非 `AR1,` 前缀内容。
 6. 电机供电不能从 DualEye 取，DualEye、底盘板和电机电源只共 GND。
 7. Web/语音移动默认开启，方便开箱即用；仍可在管理页安全设置中关闭。
@@ -117,7 +117,7 @@ flowchart LR
 | 触摸 | 新增或扩展 UI 层 | 触摸切页面、切主题、确认/取消指令 |
 | 麦克风与 TTS 音量 | `atlas_ui_state_t.audio_level` | 让 listen/speaking 表情随音量跳动 |
 | MimiClaw | `atlas_voice.*` | 把语义输出映射成 `atlas_voice_event_t` |
-| 真机 UART 引脚确认 | `atlas_rover_uart.*` | 当前按官方 LCD1 UART 口使用，若后续改独立 UART，需要在这里换端口/引脚 |
+| 真机 UART 引脚确认 | `atlas_rover_uart.*` | 当前按官方 LCD1 UART 口使用：Pin10 TXD -> XIAO D7/GPIO20，Pin9 RXD <- XIAO D6/GPIO21 |
 | 真实 LLM/宿主调用 | `atlas_llm_client.*` | 当前只做配置状态，后续接入 HTTPS/HTTP 或 WebSocket |
 | 管理页优化 | `atlas_admin_http.*` | 当前为基础嵌入式页面，后续补日志、表情调试、OTA 和更好的手机布局 |
 | mDNS/设备发现 | `atlas_wifi.*` | 当前使用 SoftAP 地址或局域网 IP，后续再补 `atlas-rover.local` |
@@ -144,4 +144,4 @@ idf.py build
 | `factory` | 4MB | DualEye 应用固件 |
 | `storage` | 4MB | 后续预留给资源、日志或文件系统 |
 
-V0.2 本地构建通过，应用镜像约 `0xca210` 字节，4MB app 分区仍有约 80% 空间。PSRAM 暂未在 V0.2 中启用，因为真实双屏/LVGL 工程需要跟随 Waveshare 官方示例确认 PSRAM 模式、缓存策略和显示缓冲区位置。
+V0.5 本地构建通过，应用镜像约 `0x110770` 字节，4MB app 分区仍有余量。PSRAM 仍需结合真机双屏/LVGL 缓冲策略继续验证。

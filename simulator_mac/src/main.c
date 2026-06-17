@@ -350,12 +350,12 @@ static void handle_key(AppState *app, SDL_Keycode key)
     case SDLK_LEFT:
         app->expr = EXPR_MOVING;
         app->page = PAGE_EYES;
-        send_rover_command("AR1,TURN,L,30");
+        send_rover_command("AR1,TURN,L,30,350");
         break;
     case SDLK_RIGHT:
         app->expr = EXPR_MOVING;
         app->page = PAGE_EYES;
-        send_rover_command("AR1,TURN,R,30");
+        send_rover_command("AR1,TURN,R,30,350");
         break;
     default:
         break;
