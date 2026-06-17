@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+  <rect width="1400" height="900" fill="#f7f5ef"/>
+  <text x="56" y="62" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#2b2b2b">Atlas Rover Mk.1 面包板临时联调接线示意图</text>
+  <text x="58" y="96" font-family="Arial, sans-serif" font-size="17" fill="#5f5a50">面包板只走 3.3V 逻辑信号和共地；电机电源、DRV8833 VM、AOUT/BOUT 不走面包板铜条。</text>
+
+  <rect x="420" y="150" width="560" height="500" rx="20" fill="#fffdf7" stroke="#c9bda8" stroke-width="4"/>
+  <rect x="450" y="178" width="500" height="42" rx="8" fill="#f0d8bb" stroke="#bd8a56" stroke-width="2"/>
+  <rect x="450" y="580" width="500" height="42" rx="8" fill="#d9e7f2" stroke="#6a91ad" stroke-width="2"/>
+  <text x="700" y="205" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#7a4b22">面包板上电源母线：只做逻辑分配，不走电机电流</text>
+  <text x="700" y="607" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#315a76">GND 母线：DualEye / XIAO / DRV8833 必须共地</text>
+
+  <g stroke="#ded4c2" stroke-width="1">
+    <line x1="470" y1="250" x2="930" y2="250"/>
+    <line x1="470" y1="280" x2="930" y2="280"/>
+    <line x1="470" y1="310" x2="930" y2="310"/>
+    <line x1="470" y1="340" x2="930" y2="340"/>
+    <line x1="470" y1="370" x2="930" y2="370"/>
+    <line x1="470" y1="400" x2="930" y2="400"/>
+    <line x1="470" y1="430" x2="930" y2="430"/>
+    <line x1="470" y1="460" x2="930" y2="460"/>
+    <line x1="470" y1="490" x2="930" y2="490"/>
+    <line x1="470" y1="520" x2="930" y2="520"/>
+  </g>
+
+  <rect x="120" y="190" width="220" height="210" rx="14" fill="#20242d" stroke="#4c5668" stroke-width="3"/>
+  <text x="230" y="228" font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle" fill="#f7f3e8">DualEye</text>
+  <text x="230" y="258" font-family="Arial, sans-serif" font-size="15" text-anchor="middle" fill="#d2d8e5">ESP32-S3 双屏/HMI</text>
+  <text x="146" y="306" font-family="Arial, sans-serif" font-size="16" fill="#f7f3e8">LCD1 Pin10 TXD</text>
+  <text x="146" y="338" font-family="Arial, sans-serif" font-size="16" fill="#f7f3e8">LCD1 Pin9 RXD</text>
+  <text x="146" y="370" font-family="Arial, sans-serif" font-size="16" fill="#f7f3e8">Pin2/Pin6 GND</text>
+
+  <rect x="560" y="270" width="240" height="190" rx="14" fill="#273238" stroke="#57866b" stroke-width="3"/>
+  <text x="680" y="306" font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle" fill="#f4f7ed">XIAO ESP32C3</text>
+  <text x="588" y="346" font-family="Arial, sans-serif" font-size="15" fill="#f4f7ed">D7/GPIO20/RX</text>
+  <text x="588" y="378" font-family="Arial, sans-serif" font-size="15" fill="#f4f7ed">D6/GPIO21/TX</text>
+  <text x="588" y="410" font-family="Arial, sans-serif" font-size="15" fill="#f4f7ed">D2/D3/D4/D5</text>
+  <text x="588" y="440" font-family="Arial, sans-serif" font-size="15" fill="#f4f7ed">GND / 5V</text>
+
+  <rect x="1070" y="220" width="230" height="250" rx="14" fill="#2d2931" stroke="#b87333" stroke-width="3"/>
+  <text x="1185" y="258" font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle" fill="#fff3df">DRV8833</text>
+  <text x="1096" y="302" font-family="Arial, sans-serif" font-size="15" fill="#fff3df">AIN1 / AIN2</text>
+  <text x="1096" y="334" font-family="Arial, sans-serif" font-size="15" fill="#fff3df">BIN1 / BIN2</text>
+  <text x="1096" y="366" font-family="Arial, sans-serif" font-size="15" fill="#fff3df">VM / GND</text>
+  <text x="1096" y="398" font-family="Arial, sans-serif" font-size="15" fill="#fff3df">AOUT1/AOUT2</text>
+  <text x="1096" y="430" font-family="Arial, sans-serif" font-size="15" fill="#fff3df">BOUT1/BOUT2</text>
+
+  <rect x="1040" y="610" width="130" height="80" rx="40" fill="#1f1f1f" stroke="#777" stroke-width="3"/>
+  <text x="1105" y="656" font-family="Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="#fff">左 N20</text>
+  <rect x="1210" y="610" width="130" height="80" rx="40" fill="#1f1f1f" stroke="#777" stroke-width="3"/>
+  <text x="1275" y="656" font-family="Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="#fff">右 N20</text>
+
+  <rect x="92" y="610" width="270" height="100" rx="12" fill="#f8fbff" stroke="#8095ad" stroke-width="3"/>
+  <text x="227" y="650" font-family="Arial, sans-serif" font-size="19" font-weight="700" text-anchor="middle" fill="#29394a">18650 + 5V 升压</text>
+  <text x="227" y="680" font-family="Arial, sans-serif" font-size="15" text-anchor="middle" fill="#4a5b6d">电机支路开关 + 电容滤波</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+  </defs>
+
+  <line x1="340" y1="304" x2="560" y2="346" stroke="#2f7fd0" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="435" y="292" font-family="Arial, sans-serif" font-size="14" fill="#2f67a0">TXD -> RX</text>
+  <line x1="560" y1="378" x2="340" y2="338" stroke="#8a5cc8" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="420" y="370" font-family="Arial, sans-serif" font-size="14" fill="#7147a7">TX -> RXD</text>
+  <line x1="340" y1="370" x2="560" y2="440" stroke="#222" stroke-width="4"/>
+  <text x="417" y="425" font-family="Arial, sans-serif" font-size="14" fill="#222">GND 共地</text>
+
+  <line x1="800" y1="410" x2="1070" y2="302" stroke="#4c9f55" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="800" y1="420" x2="1070" y2="334" stroke="#4c9f55" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="908" y="333" font-family="Arial, sans-serif" font-size="14" fill="#3e7b45">D2-D5 -> AIN/BIN</text>
+
+  <line x1="362" y1="650" x2="1070" y2="366" stroke="#d53d32" stroke-width="5" marker-end="url(#arrow)"/>
+  <text x="650" y="675" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#b53028">5V 电机电源支路绕开面包板，直接到 DRV8833 VM/GND</text>
+
+  <line x1="1185" y1="470" x2="1105" y2="610" stroke="#333" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="1210" y1="470" x2="1275" y2="610" stroke="#333" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="1215" y="540" font-family="Arial, sans-serif" font-size="14" fill="#333">AOUT/BOUT 直接接电机</text>
+
+  <rect x="100" y="760" width="1200" height="82" rx="14" fill="#fff7e8" stroke="#c58b3a" stroke-width="2"/>
+  <text x="130" y="794" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#6b421a">安全提醒</text>
+  <text x="130" y="824" font-family="Arial, sans-serif" font-size="16" fill="#4b3b2d">1. 第一次测试车轮必须悬空。 2. 先测 STOP，再测低速短时动作。 3. 面包板不承载电机电流。 4. 所有 GND 必须共地。</text>
+</svg>
