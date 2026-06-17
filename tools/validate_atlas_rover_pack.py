@@ -40,6 +40,9 @@ REQUIRED_TERMS = [
     "M2 铜柱套装",
     "黄铜丝/黄铜棒",
     "Seeed Studio XIAO ESP32C3 底盘控制板",
+    "64T 钢齿轮轮芯（备选）",
+    "3 mm D 孔轮毂或夹紧适配器",
+    "齿轮外圈防滑圈",
 ]
 
 TEXT_FILES = [
@@ -125,6 +128,10 @@ def main() -> None:
         "MimiClaw",
         "RoverIntent",
         "不能直接写 UART",
+        "64T 钢齿轮",
+        "3 mm D 孔轮毂",
+        "左右两个 N20 独立半桥",
+        "不使用贯穿通轴",
     ]
     for phrase in required_phrases:
         if phrase not in all_text:

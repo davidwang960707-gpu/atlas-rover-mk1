@@ -115,6 +115,7 @@ idf.py build
 - [项目进展日志](docs/项目进展日志.md)
 - [开发路线图](docs/开发路线图.md)
 - [面包板临时联调接线说明](docs/面包板临时联调接线说明_Atlas_Rover_Mk1.md)
+- [后桥、前桥、底板与 64T 齿轮轮方案](docs/后桥前桥与64T齿轮轮方案_Atlas_Rover_Mk1.md)
 
 ## 同步方式
 
