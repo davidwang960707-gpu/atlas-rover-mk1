@@ -16,7 +16,7 @@
 <rect x="145" y="80" width="42" height="22" rx="3" stroke="#222" fill="#fff"/>
 <text x="166.0" y="92.0" fill="#111" stroke="none" text-anchor="middle">DRV8833</text>
 <rect x="75" y="25" width="42" height="22" rx="3" stroke="#222" fill="#fff"/>
-<text x="96.0" y="37.0" fill="#111" stroke="none" text-anchor="middle">底盘控制板</text>
+<text x="96.0" y="37.0" fill="#111" stroke="none" text-anchor="middle">PCA9685</text>
 <rect x="145" y="115" width="42" height="18" rx="3" stroke="#222" fill="#fff"/>
 <text x="166.0" y="125.0" fill="#111" stroke="none" text-anchor="middle">N20 电机</text>
 <rect x="150" y="55" width="42" height="15" rx="3" stroke="#222" fill="#fff"/>
@@ -32,9 +32,9 @@
 <line x1="117" y1="92.0" x2="145" y2="91.0" stroke="#a33" marker-end="url(#arrow)"/>
 <text x="131.0" y="89.5" fill="#a33" stroke="none" text-anchor="middle">5 V VM</text>
 <line x1="117" y1="36.0" x2="145" y2="91.0" stroke="#1f4e79" marker-end="url(#arrow)"/>
-<text x="131.0" y="61.5" fill="#1f4e79" stroke="none" text-anchor="middle">PWM/DIR</text>
+<text x="131.0" y="61.5" fill="#1f4e79" stroke="none" text-anchor="middle">4 x PWM</text>
 <line x1="200" y1="36.0" x2="75" y2="36.0" stroke="#1f4e79" marker-end="url(#arrow)"/>
-<text x="137.5" y="34.0" fill="#1f4e79" stroke="none" text-anchor="middle">UART + GND</text>
+<text x="137.5" y="34.0" fill="#1f4e79" stroke="none" text-anchor="middle">I2C + 3V3</text>
 <line x1="187" y1="91.0" x2="145" y2="124.0" stroke="#333" marker-end="url(#arrow)"/>
 <text x="166.0" y="105.5" fill="#333" stroke="none" text-anchor="middle">A/B 输出</text>
 <line x1="200" y1="36.0" x2="150" y2="62.5" stroke="#333" marker-end="url(#arrow)"/>

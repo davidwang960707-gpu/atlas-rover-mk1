@@ -18,7 +18,7 @@
     -> 本地命令词/MimiClaw Adapter
     -> Intent Router + Safety Watchdog
     -> Rover Link(UART)
-    -> 底盘板/电机驱动
+    -> XIAO 底盘板/前后两块 DRV8833
 ```
 
 ## 固件模块划分
@@ -64,7 +64,10 @@
 
 ## MimiClaw 接入策略
 
-本项目按 `memovai/mimiclaw` 方案处理语音和 agent 工具调用。端侧完整合并前，也可以用外部宿主/调试桥临时联调；DualEye 始终作为语音、表情和串口控制终端。
+本项目优先适配 `memovai/mimiclaw`，不再按 MiniClaw 替代方案设计：
+
+- MimiClaw：ESP32-S3 端 OpenClaw-like 方案，适合未来直接嵌入固件；但直接集成前必须确认 DualEye 实际 flash/PSRAM 是否满足目标版本需求。
+- 外部宿主/调试桥：可作为端侧 MimiClaw 合并前的临时联调方式；DualEye 作为语音、表情和串口控制终端。
 
 | 模式/层级 | 优先级 | 设计说明 |
 | --- | --- | --- |
@@ -81,8 +84,8 @@
 | --- | --- | --- |
 | 前进/往前走/向前一点 | AR1,MOVE,F,40,500 | 默认低速短时，避免从桌面冲出 |
 | 后退/退一点 | AR1,MOVE,B,35,400 | 默认更低速，防止后方线束或障碍 |
-| 左转/向左看/左拐 | AR1,TURN,L,30,350 | 四个普通 N20 按左右两侧差速开环转向，只按时间/PWM 标定 |
-| 右转/向右看/右拐 | AR1,TURN,R,30,350 | 四个普通 N20 按左右两侧差速开环转向，只按时间/PWM 标定 |
+| 左转/向左看/左拐 | AR1,TURN,L,30,350 | 普通 N20 + 万向轮开环转向，只按时间/PWM 标定 |
+| 右转/向右看/右拐 | AR1,TURN,R,30,350 | 普通 N20 + 万向轮开环转向，只按时间/PWM 标定 |
 | 停下/别动/急停 | AR1,STOP | 最高优先级，任何状态立即执行 |
 | 开心一点/生气/睡觉 | EXPR,happy / EXPR,angry / EXPR,sleepy | 只改表情，不动底盘 |
 | 显示时间/切换时钟 | PAGE,clock | 切换到时钟主题页 |
@@ -92,7 +95,7 @@
 
 ```text
 rover.move(direction, speed_percent, duration_ms)
-rover.turn(direction, speed_percent, duration_ms)
+rover.turn(direction, angle_deg)
 rover.stop()
 eyes.set_expression(expression_id)
 ui.set_page(page_id)

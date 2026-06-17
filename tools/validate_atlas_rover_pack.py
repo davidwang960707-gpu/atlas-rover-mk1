@@ -84,6 +84,28 @@ def main() -> None:
     for term in REQUIRED_TERMS:
         if term not in bom_names:
             fail(f"BOM missing required term: {term}")
+    rows_by_name = {row["名称"]: row for row in rows}
+    expected_bom = {
+        "Seeed Studio XIAO ESP32C3 底盘控制板": ("1", "必买"),
+        "N20 金属减速电机": ("4", "必买"),
+        "DRV8833 双路 H 桥电机驱动板（必备）": ("2", "必买"),
+        "64T 钢齿轮轮芯（备选）": ("4", "必买"),
+        "齿轮外圈防滑圈": ("4-8", "必买"),
+        "迷你万向轮": ("1", "备选"),
+    }
+    for name, (qty, required) in expected_bom.items():
+        row = rows_by_name.get(name)
+        if not row:
+            fail(f"BOM missing required item: {name}")
+        if row["数量"] != qty or row["是否必需"] != required:
+            fail(f"BOM item mismatch for {name}: expected qty={qty}, required={required}")
+
+    battery_query = rows_by_name["18650 锂电池"]["推荐搜索词"]
+    if "持续放电3A" in battery_query or ("8A" not in battery_query and "高倍率" not in battery_query):
+        fail("18650 search query must target high-discharge cells, not 3A cells")
+    boost_query = rows_by_name["5 V 升压模块"]["推荐搜索词"]
+    if "2A 3A" in boost_query or ("5A" not in boost_query and "大电流" not in boost_query):
+        fail("5 V boost search query must target a high-current module")
     for row in rows:
         if not row["推荐搜索词"]:
             fail(f"BOM missing search query for: {row['名称']}")
@@ -139,6 +161,29 @@ def main() -> None:
     for phrase in required_phrases:
         if phrase not in all_text:
             fail(f"missing safety/consistency phrase: {phrase}")
+
+    forbidden_phrases = [
+        "持续放电3A",
+        "3.7V转5V 2A 3A",
+        "PCA9685 连接 DRV8833",
+        "推荐 PCA9685 I2C PWM 模块连接 DRV8833",
+        "电机链路是：ESP32 发控制信号",
+        "单板方案：DualEye 通过 I2C/PCA9685 控制 DRV8833",
+        "不建议做四驱",
+    ]
+    for phrase in forbidden_phrases:
+        if phrase in all_text:
+            fail(f"stale phrase still present: {phrase}")
+
+    four_motor_phrases = [
+        "XIAO D2-D5",
+        "前/后两块 DRV8833",
+        "四轮独立闭环",
+        "DualEye 发 UART 安全运动意图",
+    ]
+    for phrase in four_motor_phrases:
+        if phrase not in all_text:
+            fail(f"missing four-motor scheme phrase: {phrase}")
 
     if "WS2812B 数据线接 PCA9685" not in all_text:
         fail("missing warning that WS2812B data should not connect to PCA9685")
