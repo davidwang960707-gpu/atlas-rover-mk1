@@ -93,10 +93,10 @@
 | 电机电源支路 | 18650 BAT+ | 电机支路开关 -> 5 V 升压 IN+ | 22-24 AWG 红线 | 这一路给电机和车灯供电；建议只在电机支路加独立开关。 |
 | 电源共地 | 电池 BAT- / 升压 OUT- / ESP32 GND | 底盘控制板 GND / DRV8833 GND / WS2812B GND | 22-24 AWG 黑线或小分线板 | 所有 GND 必须共地，否则 UART、电机和灯的控制信号会不稳定。 |
 | 升压到电机驱动 | 5 V 升压 OUT+ / OUT- | DRV8833 VM / GND | 22-24 AWG 红黑线 | VM 只接电机电源。不要从 ESP32 3.3 V 给电机供电。 |
-| DualEye 到底盘板 | LCD1 Pin10 UART_TXD / Pin9 UART_RXD / GND | 底盘控制板 RX / TX / GND | SH1.0 14P 转接线 + 26-28 AWG 信号线 | Pin10 接底盘板 RX，Pin9 接底盘板 TX，GND 必须共地；若底盘板 TX 是 5 V，先分压或电平转换。 |
-| 底盘板到 DRV8833 | 底盘板 4 路 PWM/DIR GPIO | AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | 底盘板只发控制信号，真正给电机电流的是 DRV8833。若模块有 SLEEP/STBY，引到 3V3 或底盘板使能脚。 |
+| DualEye 到 XIAO ESP32C3 | LCD1 Pin10 UART_TXD / Pin9 UART_RXD / Pin2 或 Pin6 GND | XIAO D7(GPIO20/RX) / D6(GPIO21/TX) / GND | SH1.0 14P 转接线 + 26-28 AWG 信号线 | TX/RX 交叉连接；两边都是 3.3 V TTL。DualEye Pin5 3V3 只作参考，不给底盘板供电。 |
+| XIAO ESP32C3 逻辑供电 | 5 V 升压 OUT+ / GND | XIAO 5V / GND | 24-26 AWG 红黑线 | 从电机/底盘 5 V 支路取电，不从 DualEye 取电。若电机噪声导致重启，给 XIAO 单独加稳压或滤波。 |
+| XIAO 到 DRV8833 | XIAO D2/D3/D4/D5 | AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | D2=GPIO4 左正转，D3=GPIO5 左反转，D4=GPIO6 右正转，D5=GPIO7 右反转。 |
 | DRV8833 到电机 | AOUT1/AOUT2；BOUT1/BOUT2 | 左 N20；右 N20 | 电机自带线或 24-26 AWG | 如果前进时某个轮子反转，交换该电机两根线即可。 |
-| 底盘板逻辑供电（可选） | 5 V 升压 OUT+ / GND | 底盘控制板 5V/VIN / GND | 24-26 AWG 红黑线 | 仅在底盘板需要外部逻辑电源且确认可接 5 V 时使用。电机供电仍走底盘板电机电源端/DRV8833 VM，不要从 DualEye 板取电。 |
 | WS2812B 数据转换 | ESP32 空闲数据 GPIO | AHCT/HCT 电平转换器 A 输入 | 26-28 AWG 信号线 | 电平转换器 VCC 接 5 V，GND 共地；若使用 74AHCT1G125，OE 按模块说明使能。短线直连只适合临时测试。 |
 | WS2812B 车灯 | 5 V 升压 OUT+ / GND；电平转换器 Y 输出 | WS2812B 5V / GND / DIN | 电源 24-26 AWG；数据 26-28 AWG | Y 输出经 330 欧电阻到 DIN，灯板 5 V/GND 旁并 470-1000 uF 电容。亮度限制在 20-40%。 |
 | 小喇叭 | ESP32 SPK+ / SPK- | 4 欧 3 W 或 8 欧 1-2 W 小喇叭 | 细软双绞线 | 不要把喇叭任一端接 GND，按主控板喇叭接口两端直接接。 |
@@ -115,17 +115,17 @@
 
 | DualEye 接口针位 | 信号 | 接法/用途 |
 | --- | --- | --- |
-| LCD1-Board SH1.0 14PIN Pin 10 | UART_TXD | 接底盘控制板 RX，DualEye 下发 AR1 运动/灯光指令 |
-| LCD1-Board SH1.0 14PIN Pin 9 | UART_RXD | 接底盘控制板 TX；若底盘板 TX 是 5 V TTL，先分压或电平转换 |
-| LCD1-Board SH1.0 14PIN Pin 2 或 Pin 6 | GND | 接底盘控制板 GND，必须共地 |
+| LCD1-Board SH1.0 14PIN Pin 10 | UART_TXD | 接 XIAO D7 / GPIO20 / RX，DualEye 下发 AR1 运动/灯光指令 |
+| LCD1-Board SH1.0 14PIN Pin 9 | UART_RXD | 接 XIAO D6 / GPIO21 / TX；若换成 5 V TTL 底盘板，先分压或电平转换 |
+| LCD1-Board SH1.0 14PIN Pin 2 或 Pin 6 | GND | 接 XIAO GND，必须共地 |
 | LCD1-Board SH1.0 14PIN Pin 5 | 3V3 | 仅作 3.3 V 逻辑参考或低功耗外设供电；不要给底盘板/电机供电 |
 
 ## 走线建议
 
 - 电池线和电机电源线走底层内侧，尽量短，远离 ESP32 屏幕排线。
 - 电机线成对绞合，从左右两边贴底框走，进 DRV8833 前再汇合。
-- Pin10 UART_TXD、Pin9 UART_RXD、GND 三根线从 DualEye 后方下到底盘板，远离电机电源线；底盘板 TX 为 5 V 时先电平转换。
-- 底盘板到 DRV8833 的 4 根控制线尽量短，和电机电源线分开走。
+- Pin10 UART_TXD、Pin9 UART_RXD、GND 三根线从 DualEye 后方下到 XIAO ESP32C3，远离电机电源线。
+- XIAO D2-D5 到 DRV8833 的 4 根控制线尽量短，和电机电源线分开走。
 - WS2812B 数据线从 ESP32 预留 GPIO 走到 AHCT/HCT 电平转换器，再经 330 欧电阻到前灯条 DIN。
 - 喇叭线走车尾或车头内侧，避开电机线，避免电机噪声串入音频。
 - 每隔 30-40 mm 做一个固定点，固定点可以用 1.5 mm 黄铜短 U 形扎线桥，但线和铜之间要有热缩管。
@@ -135,7 +135,7 @@
 1. 不装电池，先用万用表检查 BAT+ 和 GND 没有短路。
 2. 只接电池到 ESP32 主控板，确认双眼屏、触摸和 USB-C 正常。
 3. 空载接 5 V 升压模块，调到约 5.0 V，再断电。
-4. 接底盘控制板，先只跑串口收发测试，确认能收到 `AR1,STOP` 和 `AR1,MOVE`。
+4. 接 XIAO ESP32C3 底盘控制板，先只跑串口收发测试，确认能收到 `AR1,STOP` 和 `AR1,MOVE`。
 5. 接 DRV8833 控制线和电源线，但车轮悬空。用低 PWM 先测左轮，再测右轮。
 6. 若方向反了，只交换对应电机的 AOUT 或 BOUT 两根线。
 7. 接 AHCT/HCT 电平转换器和 WS2812B，亮度限制在 20-40%，先测红绿蓝三色。

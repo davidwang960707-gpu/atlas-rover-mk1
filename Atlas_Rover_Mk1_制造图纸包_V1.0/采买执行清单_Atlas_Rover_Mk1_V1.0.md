@@ -7,14 +7,15 @@
 
 | 优先级 | 范围 | 估算总价 |
 | --- | --- | --- |
-| 必买 | 运动、电源、结构、线材基础物料 | 约 93-222 元 |
-| 推荐一起买 | 必买 + PCA9685 + 小喇叭 + WS2812B 外接车灯 + 数据电平转换器 | 约 113-272 元 |
+| 必买 | 底盘控制板、运动、电源、结构、线材基础物料 | 约 118-267 元 |
+| 推荐一起买 | 必买 + PCA9685 + 小喇叭 + WS2812B 外接车灯 + 数据电平转换器 | 约 138-317 元 |
 | 暂缓购买 | 摄像头、外置麦克风、外置功放、TP4056、四驱电机 | 第一版不建议买 |
 
 ## 配置关系确认
 
 | 需求 | 解决模块 | 是否已在清单中 | 备注 |
 | --- | --- | --- | --- |
+| DualEye 不能直接负责电机实时安全 | Seeed Studio XIAO ESP32C3 底盘控制板 | 已列入必买 | 接收 UART 指令，执行 DRV8833 PWM、限速和超时停车 |
 | ESP32 不能直接驱动 N20 电机 | DRV8833 双路 H 桥电机驱动板 | 已列入必买 | 这是电机功率驱动板，负责给电机输出电流 |
 | 底盘板可用 PWM/GPIO 可能不够 | PCA9685 I2C PWM 扩展板 | 已列入推荐一起买 | 这是底盘板侧可选控制信号扩展板，不是电机驱动板 |
 | 主控板没有车灯/RGB | WS2812B 灯条或灯环 | 已列入推荐一起买 | 这是外接车灯/状态灯模块，不是主控板自带 |
@@ -31,6 +32,7 @@
 
 | 项目 | 数量 | 推荐搜索词 | 下单校验 | 京东 | 淘宝 | 拼多多 |
 | --- | ---: | --- | --- | --- | --- | --- |
+| Seeed Studio XIAO ESP32C3 底盘控制板 | 1 | Seeed XIAO ESP32C3 开发板 | 优先买 Seeed 原版或引脚丝印一致版本；USB-C；3.3V GPIO；D2-D5 控 DRV8833，D6/D7 接 DualEye UART；ESP32-C3 SuperMini 可替代但必须重核引脚 | [搜索](https://search.jd.com/Search?keyword=Seeed%20XIAO%20ESP32C3%20%E5%BC%80%E5%8F%91%E6%9D%BF) | [搜索](https://s.taobao.com/search?q=Seeed%20XIAO%20ESP32C3%20%E5%BC%80%E5%8F%91%E6%9D%BF) | [搜索](https://mobile.yangkeduo.com/search_result.html?search_key=Seeed%20XIAO%20ESP32C3%20%E5%BC%80%E5%8F%91%E6%9D%BF) |
 | N20 金属减速电机 | 2 | N20 金属减速电机 6V 100RPM 3mm D轴 轴长10mm | 6V；100-150RPM；3mm D 形轴；轴长 8-10mm；不要买编码器版也可以 | [搜索](https://search.jd.com/Search?keyword=N20%20%E9%87%91%E5%B1%9E%E5%87%8F%E9%80%9F%E7%94%B5%E6%9C%BA%206V%20100RPM%203mm%20D%E8%BD%B4%20%E8%BD%B4%E9%95%BF10mm) | [搜索](https://s.taobao.com/search?q=N20%20%E9%87%91%E5%B1%9E%E5%87%8F%E9%80%9F%E7%94%B5%E6%9C%BA%206V%20100RPM%203mm%20D%E8%BD%B4%20%E8%BD%B4%E9%95%BF10mm) | [搜索](https://mobile.yangkeduo.com/search_result.html?search_key=N20%20%E9%87%91%E5%B1%9E%E5%87%8F%E9%80%9F%E7%94%B5%E6%9C%BA%206V%20100RPM%203mm%20D%E8%BD%B4%20%E8%BD%B4%E9%95%BF10mm) |
 | DRV8833 双路 H 桥电机驱动板（必备） | 1 | DRV8833 双路 H桥 电机驱动模块 迷你 | 芯片/模块必须是 DRV8833；双路直流电机；这是解决“ESP32 不能直接带电机”的必备板；不要用 L298N 大板替代 | [搜索](https://search.jd.com/Search?keyword=DRV8833%20%E5%8F%8C%E8%B7%AF%20H%E6%A1%A5%20%E7%94%B5%E6%9C%BA%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9D%97%20%E8%BF%B7%E4%BD%A0) | [搜索](https://s.taobao.com/search?q=DRV8833%20%E5%8F%8C%E8%B7%AF%20H%E6%A1%A5%20%E7%94%B5%E6%9C%BA%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9D%97%20%E8%BF%B7%E4%BD%A0) | [搜索](https://mobile.yangkeduo.com/search_result.html?search_key=DRV8833%20%E5%8F%8C%E8%B7%AF%20H%E6%A1%A5%20%E7%94%B5%E6%9C%BA%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9D%97%20%E8%BF%B7%E4%BD%A0) |
 | N20 轮胎 | 2 | N20 轮胎 34mm 3mm D形孔 橡胶轮 | 优先 34mm 直径；3mm D 形孔；橡胶胎 | [搜索](https://search.jd.com/Search?keyword=N20%20%E8%BD%AE%E8%83%8E%2034mm%203mm%20D%E5%BD%A2%E5%AD%94%20%E6%A9%A1%E8%83%B6%E8%BD%AE) | [搜索](https://s.taobao.com/search?q=N20%20%E8%BD%AE%E8%83%8E%2034mm%203mm%20D%E5%BD%A2%E5%AD%94%20%E6%A9%A1%E8%83%B6%E8%BD%AE) | [搜索](https://mobile.yangkeduo.com/search_result.html?search_key=N20%20%E8%BD%AE%E8%83%8E%2034mm%203mm%20D%E5%BD%A2%E5%AD%94%20%E6%A9%A1%E8%83%B6%E8%BD%AE) |

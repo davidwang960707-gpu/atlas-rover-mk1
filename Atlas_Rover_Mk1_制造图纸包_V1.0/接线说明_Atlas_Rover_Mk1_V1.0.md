@@ -25,10 +25,10 @@
 | 电机电源支路 | 18650 BAT+ | 电机支路开关 -> 5 V 升压 IN+ | 22-24 AWG 红线 | 这一路给电机和车灯供电；建议只在电机支路加独立开关。 |
 | 电源共地 | 电池 BAT- / 升压 OUT- / ESP32 GND | 底盘控制板 GND / DRV8833 GND / WS2812B GND | 22-24 AWG 黑线或小分线板 | 所有 GND 必须共地，否则 UART、电机和灯的控制信号会不稳定。 |
 | 升压到电机驱动 | 5 V 升压 OUT+ / OUT- | DRV8833 VM / GND | 22-24 AWG 红黑线 | VM 只接电机电源。不要从 ESP32 3.3 V 给电机供电。 |
-| DualEye 到底盘板 | LCD1 Pin10 UART_TXD / Pin9 UART_RXD / GND | 底盘控制板 RX / TX / GND | SH1.0 14P 转接线 + 26-28 AWG 信号线 | Pin10 接底盘板 RX，Pin9 接底盘板 TX，GND 必须共地；若底盘板 TX 是 5 V，先分压或电平转换。 |
-| 底盘板到 DRV8833 | 底盘板 4 路 PWM/DIR GPIO | AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | 底盘板只发控制信号，真正给电机电流的是 DRV8833。若模块有 SLEEP/STBY，引到 3V3 或底盘板使能脚。 |
+| DualEye 到 XIAO ESP32C3 | LCD1 Pin10 UART_TXD / Pin9 UART_RXD / Pin2 或 Pin6 GND | XIAO D7(GPIO20/RX) / D6(GPIO21/TX) / GND | SH1.0 14P 转接线 + 26-28 AWG 信号线 | TX/RX 交叉连接；两边都是 3.3 V TTL。DualEye Pin5 3V3 只作参考，不给底盘板供电。 |
+| XIAO ESP32C3 逻辑供电 | 5 V 升压 OUT+ / GND | XIAO 5V / GND | 24-26 AWG 红黑线 | 从电机/底盘 5 V 支路取电，不从 DualEye 取电。若电机噪声导致重启，给 XIAO 单独加稳压或滤波。 |
+| XIAO 到 DRV8833 | XIAO D2/D3/D4/D5 | AIN1 / AIN2 / BIN1 / BIN2 | 26-28 AWG 信号线 | D2=GPIO4 左正转，D3=GPIO5 左反转，D4=GPIO6 右正转，D5=GPIO7 右反转。 |
 | DRV8833 到电机 | AOUT1/AOUT2；BOUT1/BOUT2 | 左 N20；右 N20 | 电机自带线或 24-26 AWG | 如果前进时某个轮子反转，交换该电机两根线即可。 |
-| 底盘板逻辑供电（可选） | 5 V 升压 OUT+ / GND | 底盘控制板 5V/VIN / GND | 24-26 AWG 红黑线 | 仅在底盘板需要外部逻辑电源且确认可接 5 V 时使用。电机供电仍走底盘板电机电源端/DRV8833 VM，不要从 DualEye 板取电。 |
 | WS2812B 数据转换 | ESP32 空闲数据 GPIO | AHCT/HCT 电平转换器 A 输入 | 26-28 AWG 信号线 | 电平转换器 VCC 接 5 V，GND 共地；若使用 74AHCT1G125，OE 按模块说明使能。短线直连只适合临时测试。 |
 | WS2812B 车灯 | 5 V 升压 OUT+ / GND；电平转换器 Y 输出 | WS2812B 5V / GND / DIN | 电源 24-26 AWG；数据 26-28 AWG | Y 输出经 330 欧电阻到 DIN，灯板 5 V/GND 旁并 470-1000 uF 电容。亮度限制在 20-40%。 |
 | 小喇叭 | ESP32 SPK+ / SPK- | 4 欧 3 W 或 8 欧 1-2 W 小喇叭 | 细软双绞线 | 不要把喇叭任一端接 GND，按主控板喇叭接口两端直接接。 |
@@ -46,14 +46,15 @@
 ## 推荐电机控制接线
 
 解决电机的新增板子是 DRV8833。ESP32/DualEye 不能直接接 N20 电机，只能输出控制信号；DRV8833 才是给电机供电和换向的功率驱动板。
-Mk.1 当前推荐“双板 UART”路径：DualEye 负责语音和 HMI，底盘控制板负责把 `AR1,` 串口命令转换成 4 路 PWM/DIR 信号。
+Mk.1 当前推荐“双板 UART”路径：DualEye 负责语音和 HMI，XIAO ESP32C3 底盘板负责把 `AR1,` 串口命令转换成 4 路 PWM/DIR 信号。
 
-底盘板连接 DRV8833：
+XIAO ESP32C3 连接 DRV8833：
 
-- 底盘板 LEFT_IN1/PWM -> DRV8833 AIN1
-- 底盘板 LEFT_IN2/DIR -> DRV8833 AIN2
-- 底盘板 RIGHT_IN1/PWM -> DRV8833 BIN1
-- 底盘板 RIGHT_IN2/DIR -> DRV8833 BIN2
+- XIAO D2 / GPIO4 -> DRV8833 AIN1
+- XIAO D3 / GPIO5 -> DRV8833 AIN2
+- XIAO D4 / GPIO6 -> DRV8833 BIN1
+- XIAO D5 / GPIO7 -> DRV8833 BIN2
+- DRV8833 nSLEEP/STBY/EN -> 3V3 上拉，若模块有该引脚
 
 DRV8833 连接电机：
 
@@ -73,18 +74,18 @@ Waveshare 官方接口表确认 DualEye 外露 UART 位于 LCD1-Board SH1.0 14PI
 
 | DualEye 接口针位 | 信号 | 接法/用途 |
 | --- | --- | --- |
-| LCD1-Board SH1.0 14PIN Pin 10 | UART_TXD | 接底盘控制板 RX，DualEye 下发 AR1 运动/灯光指令 |
-| LCD1-Board SH1.0 14PIN Pin 9 | UART_RXD | 接底盘控制板 TX；若底盘板 TX 是 5 V TTL，先分压或电平转换 |
+| LCD1-Board SH1.0 14PIN Pin 10 | UART_TXD | 接 XIAO D7 / GPIO20 / RX，DualEye 下发 AR1 运动/灯光指令 |
+| LCD1-Board SH1.0 14PIN Pin 9 | UART_RXD | 接 XIAO D6 / GPIO21 / TX；若换成 5 V TTL 底盘板，先分压或电平转换 |
 | LCD1-Board SH1.0 14PIN Pin 2 或 Pin 6 | GND | 接底盘控制板 GND，必须共地 |
 | LCD1-Board SH1.0 14PIN Pin 5 | 3V3 | 仅作 3.3 V 逻辑参考或低功耗外设供电；不要给底盘板/电机供电 |
 
 双板连接使用 3.3 V TTL UART：
 
-- DualEye Pin10 UART_TXD -> 底盘板 RX
-- DualEye Pin9 UART_RXD <- 底盘板 TX
-- DualEye Pin2/Pin6 GND <-> 底盘板 GND
+- DualEye Pin10 UART_TXD -> XIAO D7 / GPIO20 / RX
+- DualEye Pin9 UART_RXD <- XIAO D6 / GPIO21 / TX
+- DualEye Pin2/Pin6 GND <-> XIAO GND
 
-若底盘板需要逻辑供电，可以从 5 V 升压支路给底盘板 5V/VIN 供电，但必须先确认该底盘板接口允许 5 V。
+XIAO ESP32C3 可以从 5 V 升压支路给 5V 引脚供电。
 电机供电仍接到底盘板电机电源端、DRV8833 VM 或成品底盘的电机电源端，不要从 DualEye 板取电，也不要让电机电流经过 DualEye。
 若底盘板 TX 是 5 V TTL，进入 DualEye RX 前要加分压或电平转换。
 

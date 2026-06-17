@@ -63,9 +63,9 @@ Cmd+Shift+P -> Tasks: Run Task
 DualEye 到底盘板接线：
 
 ```text
-DualEye LCD1 Pin10 UART_TXD -> 底盘板 RX
-DualEye LCD1 Pin9  UART_RXD <- 底盘板 TX
-DualEye LCD1 Pin2/Pin6 GND  <-> 底盘板 GND
+DualEye LCD1 Pin10 UART_TXD -> XIAO ESP32C3 D7 / GPIO20 / RX
+DualEye LCD1 Pin9  UART_RXD <- XIAO ESP32C3 D6 / GPIO21 / TX
+DualEye LCD1 Pin2/Pin6 GND  <-> XIAO ESP32C3 GND
 ```
 
 底盘板只解析带前缀的命令：

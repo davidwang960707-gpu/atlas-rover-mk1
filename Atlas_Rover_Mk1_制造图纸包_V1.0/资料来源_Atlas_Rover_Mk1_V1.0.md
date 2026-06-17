@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | Waveshare ESP32-S3-DualEye-Touch-LCD-1.28 文档 | https://docs.waveshare.com/ESP32-S3-DualEye-Touch-LCD-1.28 | 用于核对主控板功能、板载电池接口、音频资源、LCD1 SH1.0 14PIN UART 针位和尺寸图。 |
 | Waveshare 官方尺寸图 | https://docs.waveshare.com/assets/images/ESP32-S3-DualEye-Touch-LCD-1.28-details-size-0c9d4ea9bb5aeb50a666969698fec9e4.webp | 用于核对 93.50 mm 宽度、36.50 mm 显示高度和 M2 安装孔。 |
+| Seeed Studio XIAO ESP32C3 官方文档 | https://wiki.seeedstudio.com/XIAO_ESP32C3_Getting_Started/ | 用于核对 XIAO ESP32C3 板卡、供电、引脚和 3.3 V GPIO 逻辑。 |
 | TI DRV8833 数据手册 | https://www.ti.com/lit/gpn/DRV8833 | 用于核对 DRV8833 供电范围和电流能力。 |
 | Handson Technology GA12-N20 数据手册 | https://www.handsontec.com/dataspecs/motor_fan/GA12-N20.pdf | 用于核对 N20 典型尺寸和 3 mm D 形轴。 |
 | NXP PCA9685 产品页 | https://www.nxp.com/products/power-drivers/lighting-driver-and-controller-ics/led-drivers/16-channel-12-bit-pwm-fm-plus-ic-bus-led-driver%3APCA9685 | 用于核对 I2C 16 通道 12 位 PWM 控制特性。 |

@@ -14,7 +14,7 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 
 - 双实体圆屏，每块屏幕显示一只眼睛。
 - DualEye 负责表情、页面、语音、触摸和高层意图。
-- 底盘板负责普通 N20 电机、DRV8833、限速、开环短时差速控制和超时停车。
+- Seeed XIAO ESP32C3 底盘板负责普通 N20 电机、DRV8833、限速、开环短时差速控制和超时停车。
 - DualEye 与底盘板通过 3.3 V TTL UART 通信。
 - 车架尽量保留黄铜/铜丝手工 DIY 的质感。
 
@@ -32,7 +32,7 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 | Web 应用/管理界面 | V0.4 已拆分 `/app` 日常应用页和 `/admin` 管理后台，支持表情、页面、主题、移动、MimiClaw 应用占位和配置管理 |
 | 真机双屏显示 | 已接 Waveshare 官方同款 GC9A01/LVGL 初始化，真机需继续实测触摸和复杂页面 |
 | 语音 MimiClaw | DualEye 已提供 `/api/mimiclaw/intent`，MimiClaw 集成方案见 `docs/MimiClaw集成方案_Atlas_Rover_Mk1.md` |
-| 底盘开环控制 | 待底盘板固件实现；Mk.1 先用普通 N20 + DRV8833 + 前万向轮，不上编码器/IMU |
+| 底盘开环控制 | 已锁定 XIAO ESP32C3 + DRV8833 + 普通 N20 + 前万向轮，待底盘板固件实现 |
 
 ## 仓库结构
 
