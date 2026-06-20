@@ -1,0 +1,329 @@
+{
+  "version": "0.1",
+  "target": "ESP32-S3-DualEye-Touch-LCD-1.28",
+  "storage": "SD card",
+  "root": "/atlas_eyes",
+  "size_px": 240,
+  "themes": [
+    {
+      "id": "raptor",
+      "name_zh": "猛禽眼"
+    },
+    {
+      "id": "mecha",
+      "name_zh": "机械电子眼"
+    },
+    {
+      "id": "goggle",
+      "name_zh": "黄色护目镜眼"
+    },
+    {
+      "id": "pet",
+      "name_zh": "电子宠物巡游"
+    }
+  ],
+  "states": [
+    {
+      "id": "idle",
+      "name_zh": "待机"
+    },
+    {
+      "id": "blink",
+      "name_zh": "眨眼"
+    },
+    {
+      "id": "listen",
+      "name_zh": "聆听"
+    }
+  ],
+  "assets": [
+    {
+      "theme": "raptor",
+      "theme_zh": "猛禽眼",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/raptor/idle/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "raptor",
+      "theme_zh": "猛禽眼",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/raptor/idle/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "mecha",
+      "theme_zh": "机械电子眼",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/mecha/idle/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "mecha",
+      "theme_zh": "机械电子眼",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/mecha/idle/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "goggle",
+      "theme_zh": "黄色护目镜眼",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/goggle/idle/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "goggle",
+      "theme_zh": "黄色护目镜眼",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/goggle/idle/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "pet",
+      "theme_zh": "电子宠物巡游",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/pet/idle/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "pet",
+      "theme_zh": "电子宠物巡游",
+      "state": "idle",
+      "state_zh": "待机",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/pet/idle/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "raptor",
+      "theme_zh": "猛禽眼",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/raptor/blink/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "raptor",
+      "theme_zh": "猛禽眼",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/raptor/blink/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "mecha",
+      "theme_zh": "机械电子眼",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/mecha/blink/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "mecha",
+      "theme_zh": "机械电子眼",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/mecha/blink/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "goggle",
+      "theme_zh": "黄色护目镜眼",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/goggle/blink/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "goggle",
+      "theme_zh": "黄色护目镜眼",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/goggle/blink/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "pet",
+      "theme_zh": "电子宠物巡游",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/pet/blink/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "pet",
+      "theme_zh": "电子宠物巡游",
+      "state": "blink",
+      "state_zh": "眨眼",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/pet/blink/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "raptor",
+      "theme_zh": "猛禽眼",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/raptor/listen/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "raptor",
+      "theme_zh": "猛禽眼",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/raptor/listen/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "mecha",
+      "theme_zh": "机械电子眼",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/mecha/listen/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "mecha",
+      "theme_zh": "机械电子眼",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/mecha/listen/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "goggle",
+      "theme_zh": "黄色护目镜眼",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/goggle/listen/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "goggle",
+      "theme_zh": "黄色护目镜眼",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/goggle/listen/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "pet",
+      "theme_zh": "电子宠物巡游",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "L",
+      "eye_name": "left",
+      "path": "atlas_eyes/pet/listen/left.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    },
+    {
+      "theme": "pet",
+      "theme_zh": "电子宠物巡游",
+      "state": "listen",
+      "state_zh": "聆听",
+      "eye": "R",
+      "eye_name": "right",
+      "path": "atlas_eyes/pet/listen/right.png",
+      "width": "240",
+      "height": "240",
+      "format": "PNG"
+    }
+  ]
+}
