@@ -131,6 +131,17 @@ static bool parse_tool_call(const cJSON *root, atlas_mimiclaw_intent_t *intent, 
         return true;
     }
 
+    if (strcmp(tool, "atlas_pet_event") == 0 || strcmp(tool, "pet.event") == 0) {
+        char event_name[24] = "";
+        if (!json_string_to_buffer(input, "event", event_name, sizeof(event_name)) ||
+            !atlas_pet_event_from_name(event_name, &intent->pet_event)) {
+            set_error(error, error_size, "bad pet event");
+            return false;
+        }
+        intent->has_pet_event = true;
+        return true;
+    }
+
     set_error(error, error_size, "unknown mimiclaw tool");
     return false;
 }
@@ -171,22 +182,27 @@ static bool apply_action(atlas_ui_state_t *state, const char *action, uint32_t n
         set_page_defaults(state, ATLAS_PAGE_MUSIC);
         state->expression = ATLAS_EXPR_SPEAKING;
         state->audio_level = 64;
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_MUSIC, now_ms);
     } else if (strcmp(action, "story.tell") == 0 || strcmp(action, "story") == 0) {
         set_page_defaults(state, ATLAS_PAGE_STORY);
         state->expression = ATLAS_EXPR_SPEAKING;
         state->audio_level = 58;
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_STORY, now_ms);
     } else if (strcmp(action, "chat.reply") == 0 || strcmp(action, "chat") == 0 ||
                strcmp(action, "audio.speak") == 0) {
         set_page_defaults(state, ATLAS_PAGE_CHAT);
         state->expression = ATLAS_EXPR_SPEAKING;
         state->audio_level = 58;
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_CHAT, now_ms);
     } else if (strcmp(action, "calendar.show") == 0 || strcmp(action, "calendar.add_reminder") == 0 ||
                strcmp(action, "calendar") == 0) {
         set_page_defaults(state, ATLAS_PAGE_CALENDAR);
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_THINK, now_ms);
     } else if (strcmp(action, "pomodoro.start") == 0 || strcmp(action, "pomodoro.stop") == 0 ||
                strcmp(action, "pomodoro") == 0) {
         set_page_defaults(state, ATLAS_PAGE_POMODORO);
         state->expression = ATLAS_EXPR_THINKING;
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_THINK, now_ms);
     } else if (strcmp(action, "status.report") == 0 || strcmp(action, "status") == 0) {
         set_page_defaults(state, ATLAS_PAGE_STATUS);
     } else if (strcmp(action, "display.show_page") == 0 || strcmp(action, "eyes.set_expression") == 0 ||
@@ -210,6 +226,7 @@ void atlas_mimiclaw_intent_init(atlas_mimiclaw_intent_t *intent)
         .expression = ATLAS_EXPR_IDLE,
         .page = ATLAS_PAGE_EYES,
         .motion = atlas_voice_intent_from_event(ATLAS_VOICE_EVENT_NONE),
+        .pet_event = ATLAS_PET_EVENT_INTERACTION,
     };
 }
 
@@ -296,6 +313,15 @@ esp_err_t atlas_mimiclaw_intent_parse_json(const char *json,
         intent->has_motion = true;
     }
 
+    if (json_string_to_buffer(root, "pet_event", value, sizeof(value))) {
+        if (!atlas_pet_event_from_name(value, &intent->pet_event)) {
+            cJSON_Delete(root);
+            set_error(error, error_size, "bad pet event");
+            return ESP_ERR_INVALID_ARG;
+        }
+        intent->has_pet_event = true;
+    }
+
     const cJSON *safety = cJSON_GetObjectItemCaseSensitive(root, "safety");
     if (cJSON_IsObject(safety)) {
         const cJSON *requires_confirmation = cJSON_GetObjectItemCaseSensitive(safety, "requires_confirmation");
@@ -360,10 +386,18 @@ esp_err_t atlas_mimiclaw_intent_apply_intent(const atlas_config_t *config,
         ESP_LOGW(TAG, "unknown mimiclaw action: %s", intent->action);
     }
 
+    if (intent->has_pet_event) {
+        const esp_err_t err = atlas_ui_handle_pet_event(state, intent->pet_event, now_ms);
+        if (err != ESP_OK) {
+            return err;
+        }
+    }
+
     if (intent->has_speech && !intent->has_expression && !intent->has_motion) {
         state->expression = ATLAS_EXPR_SPEAKING;
         state->audio_level = 58;
         state->last_event_ms = now_ms;
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_SPEAK, now_ms);
     }
 
     if (intent->has_expression) {

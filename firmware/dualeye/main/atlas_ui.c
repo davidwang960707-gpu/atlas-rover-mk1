@@ -60,6 +60,7 @@ void atlas_ui_init(atlas_ui_state_t *state)
         .moving = false,
         .charging = false,
     };
+    atlas_pet_init(&state->pet);
 }
 
 static esp_err_t send_motion(atlas_ui_state_t *state, atlas_voice_intent_t intent, uint32_t now_ms)
@@ -94,6 +95,7 @@ static esp_err_t send_motion(atlas_ui_state_t *state, atlas_voice_intent_t inten
     state->last_event_ms = now_ms;
     state->safety_stop_due_ms = now_ms + safety_stop_delay_ms(intent.duration_ms);
     state->moving = true;
+    atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_PATROL, now_ms);
 
     ESP_LOGI(TAG,
              "motion intent accepted: motion=%s speed=%u duration=%u",
@@ -117,6 +119,7 @@ esp_err_t atlas_ui_stop(atlas_ui_state_t *state, uint32_t now_ms)
     state->last_speed = 0;
     state->last_event_ms = now_ms;
     state->safety_stop_due_ms = 0;
+    atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_STOP, now_ms);
 
     if (err != ESP_OK) {
         state->page = ATLAS_PAGE_STATUS;
@@ -153,23 +156,27 @@ esp_err_t atlas_ui_handle_voice_intent(atlas_ui_state_t *state,
     switch (intent.event) {
     case ATLAS_VOICE_EVENT_WAKE:
     case ATLAS_VOICE_EVENT_LISTENING:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_VOICE_LISTEN, now_ms);
         state->page = ATLAS_PAGE_VOICE;
         state->expression = ATLAS_EXPR_LISTEN;
         state->audio_level = 24;
         break;
 
     case ATLAS_VOICE_EVENT_THINKING:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_THINK, now_ms);
         state->page = ATLAS_PAGE_EYES;
         state->expression = ATLAS_EXPR_THINKING;
         break;
 
     case ATLAS_VOICE_EVENT_SPEAKING:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_SPEAK, now_ms);
         state->page = ATLAS_PAGE_EYES;
         state->expression = ATLAS_EXPR_SPEAKING;
         state->audio_level = 58;
         break;
 
     case ATLAS_VOICE_EVENT_SUCCESS:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_TOUCH, now_ms);
         state->page = ATLAS_PAGE_EYES;
         state->expression = ATLAS_EXPR_HAPPY;
         break;
@@ -178,25 +185,90 @@ esp_err_t atlas_ui_handle_voice_intent(atlas_ui_state_t *state,
         return atlas_ui_stop(state, now_ms);
 
     case ATLAS_VOICE_EVENT_CHARGING:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_CHARGE, now_ms);
         state->page = ATLAS_PAGE_STATUS;
         state->expression = ATLAS_EXPR_CHARGING;
         state->charging = true;
         break;
 
     case ATLAS_VOICE_EVENT_SLEEP:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_REST, now_ms);
         state->page = ATLAS_PAGE_EYES;
         state->expression = ATLAS_EXPR_SLEEPY;
         break;
 
     case ATLAS_VOICE_EVENT_ERROR:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_ERROR, now_ms);
         state->page = ATLAS_PAGE_STATUS;
         state->expression = ATLAS_EXPR_ERROR;
         break;
 
     case ATLAS_VOICE_EVENT_NONE:
     default:
+        atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_INTERACTION, now_ms);
         state->page = ATLAS_PAGE_EYES;
         state->expression = ATLAS_EXPR_CURIOUS;
+        break;
+    }
+
+    state->motion = ATLAS_MOTION_NONE;
+    state->moving = false;
+    return ESP_OK;
+}
+
+esp_err_t atlas_ui_handle_pet_event(atlas_ui_state_t *state, atlas_pet_event_t event, uint32_t now_ms)
+{
+    if (state == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (state->moving && event != ATLAS_PET_EVENT_PATROL) {
+        (void)atlas_ui_stop(state, now_ms);
+    }
+
+    atlas_pet_handle_event(&state->pet, event, now_ms);
+    state->last_event_ms = now_ms;
+
+    switch (event) {
+    case ATLAS_PET_EVENT_MUSIC:
+        state->page = ATLAS_PAGE_MUSIC;
+        state->expression = ATLAS_EXPR_SPEAKING;
+        state->audio_level = 64;
+        break;
+    case ATLAS_PET_EVENT_STORY:
+        state->page = ATLAS_PAGE_STORY;
+        state->expression = ATLAS_EXPR_SPEAKING;
+        state->audio_level = 58;
+        break;
+    case ATLAS_PET_EVENT_CHAT:
+    case ATLAS_PET_EVENT_SPEAK:
+        state->page = ATLAS_PAGE_CHAT;
+        state->expression = event == ATLAS_PET_EVENT_CHAT ? ATLAS_EXPR_LISTEN : ATLAS_EXPR_SPEAKING;
+        state->audio_level = event == ATLAS_PET_EVENT_CHAT ? 28 : 58;
+        break;
+    case ATLAS_PET_EVENT_REST:
+        state->page = ATLAS_PAGE_EYES;
+        state->expression = ATLAS_EXPR_SLEEPY;
+        state->audio_level = 0;
+        break;
+    case ATLAS_PET_EVENT_PATROL:
+        state->page = ATLAS_PAGE_EYES;
+        state->expression = ATLAS_EXPR_MOVING;
+        state->audio_level = 0;
+        break;
+    case ATLAS_PET_EVENT_TOUCH:
+    case ATLAS_PET_EVENT_PLAY:
+    case ATLAS_PET_EVENT_FEED:
+    case ATLAS_PET_EVENT_INTERACTION:
+    case ATLAS_PET_EVENT_VOICE_LISTEN:
+    case ATLAS_PET_EVENT_THINK:
+    case ATLAS_PET_EVENT_STOP:
+    case ATLAS_PET_EVENT_CHARGE:
+    case ATLAS_PET_EVENT_ERROR:
+    default:
+        state->page = ATLAS_PAGE_EYES;
+        state->expression = atlas_pet_expression(&state->pet);
+        state->audio_level = 0;
         break;
     }
 
@@ -226,6 +298,7 @@ void atlas_ui_handle_chassis_ack(atlas_ui_state_t *state, atlas_rover_ack_t ack,
     }
 
     ESP_LOGE(TAG, "chassis ACK ERROR, forcing stop state");
+    atlas_pet_handle_event(&state->pet, ATLAS_PET_EVENT_ERROR, now_ms);
     state->page = ATLAS_PAGE_STATUS;
     state->expression = ATLAS_EXPR_ERROR;
     state->moving = false;
@@ -239,14 +312,26 @@ void atlas_ui_tick(atlas_ui_state_t *state, uint32_t now_ms)
         return;
     }
 
+    atlas_pet_tick(&state->pet, now_ms);
+
     if (state->moving && state->safety_stop_due_ms != 0 && now_ms >= state->safety_stop_due_ms) {
         ESP_LOGW(TAG, "DualEye safety timeout, sending STOP");
         (void)atlas_ui_stop(state, now_ms);
     }
 
+    const bool explicit_recent = now_ms - state->last_event_ms <= 3500u;
+    if (!state->moving && !explicit_recent && !is_persistent_page(state->page) &&
+        state->expression != ATLAS_EXPR_CHARGING && state->expression != ATLAS_EXPR_ERROR &&
+        atlas_pet_phase_is_character_active(&state->pet)) {
+        state->page = ATLAS_PAGE_EYES;
+        state->expression = atlas_pet_expression(&state->pet);
+        state->motion = ATLAS_MOTION_NONE;
+        state->audio_level = 0;
+    }
+
     if (!state->moving && !is_persistent_page(state->page) && state->expression != ATLAS_EXPR_IDLE &&
         state->expression != ATLAS_EXPR_CHARGING && state->expression != ATLAS_EXPR_ERROR &&
-        now_ms - state->last_event_ms > 3500) {
+        !atlas_pet_phase_is_character_active(&state->pet) && now_ms - state->last_event_ms > 3500) {
         state->page = ATLAS_PAGE_EYES;
         state->expression = ATLAS_EXPR_IDLE;
         state->motion = ATLAS_MOTION_NONE;

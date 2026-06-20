@@ -11,6 +11,7 @@ Use this skill when the user asks Atlas Rover to:
 - Move a short distance
 - Stop immediately
 - Play music, tell a story, chat, show calendar, or start pomodoro
+- Treat Atlas Rover as a desktop pet: touch it, play with it, let it rest, or switch pet mood/state
 
 ## Safety rules
 
@@ -55,6 +56,23 @@ Useful actions:
 `music.play`, `story.tell`, `chat.reply`, `calendar.show`, `calendar.add_reminder`, `pomodoro.start`, `pomodoro.stop`, `status.report`
 
 ```json
+{"tool":"atlas_pet_event","input":{"event":"touch"}}
+```
+
+Allowed pet events:
+
+`interaction`, `touch`, `play`, `feed`, `voice_listen`, `think`, `speak`, `patrol`, `music`, `story`, `chat`, `stop`, `rest`, `charge`, `error`
+
+Pet event meanings:
+
+- `touch`: user touched the robot; make it happy.
+- `play`: playful interaction; raise mood and curiosity.
+- `feed`:补能/充电语义；提高能量值。
+- `rest`:让它休息或睡一会。
+- `patrol`:巡游状态，只表示宠物状态；真正移动仍要用 `atlas_rover_move`。
+- `music` / `story` / `chat`:音乐、讲故事、对话专属状态。
+
+```json
 {"tool":"atlas_rover_move","input":{"direction":"forward","speed":35,"duration_ms":600}}
 ```
 
@@ -84,6 +102,18 @@ User: "往前走一点"
 
 ```json
 {"tool":"atlas_rover_move","input":{"direction":"forward","speed":35,"duration_ms":600}}
+```
+
+User: "摸摸你"
+
+```json
+{"tool":"atlas_pet_event","input":{"event":"touch"}}
+```
+
+User: "你困了就休息一下"
+
+```json
+{"tool":"atlas_pet_event","input":{"event":"rest"}}
 ```
 
 User: "停下"

@@ -1,8 +1,8 @@
-# Atlas Rover Mk.1 DualEye 固件 V0.5
+# Atlas Rover Mk.1 DualEye 固件 V0.6
 
 这个目录是 `ESP32-S3-DualEye-Touch-LCD-1.28` 的 ESP-IDF 固件工程，目标芯片为 `esp32s3`。
 
-V0.5 已经从单文件脚手架升级为可配网、可管理、可日常控制、可驱动双屏，并可接收 MimiClaw 结构化意图的模块化程序：
+V0.6 已经从单文件脚手架升级为可配网、可管理、可日常控制、可驱动双屏、可接收 MimiClaw 结构化意图，并带有电子宠物状态机的模块化程序：
 
 - 双目表情参数模型：每块实体屏幕对应一只眼睛。
 - 表情状态机：待机、开心、聆听、思考、说话、移动、好奇、困倦、惊讶、眨眼、爱心、爱钱、生气、充电、错误、大哭。
@@ -10,11 +10,13 @@ V0.5 已经从单文件脚手架升级为可配网、可管理、可日常控制
 - 双板职责划分：DualEye 负责 HMI/语音/意图，底盘板负责普通 N20 + DRV8833 的开环短时差速控制、限速和超时停车。
 - 安全超时：DualEye 发出移动指令后会按动作时长延后补发 `AR1,STOP`，防止底盘板异常时持续移动。
 - 语音事件接口：MimiClaw 可输出标准事件、tool-call 或 `atlas.mimiclaw.v1` 意图来驱动表情、页面、应用和底盘指令。
+- 电子宠物状态机：维护心情值、能量值、好奇心；长时间不互动会困/睡觉，触摸会开心，移动后进入巡游状态，音乐/讲故事/对话有专属状态。
 - NVS 配置：保存 Wi-Fi、LLM 模式、Base URL、Model、API Key 和安全限制。
 - Wi-Fi 配网：无配置时开启 `AtlasRover-XXXX` SoftAP；有配置时优先连接路由器，失败后回落 APSTA。
 - Web 管理页：手机/电脑访问设备 IP，可查看状态、保存配置、STOP、短时移动和测试文本意图。
 - 配对码：启动时生成 6 位配对码；STOP 不需要配对码，移动和配置修改需要配对码。
 - Web 入口拆分：`/app` 是日常应用页，`/admin` 是管理后台，根路径 `/` 默认进入应用页。
+- Web 宠物控制：`/app` 已补电子宠物区块，可查看心情/能量/好奇心，并触发摸摸、玩耍、补能、休息、巡游、音乐、故事、对话状态。
 - MimiClaw 适配层：当前支持本地关键词意图、LLM 配置状态，以及 `/api/mimiclaw/intent` 结构化意图执行入口。
 - 主题同步：`classic`、`amber`、`mint`、`alert`、`night` 已从 Web 评审页同步到 `atlas_expression` palette。
 - Waveshare 双屏后端：`atlas_display.c` 默认接入官方同款 GC9A01/LVGL 初始化；如果硬件初始化失败，会回退为串口日志渲染。
@@ -32,6 +34,7 @@ main/
   atlas_voice.*          语音/MimiClaw 事件入口
   atlas_mimiclaw_intent.* MimiClaw tool-call / 结构化意图解析
   atlas_ui.*             页面、表情、运动、安全状态机
+  atlas_pet.*            电子宠物心情/能量/好奇心状态机
   atlas_config.*         NVS 配置读写
   atlas_wifi.*           SoftAP/STA/APSTA 网络
   atlas_admin_http.*     Web 管理页和 REST API
@@ -57,12 +60,13 @@ main/
 |---|---|---|---|
 | `/` / `/app` | GET | 否 | 用户应用页：表情、显示、移动、MimiClaw 应用入口 |
 | `/admin` | GET | 否 | 管理后台：配网、API、安全和调试 |
-| `/api/status` | GET | 否 | 查看 Wi-Fi、UI、LLM、安全状态，不返回 API Key 明文 |
+| `/api/status` | GET | 否 | 查看 Wi-Fi、UI、电子宠物、LLM、安全状态，不返回 API Key 明文 |
 | `/api/rover/stop` | POST | 否 | 立即发送 `AR1,STOP` |
 | `/api/rover/move` | POST | 是 | 短时移动，受最大速度/最大时长限制 |
 | `/api/app/expression` | POST | 是 | 切换双眼表情 |
 | `/api/app/page` | POST | 是 | 切换显示页：双眼、时钟、闹钟、照片、状态等 |
 | `/api/app/action` | POST | 是 | 触发应用动作：音乐、故事、陪聊、日历、番茄、闹钟；当前为 MimiClaw 占位入口 |
+| `/api/pet/event` | POST | 是 | 触发电子宠物事件：`touch`、`play`、`feed`、`rest`、`patrol`、`music`、`story`、`chat` |
 | `/api/config/wifi` | POST | 是 | 保存 Wi-Fi |
 | `/api/config/llm` | POST | 是 | 保存 LLM 模式、Base URL、Model、API Key |
 | `/api/config/safety` | POST | 是 | 保存是否允许移动、最大速度、最大时长 |
@@ -182,7 +186,7 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
   "$IDF_PYTHON_ENV_PATH/bin/python" -m pip install PySocks
 ```
 
-本地已经验证过一次：`idf.py build` 可以生成 `build/atlas_rover_dualeye.bin`，大小约 `0x110710`，4MB 应用分区剩余约 73%。
+本地已经验证过一次：`idf.py build` 可以生成 `build/atlas_rover_dualeye.bin`，V0.6 大小约 `0x111b90`，4MB 应用分区剩余约 73%。
 
 ## 后续接入点
 

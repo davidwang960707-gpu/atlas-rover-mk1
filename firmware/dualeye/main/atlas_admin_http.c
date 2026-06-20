@@ -178,10 +178,11 @@ static esp_err_t app_handler(httpd_req_t *req)
         "main{max-width:820px;margin:0 auto;padding:16px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.badge{padding:6px 10px;border:1px solid #5fe1b4;color:#5fe1b4}"
         "section{margin:12px 0;padding:12px;border:1px solid #41474f;background:#171a20}h1{margin:6px 0 2px;font-size:28px}h2{font-size:17px;margin:0 0 10px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:8px}"
         "button,input{font:inherit;border:1px solid #6f7780;background:#202631;color:#f2eee7;padding:11px;border-radius:6px}button{cursor:pointer}button.primary{border-color:#3fc9ff}button.warn{border-color:#ff6b4b;color:#ffb2a0}"
-        ".pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:360px;margin:0 auto}.pad .wide{grid-column:1/4}.status{white-space:pre-wrap;color:#b9c2cc;font-size:13px}</style></head>"
+        ".pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:360px;margin:0 auto}.pad .wide{grid-column:1/4}.status{white-space:pre-wrap;color:#b9c2cc;font-size:13px}.petline{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center;margin:6px 0}.bar{height:9px;background:#252b34;border:1px solid #3b4552}.bar span{display:block;height:100%;background:#5fe1b4}</style></head>"
         "<body><main><div class=\"top\"><div><h1>Atlas Rover</h1><div id=\"mode\" class=\"badge\">连接中</div></div><a href=\"/admin\" style=\"color:#f5dc96\">管理后台</a></div>"
         "<section><h2>配对</h2><div class=\"grid\"><input id=\"pin\" inputmode=\"numeric\" placeholder=\"6 位配对码\"><button onclick=\"savePin()\">保存配对码</button><button class=\"warn\" onclick=\"stopNow()\">STOP</button></div></section>"
         "<section><h2>模式</h2><div class=\"grid\"><button class=\"primary\" onclick=\"setMode('manual')\">手动模式</button><button onclick=\"setMode('ai')\">AI 模式</button><button onclick=\"refresh()\">刷新状态</button></div><div id=\"status\" class=\"status\">加载中...</div></section>"
+        "<section><h2>电子宠物</h2><div id=\"pet\" class=\"status\">加载中...</div><div class=\"grid\"><button onclick=\"petEvent('touch')\">摸摸</button><button onclick=\"petEvent('play')\">玩一下</button><button onclick=\"petEvent('feed')\">补能</button><button onclick=\"petEvent('rest')\">休息</button><button onclick=\"petEvent('patrol')\">巡游状态</button><button onclick=\"petEvent('music')\">音乐表情</button><button onclick=\"petEvent('story')\">故事表情</button><button onclick=\"petEvent('chat')\">对话表情</button></div></section>"
         "<section><h2>双眼表情</h2><div class=\"grid\"><button onclick=\"expr('happy')\">开心</button><button onclick=\"expr('thinking')\">思考</button><button onclick=\"expr('listen')\">聆听</button><button onclick=\"expr('speaking')\">说话</button><button onclick=\"expr('sleepy')\">困倦</button><button onclick=\"expr('wink')\">眨眼</button></div></section>"
         "<section><h2>显示</h2><div class=\"grid\"><button onclick=\"page('eyes')\">双眼</button><button onclick=\"page('clock')\">时钟</button><button onclick=\"page('status')\">状态</button><button onclick=\"page('voice')\">语音</button><button onclick=\"page('music')\">音乐</button><button onclick=\"page('story')\">故事</button><button onclick=\"page('chat')\">对话</button><button onclick=\"page('calendar')\">日历</button><button onclick=\"page('pomodoro')\">番茄</button><button onclick=\"page('photo')\">照片</button></div></section>"
         "<section><h2>移动</h2><div class=\"pad\"><button></button><button onclick=\"move('F')\">前进</button><button></button><button onclick=\"move('L')\">左转</button><button class=\"warn\" onclick=\"stopNow()\">停止</button><button onclick=\"move('R')\">右转</button><button class=\"wide\" onclick=\"move('B')\">后退</button></div></section>"
@@ -190,13 +191,15 @@ static esp_err_t app_handler(httpd_req_t *req)
         "const enc=encodeURIComponent,$=id=>document.getElementById(id);let st=null;$('pin').value=localStorage.getItem('atlas_pin')||'';function savePin(){localStorage.setItem('atlas_pin',$('pin').value);alert('已保存')}"
         "async function post(u,b=''){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b});const t=await r.text();try{return JSON.parse(t)}catch(e){return {raw:t}}}"
         "function pinBody(){return `pin=${enc($('pin').value)}`}"
-        "async function refresh(){st=await (await fetch('/api/status')).json();$('mode').textContent=`${st.safety.control_mode==='ai'?'AI 模式':'手动模式'} · ${st.ui.page} · ${st.ui.expression}`;$('status').textContent=JSON.stringify(st,null,2)}"
+        "function petHtml(p){if(!p)return '加载中...';const b=(n,v)=>`<div class=\"petline\"><span>${n}</span><div class=\"bar\"><span style=\"width:${v}%\"></span></div></div>`;return `${p.label} · ${p.phase} · 资源 ${p.asset_id}<br>`+b('心情',p.mood)+b('能量',p.energy)+b('好奇心',p.curiosity)}"
+        "async function refresh(){st=await (await fetch('/api/status')).json();$('mode').textContent=`${st.safety.control_mode==='ai'?'AI 模式':'手动模式'} · ${st.ui.page} · ${st.ui.expression}`;$('status').textContent=JSON.stringify(st,null,2);$('pet').innerHTML=petHtml(st.pet)}"
         "async function setMode(m){const speed=st?st.safety.max_speed_percent:40,dur=st?st.safety.max_duration_ms:700;alert(JSON.stringify(await post('/api/config/safety',`${pinBody()}&motion_enabled=1&control_mode=${m}&max_speed=${speed}&max_duration=${dur}`)));refresh()}"
         "async function stopNow(){alert(JSON.stringify(await post('/api/rover/stop')));refresh()}"
         "async function move(d){alert(JSON.stringify(await post('/api/rover/move',`${pinBody()}&dir=${d}&speed=30&duration=500`)));refresh()}"
         "async function expr(e){alert(JSON.stringify(await post('/api/app/expression',`${pinBody()}&expression=${e}`)));refresh()}"
         "async function page(p){alert(JSON.stringify(await post('/api/app/page',`${pinBody()}&page=${p}`)));refresh()}"
-        "async function act(a){alert(JSON.stringify(await post('/api/app/action',`${pinBody()}&action=${a}`)));refresh()}refresh();setInterval(refresh,5000);</script></body></html>";
+        "async function act(a){alert(JSON.stringify(await post('/api/app/action',`${pinBody()}&action=${a}`)));refresh()}"
+        "async function petEvent(e){alert(JSON.stringify(await post('/api/pet/event',`${pinBody()}&event=${e}`)));refresh()}refresh();setInterval(refresh,5000);</script></body></html>";
 
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     return httpd_resp_sendstr(req, html);
@@ -265,13 +268,18 @@ static esp_err_t status_handler(httpd_req_t *req)
     char model[ATLAS_LLM_MODEL_MAX * 2];
     char provider[ATLAS_LLM_PROVIDER_MAX * 2];
     char ui_theme[ATLAS_UI_THEME_MAX * 2];
+    char pet_asset[sizeof(s_ctx.ui_state->pet.asset_id) * 2];
     json_escape(base_url, sizeof(base_url), llm.base_url);
     json_escape(mode, sizeof(mode), llm.mode);
     json_escape(model, sizeof(model), llm.model);
     json_escape(provider, sizeof(provider), llm.provider);
     json_escape(ui_theme, sizeof(ui_theme), s_ctx.config->ui.theme);
+    json_escape(pet_asset, sizeof(pet_asset), s_ctx.ui_state->pet.asset_id);
 
-    char json[1700];
+    const uint32_t ts = now_ms();
+    const uint32_t idle_ms = ts - s_ctx.ui_state->pet.last_interaction_ms;
+
+    char json[2300];
     snprintf(json,
              sizeof(json),
              "{"
@@ -279,6 +287,8 @@ static esp_err_t status_handler(httpd_req_t *req)
              "\"pairing_hint\":\"see DualEye screen or serial log\","
              "\"ui\":{\"page\":\"%s\",\"expression\":\"%s\",\"motion\":\"%s\",\"moving\":%s,\"last_ack\":%d,"
              "\"theme\":\"%s\",\"brightness\":%u,\"volume\":%u},"
+             "\"pet\":{\"phase\":\"%s\",\"label\":\"%s\",\"mood\":%u,\"energy\":%u,\"curiosity\":%u,"
+             "\"asleep\":%s,\"asset_id\":\"%s\",\"idle_ms\":%u},"
              "\"wifi\":{\"mode\":\"%s\",\"sta_connected\":%s,\"sta_ip\":\"%s\",\"ap_started\":%s,\"ap_ip\":\"%s\",\"ap_ssid\":\"%s\"},"
              "\"llm\":{\"mode\":\"%s\",\"label\":\"%s\",\"provider\":\"%s\",\"base_url\":\"%s\",\"model\":\"%s\",\"configured\":%s,\"api_key_set\":%s},"
              "\"safety\":{\"motion_enabled\":%s,\"control_mode\":\"%s\",\"max_speed_percent\":%u,\"max_duration_ms\":%u}"
@@ -291,6 +301,14 @@ static esp_err_t status_handler(httpd_req_t *req)
              ui_theme,
              s_ctx.config->ui.brightness,
              s_ctx.config->ui.volume,
+             atlas_pet_phase_name(s_ctx.ui_state->pet.phase),
+             atlas_pet_phase_label_zh(s_ctx.ui_state->pet.phase),
+             s_ctx.ui_state->pet.mood,
+             s_ctx.ui_state->pet.energy,
+             s_ctx.ui_state->pet.curiosity,
+             s_ctx.ui_state->pet.asleep ? "true" : "false",
+             pet_asset,
+             (unsigned int)idle_ms,
              atlas_wifi_mode_name(wifi.mode),
              wifi.sta_connected ? "true" : "false",
              wifi.sta_ip,
@@ -353,13 +371,20 @@ static esp_err_t app_page_handler(httpd_req_t *req)
     if (page == ATLAS_PAGE_VOICE) {
         s_ctx.ui_state->expression = ATLAS_EXPR_LISTEN;
         s_ctx.ui_state->audio_level = 24;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_VOICE_LISTEN, now_ms());
     } else if (page == ATLAS_PAGE_MUSIC || page == ATLAS_PAGE_STORY || page == ATLAS_PAGE_CHAT) {
         s_ctx.ui_state->expression = page == ATLAS_PAGE_CHAT ? ATLAS_EXPR_LISTEN : ATLAS_EXPR_SPEAKING;
         s_ctx.ui_state->audio_level = page == ATLAS_PAGE_CHAT ? 28 : 58;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet,
+                               page == ATLAS_PAGE_MUSIC ? ATLAS_PET_EVENT_MUSIC :
+                               page == ATLAS_PAGE_STORY ? ATLAS_PET_EVENT_STORY :
+                                                          ATLAS_PET_EVENT_CHAT,
+                               now_ms());
     } else if (page == ATLAS_PAGE_CALENDAR || page == ATLAS_PAGE_POMODORO ||
                page == ATLAS_PAGE_ALARM || page == ATLAS_PAGE_PHOTO) {
         s_ctx.ui_state->expression = ATLAS_EXPR_CURIOUS;
         s_ctx.ui_state->audio_level = 0;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_THINK, now_ms());
     } else if (!s_ctx.ui_state->moving) {
         s_ctx.ui_state->expression = ATLAS_EXPR_IDLE;
         s_ctx.ui_state->audio_level = 0;
@@ -388,32 +413,69 @@ static esp_err_t app_action_handler(httpd_req_t *req)
         s_ctx.ui_state->page = ATLAS_PAGE_MUSIC;
         s_ctx.ui_state->expression = ATLAS_EXPR_SPEAKING;
         s_ctx.ui_state->audio_level = 64;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_MUSIC, ts);
     } else if (strcmp(action, "story") == 0) {
         s_ctx.ui_state->page = ATLAS_PAGE_STORY;
         s_ctx.ui_state->expression = ATLAS_EXPR_SPEAKING;
         s_ctx.ui_state->audio_level = 58;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_STORY, ts);
     } else if (strcmp(action, "chat") == 0) {
         s_ctx.ui_state->page = ATLAS_PAGE_CHAT;
         s_ctx.ui_state->expression = ATLAS_EXPR_LISTEN;
         s_ctx.ui_state->audio_level = 28;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_CHAT, ts);
     } else if (strcmp(action, "calendar") == 0) {
         s_ctx.ui_state->page = ATLAS_PAGE_CALENDAR;
         s_ctx.ui_state->expression = ATLAS_EXPR_CURIOUS;
         s_ctx.ui_state->audio_level = 0;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_THINK, ts);
     } else if (strcmp(action, "pomodoro") == 0) {
         s_ctx.ui_state->page = ATLAS_PAGE_POMODORO;
         s_ctx.ui_state->expression = ATLAS_EXPR_THINKING;
         s_ctx.ui_state->audio_level = 0;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_THINK, ts);
     } else if (strcmp(action, "alarm") == 0) {
         s_ctx.ui_state->page = ATLAS_PAGE_ALARM;
         s_ctx.ui_state->expression = ATLAS_EXPR_CURIOUS;
         s_ctx.ui_state->audio_level = 0;
+        atlas_pet_handle_event(&s_ctx.ui_state->pet, ATLAS_PET_EVENT_THINK, ts);
     } else {
         return send_error(req, "400 Bad Request", "bad action");
     }
 
     s_ctx.ui_state->last_event_ms = ts;
     return send_json(req, "{\"ok\":true,\"app\":\"action\",\"note\":\"mimiclaw placeholder\"}");
+}
+
+static esp_err_t pet_event_handler(httpd_req_t *req)
+{
+    char body[160];
+    ESP_RETURN_ON_ERROR(read_body(req, body, sizeof(body)), TAG, "read body failed");
+    if (!authorize_body(body)) {
+        return send_error(req, "403 Forbidden", "pairing required");
+    }
+
+    char event_name[24] = "";
+    (void)form_get_value(body, "event", event_name, sizeof(event_name));
+    atlas_pet_event_t event = ATLAS_PET_EVENT_INTERACTION;
+    if (!atlas_pet_event_from_name(event_name, &event)) {
+        return send_error(req, "400 Bad Request", "bad pet event");
+    }
+
+    const uint32_t ts = now_ms();
+    const esp_err_t err = atlas_ui_handle_pet_event(s_ctx.ui_state, event, ts);
+    if (err != ESP_OK) {
+        return send_error(req, "500 Internal Server Error", esp_err_to_name(err));
+    }
+
+    char json[220];
+    snprintf(json,
+             sizeof(json),
+             "{\"ok\":true,\"pet_event\":\"%s\",\"phase\":\"%s\",\"expression\":\"%s\"}",
+             atlas_pet_event_name(event),
+             atlas_pet_phase_name(s_ctx.ui_state->pet.phase),
+             atlas_expression_name(s_ctx.ui_state->expression));
+    return send_json(req, json);
 }
 
 static esp_err_t stop_handler(httpd_req_t *req)
@@ -752,6 +814,7 @@ esp_err_t atlas_admin_http_start(atlas_config_t *config,
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/app/expression", HTTP_POST, app_expression_handler), TAG, "route app expression failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/app/page", HTTP_POST, app_page_handler), TAG, "route app page failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/app/action", HTTP_POST, app_action_handler), TAG, "route app action failed");
+    ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/pet/event", HTTP_POST, pet_event_handler), TAG, "route pet event failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/wifi", HTTP_POST, save_wifi_handler), TAG, "route wifi failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/llm", HTTP_POST, save_llm_handler), TAG, "route llm failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/config/safety", HTTP_POST, save_safety_handler), TAG, "route safety failed");

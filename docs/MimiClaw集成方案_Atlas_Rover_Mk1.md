@@ -108,11 +108,13 @@ DualEye 固件侧新增：
 | `atlas_set_expression` | 切换双眼表情。 |
 | `atlas_show_page` | 切换功能页面。 |
 | `atlas_app_action` | 触发音乐、故事、对话、日历、番茄等应用入口。 |
+| `atlas_pet_event` | 触发电子宠物事件，例如摸摸、玩耍、补能、休息、巡游状态、音乐、故事、对话。 |
 | `atlas_rover_move` | 短时移动，必须经 DualEye Safety Guard。 |
 | `atlas_rover_stop` | 立即停止，最高优先级。 |
-| `atlas_status_report` | 查询当前 UI、Wi-Fi、UART、底盘安全状态。 |
+| `atlas_status_report` | 查询当前 UI、电子宠物、Wi-Fi、UART、底盘安全状态。 |
 
 这些工具不直接写电机 GPIO，不直接写 UART。它们统一进入 DualEye 的 UI/安全层，再由 DualEye 决定是否发 `AR1,` UART 给底盘板。
+电子宠物事件也不直接移动底盘；`patrol` 只切换宠物状态和表情，真正车轮运动仍必须走 `atlas_rover_move`。
 
 ## 5. Safety Guard
 
@@ -131,10 +133,11 @@ DualEye 固件侧新增：
 
 Web 端分两类：
 
-- `/app`：用户日常应用页，切换表情、页面、音乐、故事、对话、日历、番茄、小车移动。
+- `/app`：用户日常应用页，切换表情、页面、电子宠物、音乐、故事、对话、日历、番茄、小车移动。
 - `/admin`：管理后台，配置 Wi-Fi/API/安全/主题，并提供 MimiClaw 结构化意图测试框。
 
 MimiClaw 端侧合并完成前，`/admin` 的测试框可用于模拟 Mimiclaw tool call，提前验证 DualEye 执行链路。
+`/api/status` 会返回 `pet` 对象，包括 `phase`、中文状态、心情、能量、好奇心、是否睡着和 SD 卡资源 ID。`/api/pet/event` 可供 Web、手机端或 Mimiclaw 调用。
 
 ## 7. 下一步工程合并清单
 

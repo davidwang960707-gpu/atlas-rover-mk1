@@ -7,6 +7,7 @@ idf_component_register(
         "atlas_expression.c"
         "atlas_llm_client.c"
         "atlas_mimiclaw_adapter.c"
+        "atlas_pet.c"
         "atlas_pairing.c"
         "atlas_rover_uart.c"
         "atlas_ui.c"

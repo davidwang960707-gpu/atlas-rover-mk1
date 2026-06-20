@@ -25,6 +25,8 @@ typedef struct {
     char action[ATLAS_MIMICLAW_INTENT_ACTION_MAX];
     bool has_motion;
     atlas_voice_intent_t motion;
+    bool has_pet_event;
+    atlas_pet_event_t pet_event;
     bool has_speech;
     char speech[ATLAS_MIMICLAW_INTENT_SPEECH_MAX];
     bool requires_confirmation;
