@@ -47,11 +47,14 @@
 
 目标：把 OPUS probe 与持续推流入口拆成 common audio stream adapter。
 
-计划：
+本轮边界：
 
-- common 层固化 AOP1 header、60ms frame、sequence、send failure 和 mute statistics。
-- app 层提供 PCM capture backend、Brain URL resolution 和 HTTP route binding。
-- 保留 `/api/audio/opus-stream/start|stop|status` 与 `atlas.audio.stream.v0`。
+- 新增 `firmware/dualeye/main/common/atlas_common_opus_stream.*`。
+- `atlas_opus_stream.*` 保留旧 API，作为 DualEye app wrapper。
+- common 层固化 AOP1 header、60ms frame、OPUS encoder、probe statistics、WebSocket uplink、sequence、send failure、mute statistics 和状态 JSON。
+- app wrapper 通过 callback 提供 PCM capture、播放 mute 状态、audio service 阶段通知、device id 和 task name。
+- 保留 `/api/audio/opus-probe`、`/api/audio/opus-stream/start|stop|status` 与 `atlas.audio.stream.v0`；Brain 侧 `/api/device/opus-*` 代理语义不需要固件改路由。
+- Brain 离线不影响本地 UI；OPUS stream start 仍只返回 host bridge 未配置/连接失败状态，不改双眼、时钟、番茄、日历本地页面降级规则。
 
 ### P3 WakeNet/AEC 资源验证
 
