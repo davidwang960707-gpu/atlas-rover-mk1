@@ -8,7 +8,6 @@ from typing import Any
 
 from atlas_brain_audio import latest_tts_meta, latest_turn_meta
 from atlas_brain_devices import http_json
-from atlas_web_ui import render_device_app_page, render_devices_page
 
 
 def live_device_payload(bridge: Any) -> dict[str, Any]:
@@ -170,16 +169,3 @@ def handle_device_detail(handler: Any, bridge: Any, device_id: str) -> None:
             handler.send_json({"ok": True, "device": device})
             return
     handler.send_json({"ok": False, "error": f"device not found: {device_id}"}, HTTPStatus.NOT_FOUND)
-
-
-def handle_devices_page(handler: Any, bridge: Any) -> None:
-    handler.send_html(render_devices_page(bridge.devices()))
-
-
-def handle_device_app_page(handler: Any, bridge: Any, *, lan_url: str, rover_skills_enabled: bool) -> None:
-    handler.send_html(render_device_app_page(
-        bridge.device_summary(),
-        dualeye_url=bridge.dualeye_url,
-        lan_url=lan_url,
-        rover_enabled=rover_skills_enabled,
-    ))
