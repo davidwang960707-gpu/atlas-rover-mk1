@@ -2175,10 +2175,10 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
         audio_service_status.consecutive_failures == 0u;
 
     const uint32_t ts = now_ms();
-    char json[6200];
-    snprintf(json,
-             sizeof(json),
-             "{"
+    char json[7000];
+    const int written = snprintf(json,
+                                 sizeof(json),
+                                 "{"
              "\"ok\":true,"
              "\"now_ms\":%" PRIu32 ","
              "\"voice_wake\":{\"enabled\":%s,\"busy\":%s,\"psram_stack\":%s,\"mute_ms\":%" PRIu32 ",\"triggers\":%" PRIu32 ",\"reason\":\"%s\"},"
@@ -2222,6 +2222,9 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
              scene_json,
              audio_service_json,
              runtime_json);
+    if (!json_snprintf_complete(written, sizeof(json))) {
+        return send_error(req, "500 Internal Server Error", "turn diagnostics json overflow");
+    }
     return send_json(req, json);
 }
 
@@ -3459,14 +3462,20 @@ static esp_err_t audio_opus_stream_status_handler(httpd_req_t *req)
     atlas_opus_stream_get_status(&status);
 
     char stream_json[1200];
-    atlas_opus_stream_write_status_json(&status, stream_json, sizeof(stream_json));
+    const size_t stream_len = atlas_opus_stream_write_status_json(&status, stream_json, sizeof(stream_json));
+    if (!json_fragment_complete(stream_len, sizeof(stream_json))) {
+        return send_error(req, "500 Internal Server Error", "opus stream status json overflow");
+    }
     char response[1400];
-    snprintf(response,
-             sizeof(response),
-             "{\"ok\":true,\"protocol\":\"" ATLAS_OPUS_STREAM_PROTOCOL "\","
-             "\"stage\":\"P2_dualeye_ws_opus_stream\",\"binary_header\":\"AOP1\","
-             "\"stream\":%s}",
-             stream_json);
+    const int written = snprintf(response,
+                                 sizeof(response),
+                                 "{\"ok\":true,\"protocol\":\"" ATLAS_OPUS_STREAM_PROTOCOL "\","
+                                 "\"stage\":\"P2_dualeye_ws_opus_stream\",\"binary_header\":\"AOP1\","
+                                 "\"stream\":%s}",
+                                 stream_json);
+    if (!json_snprintf_complete(written, sizeof(response))) {
+        return send_error(req, "500 Internal Server Error", "opus stream status response overflow");
+    }
     return send_json(req, response);
 }
 
