@@ -79,6 +79,14 @@ from atlas_brain_ota import (
     build_ota_packages_response,
     send_ota_package,
 )
+from atlas_brain_tool_routes import (
+    handle_legacy_skill_call,
+    handle_legacy_skills,
+    handle_legacy_tools,
+    handle_tool_call,
+    handle_tools_list,
+    public_roles_payload,
+)
 from atlas_brain_providers import (
     chat_choice_audio,
     chat_choice_text,
@@ -2016,7 +2024,7 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 payload = self.health_payload()
                 payload["brain"] = {
                     "skills": bridge.skills.list_public(),
-                    "roles": {key: {k: v for k, v in value.items() if k != "prompt"} for key, value in ROLE_PROFILES.items()},
+                    "roles": public_roles_payload(),
                     "endpoints": ["/health", "/diagnostics", "/api/acceptance/report", "/api/runtime", "/api/runtime/sessions", "/api/runtime/score", "/api/platform", "/api/devices", "/api/device/live", "/api/device/scene", "/api/device/selftest", "/api/device/system-info", "/api/device/opus-probe", "/api/device/opus-stream/start", "/api/device/opus-turn/start", "/api/device/opus-stream/stop", "/api/device/opus-stream/status", "/devices", "/acceptance", "/skills", "/skill", "/api/tools", "/api/tools/list", "/api/tools/call", "/mcp/tools/list", "/mcp/tools/call", "/turn/text", "/turn/audio", "/api/brain/session", "/api/brain/events", "/ws/brain", "/ws/audio", "/api/audio/stream/status", "/api/audio/stream/simulate", "/api/sr/status", "/api/sr/simulate", "/role/switch", "/ota/manifest", "/api/ota/packages", "/ota/package/app_ota"],
                 }
                 try:
@@ -2089,23 +2097,10 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 handle_status(self, bridge)
                 return
             if path == "/skills":
-                self.send_json({
-                    "ok": True,
-                    "protocol": "atlas.skills.legacy.v1",
-                    "skills": bridge.skills.list_public(),
-                    "roles": {key: {k: v for k, v in value.items() if k != "prompt"} for key, value in ROLE_PROFILES.items()},
-                })
+                handle_legacy_skills(self, bridge)
                 return
             if path in {"/api/tools", "/api/tools/list", "/mcp/tools/list"}:
-                payload = bridge.skills.tool_schema_payload()
-                if path == "/mcp/tools/list":
-                    self.send_json({
-                        "ok": True,
-                        "protocol": "atlas.tools.v0.desk_apps",
-                        "tools": payload["tools"],
-                    })
-                else:
-                    self.send_json(payload)
+                handle_tools_list(self, bridge, path)
                 return
             if path == "/api/devices" or path == "/devices.json":
                 self.send_json(devices_payload(bridge, rover_skills_enabled=ENABLE_ROVER_SKILLS))
@@ -2175,22 +2170,7 @@ runAll();
                 )
                 return
             if path == "/tools":
-                legacy_tools = [
-                    "atlas_show_page",
-                    "atlas_set_expression",
-                    "atlas_pomodoro",
-                    "atlas_calendar",
-                    "atlas_chat",
-                    "atlas_app_action",
-                ]
-                if ENABLE_ROVER_SKILLS:
-                    legacy_tools = ["atlas_rover_move", "atlas_rover_stop"] + legacy_tools
-                self.send_json({
-                    "ok": True,
-                    "legacy_tools": legacy_tools,
-                    "skills": bridge.skills.list_public(),
-                    "tool_schema": bridge.skills.tool_schema_payload(),
-                })
+                handle_legacy_tools(self, bridge, rover_skills_enabled=ENABLE_ROVER_SKILLS)
                 return
             if path == "/tts/latest.wav":
                 audio, meta = latest_tts_wav()
@@ -2305,90 +2285,10 @@ runAll();
                 handle_browser_audio_turn(self, bridge, payload, self.latest_tts_url())
                 return
             if path in {"/api/tools/call", "/mcp/tools/call"}:
-                tool_name = str(payload.get("name") or payload.get("tool") or "").strip()
-                args = payload.get("arguments", payload.get("args", payload.get("input", {})))
-                if not isinstance(args, dict):
-                    args = {}
-                if not tool_name:
-                    self.send_json({"ok": False, "error": "tool name required"}, HTTPStatus.BAD_REQUEST)
-                    return
-                tool_meta = bridge.skills.public_item(tool_name)
-                if tool_meta is None:
-                    self.send_json({"ok": False, "error": f"unknown tool: {tool_name}", "tool": tool_name}, HTTPStatus.NOT_FOUND)
-                    return
-                if bool(tool_meta.get("confirm_required")) and not bool(payload.get("confirmed", False)):
-                    self.send_json({
-                        "ok": False,
-                        "error": "confirmation required",
-                        "tool": tool_name,
-                        "risk": tool_meta.get("risk", "unknown"),
-                        "confirm_required": True,
-                    }, HTTPStatus.CONFLICT)
-                    return
-                result = bridge.execute_skill(tool_name, args)
-                reply = str(result.get("reply") or result.get("speech") or "").strip()
-                if bool(payload.get("speak", False)) and reply:
-                    result["tts"] = bridge.synthesize_speech(
-                        reply,
-                        voice=str(payload.get("tts_voice", "")).strip(),
-                        style=str(payload.get("tts_style", bridge.session.default_tts_style) or bridge.session.default_tts_style),
-                        singing=bool(payload.get("tts_singing", False)),
-                    )
-                    tts_store, tts_url, dualeye_play = self.cache_tts_and_push(result["tts"])
-                    result["tts_cached"] = tts_store
-                    result["tts_url"] = tts_url
-                    result["dualeye_play"] = dualeye_play
-                remember_turn({
-                    "kind": "tool_call",
-                    "ok": bool(result.get("ok")),
-                    "tool": tool_name,
-                    "args": args,
-                    "reply": reply,
-                    "risk": tool_meta.get("risk", ""),
-                    "target": tool_meta.get("target", ""),
-                    "tts_ready": bool(result.get("tts_cached", {}).get("ready")),
-                    "dualeye_play": result.get("dualeye_play", {}),
-                    "error": str(result.get("error", "")),
-                })
-                self.send_json(compact_audio_payload({
-                    "ok": bool(result.get("ok")),
-                    "protocol": "atlas.tools.v0.desk_apps",
-                    "tool": tool_name,
-                    "result": result,
-                }), HTTPStatus.OK if result.get("ok") else HTTPStatus.BAD_GATEWAY)
+                handle_tool_call(self, bridge, payload, cache_tts_and_push=self.cache_tts_and_push)
                 return
             if path == "/skill":
-                skill_name = str(payload.get("skill") or payload.get("name") or "").strip()
-                args = payload.get("args", {})
-                if not isinstance(args, dict):
-                    args = {}
-                if not skill_name:
-                    self.send_json({"ok": False, "error": "skill required"}, HTTPStatus.BAD_REQUEST)
-                    return
-                result = bridge.execute_skill(skill_name, args)
-                reply = str(result.get("reply") or result.get("speech") or "").strip()
-                if bool(payload.get("speak", False)) and reply:
-                    result["tts"] = bridge.synthesize_speech(
-                        reply,
-                        voice=str(payload.get("tts_voice", "")).strip(),
-                        style=str(payload.get("tts_style", bridge.session.default_tts_style) or bridge.session.default_tts_style),
-                        singing=bool(payload.get("tts_singing", False)),
-                    )
-                    tts_store, tts_url, dualeye_play = self.cache_tts_and_push(result["tts"])
-                    result["tts_cached"] = tts_store
-                    result["tts_url"] = tts_url
-                    result["dualeye_play"] = dualeye_play
-                remember_turn({
-                    "kind": "skill",
-                    "ok": bool(result.get("ok")),
-                    "skill": skill_name,
-                    "args": args,
-                    "reply": reply,
-                    "tts_ready": bool(result.get("tts_cached", {}).get("ready")),
-                    "dualeye_play": result.get("dualeye_play", {}),
-                    "error": str(result.get("error", "")),
-                })
-                self.send_json(compact_audio_payload(result), HTTPStatus.OK if result.get("ok") else HTTPStatus.BAD_GATEWAY)
+                handle_legacy_skill_call(self, bridge, payload, cache_tts_and_push=self.cache_tts_and_push)
                 return
             if path == "/role/switch":
                 role = str(payload.get("role", "")).strip()
