@@ -32,9 +32,7 @@ from atlas_brain_audio import (
     compact_audio_payload,
     decode_opus_packets_to_wav,
     latest_audio_stream_meta,
-    latest_tts_meta,
     latest_tts_wav,
-    latest_turn_meta,
     parse_atlas_opus_frame,
     remember_audio_stream,
     remember_turn,
@@ -80,12 +78,23 @@ from atlas_brain_ota import (
     build_ota_packages_response,
     send_ota_package,
 )
+from atlas_brain_platform_routes import (
+    build_health_payload,
+    handle_capabilities,
+    handle_diagnostics,
+    handle_health,
+    handle_platform,
+    handle_protocols,
+    handle_providers,
+    handle_runtime,
+    handle_runtime_score,
+    handle_runtime_sessions,
+)
 from atlas_brain_tool_routes import (
     handle_legacy_skill_call,
     handle_legacy_skills,
     handle_tool_call,
     handle_tools_list,
-    public_roles_payload,
 )
 from atlas_brain_providers import (
     chat_choice_audio,
@@ -1478,33 +1487,6 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
         def audio_ws_url(self) -> str:
             return f"ws://{local_lan_ip()}:{self.server.server_address[1]}/ws/audio"
 
-        def health_payload(self) -> dict[str, Any]:
-            platform = bridge.platform_snapshot()
-            return {
-                "ok": True,
-                "service": "atlas-brain",
-                "service_version": "0.2",
-                "aliases": ["atlas-brain-mac"],
-                "dualeye_url": bridge.dualeye_url,
-                "pairing_code_known": bool(bridge.pin),
-                "llm_enabled": bridge.llm_enabled(),
-                "llm_model": bridge.llm_model if bridge.llm_enabled() else "",
-                "asr_enabled": bridge.asr_enabled(),
-                "asr_model": bridge.asr_model if bridge.asr_enabled() else "",
-                "tts_enabled": bridge.tts_enabled(),
-                "tts_model": bridge.tts_model if bridge.tts_enabled() else "",
-                "tts_voice": bridge.tts_voice if bridge.tts_enabled() else "",
-                "providers": bridge.provider_status(),
-                "session": bridge.session.snapshot(),
-                "skill_count": len(bridge.skills.list_public()),
-                "rover_skills_enabled": ENABLE_ROVER_SKILLS,
-                "dry_run": bridge.dry_run,
-                "latest_tts": latest_tts_meta(),
-                "last_turn": latest_turn_meta(),
-                "platform_summary": platform["summary"],
-                "protocols": platform["protocols"],
-            }
-
         def cache_tts_and_push(self, tts_payload: dict[str, Any]) -> tuple[dict[str, Any], str, dict[str, Any]]:
             tts_store = store_latest_tts(tts_payload)
             if not tts_store.get("ready"):
@@ -1988,49 +1970,25 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 self.handle_brain_session_ws()
                 return
             if path == "/health":
-                self.send_json(self.health_payload())
+                handle_health(self, bridge, rover_skills_enabled=ENABLE_ROVER_SKILLS)
                 return
             if path == "/diagnostics":
-                payload = self.health_payload()
-                try:
-                    payload["dualeye"] = bridge.status()
-                except Exception as exc:
-                    payload["dualeye_error"] = str(exc)
-                try:
-                    payload["dualeye_capabilities"] = bridge.capabilities()
-                except Exception as exc:
-                    payload["dualeye_capabilities_error"] = str(exc)
-                try:
-                    payload["dualeye_ota"] = bridge.ota_status()
-                except Exception as exc:
-                    payload["dualeye_ota_error"] = str(exc)
-                self.send_json(payload)
+                handle_diagnostics(self, bridge, rover_skills_enabled=ENABLE_ROVER_SKILLS)
                 return
-            if path == "/capabilities":
-                payload = self.health_payload()
-                payload["brain"] = {
-                    "skills": bridge.skills.list_public(),
-                    "roles": public_roles_payload(),
-                    "endpoints": ["/health", "/diagnostics", "/api/acceptance/report", "/api/runtime", "/api/runtime/sessions", "/api/runtime/score", "/api/platform", "/api/devices", "/api/device/live", "/api/device/scene", "/api/device/selftest", "/api/device/system-info", "/api/device/opus-probe", "/api/device/opus-stream/start", "/api/device/opus-turn/start", "/api/device/opus-stream/stop", "/api/device/opus-stream/status", "/devices", "/acceptance", "/skills", "/skill", "/api/tools", "/api/tools/list", "/api/tools/call", "/mcp/tools/list", "/mcp/tools/call", "/turn/text", "/turn/audio", "/api/brain/session", "/api/brain/events", "/ws/brain", "/ws/audio", "/api/audio/stream/status", "/api/audio/stream/simulate", "/api/sr/status", "/api/sr/simulate", "/role/switch", "/ota/manifest", "/api/ota/packages", "/ota/package/app_ota"],
-                }
-                try:
-                    payload["dualeye_capabilities"] = bridge.capabilities()
-                except Exception as exc:
-                    payload["dualeye_capabilities_error"] = str(exc)
-                self.send_json(payload)
+            if path in {"/capabilities", "/api/capabilities"}:
+                handle_capabilities(self, bridge, rover_skills_enabled=ENABLE_ROVER_SKILLS)
                 return
             if path == "/api/platform":
-                self.send_json({"ok": True, "platform": bridge.platform_snapshot(), "last_turn": latest_turn_meta(), "recent_events": recent_brain_events()})
+                handle_platform(self, bridge, recent_brain_events)
                 return
             if path == "/api/runtime":
-                self.send_json({"ok": True, "runtime": bridge.runtime.snapshot(), "score": bridge.runtime_score_payload()})
+                handle_runtime(self, bridge)
                 return
             if path == "/api/runtime/sessions":
-                snapshot = bridge.runtime.snapshot()
-                self.send_json({"ok": True, "protocol": snapshot["protocol"], "sessions": snapshot["sessions"], "recent_events": snapshot["recent_events"]})
+                handle_runtime_sessions(self, bridge)
                 return
             if path == "/api/runtime/score":
-                self.send_json(bridge.runtime_score_payload())
+                handle_runtime_score(self, bridge)
                 return
             if path == "/api/acceptance/report":
                 query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
@@ -2038,12 +1996,10 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 self.send_json(build_acceptance_report(bridge, self.audio_ws_url(), skip_device=skip_device))
                 return
             if path == "/api/providers":
-                snapshot = bridge.platform_snapshot()
-                self.send_json({"ok": True, "providers": snapshot["providers"], "summary": snapshot["summary"]})
+                handle_providers(self, bridge)
                 return
             if path == "/api/protocols":
-                snapshot = bridge.platform_snapshot()
-                self.send_json({"ok": True, "protocols": snapshot["protocols"], "summary": snapshot["summary"]})
+                handle_protocols(self, bridge)
                 return
             if path == "/api/brain/session":
                 self.send_json(self.brain_session_payload())
@@ -2150,7 +2106,11 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 )
                 return
             if path == "/admin":
-                handle_admin_page(self, bridge, provider_summary=self.health_payload())
+                handle_admin_page(
+                    self,
+                    bridge,
+                    provider_summary=build_health_payload(bridge, rover_skills_enabled=ENABLE_ROVER_SKILLS),
+                )
                 return
             self.send_json({"ok": False, "error": "not found"}, HTTPStatus.NOT_FOUND)
 
