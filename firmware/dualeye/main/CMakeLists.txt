@@ -4,6 +4,7 @@ idf_component_register(
         "atlas_audio.c"
         "atlas_audio_service.c"
         "atlas_brain_ws_client.c"
+        "common/atlas_common_brain_session.c"
         "common/atlas_common_audio_service.c"
         "atlas_font_zh_16.c"
         "atlas_brain_intent.c"

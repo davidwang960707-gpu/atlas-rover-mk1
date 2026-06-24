@@ -34,11 +34,14 @@
 
 目标：把 `atlas_brain_ws_client` 拆成 common session runtime 和 DualEye event adapter。
 
-计划：
+本轮边界：
 
-- common 层负责 connect/reconnect、hello/status/ping、recent event ring buffer。
-- app 层负责把 scene/audio/ui/pet 状态转换成 DualEye payload。
-- 保留 `/api/brain/ws`、`/api/brain/events`、`brain_ws` status 字段。
+- 新增 `firmware/dualeye/main/common/atlas_common_brain_session.*`。
+- `atlas_brain_ws_client.*` 保留旧 API，作为 DualEye app wrapper。
+- common 层负责 base URL 转换、health probe、connect/reconnect、hello/ping、turn WAV request、TTS binary receive 和状态 JSON。
+- app wrapper 通过 callback 提供 Wi-Fi ready、runtime state、device id、protocol 和 Brain base URL。
+- 保留 `/api/brain/ws`、`/api/brain/events`、`brain_ws` status 字段；`atlas.brain.session.v1` payload 兼容当前 Brain。
+- Brain 离线时仅更新 `brain_ws.stage=brain_offline/waiting_wifi`；双眼、时钟、番茄、日历等本地页面继续由 scene/UI 层显示，不因 session 断开切到异常页。
 
 ### P2 OPUS 60ms 真机链路
 
