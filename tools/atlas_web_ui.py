@@ -138,6 +138,7 @@ _BASE_CSS = """
 _LIVE_CSS = """
 .device-stage{transition:background .28s ease,box-shadow .28s ease}.device-stage[data-online=false]{background:#20231f}.device-stage[data-online=false] .eye{opacity:.62;filter:saturate(.55)}.device-stage[data-theme=raptor]{background:#251611}.device-stage[data-theme=raptor] .eye{border-color:#4a2118;box-shadow:inset 0 0 0 8px #100704}.device-stage[data-theme=raptor] .eye:after{width:26px;height:76px;border-radius:999px;background:#ffe2a8;box-shadow:0 0 18px #ff855e,inset 0 0 0 8px #a9211e}.device-stage[data-theme=mecha]{background:#101c24}.device-stage[data-theme=mecha] .eye{border-color:#24475a;box-shadow:inset 0 0 0 8px #061117}.device-stage[data-theme=mecha] .eye:after{background:#d4fbff;box-shadow:0 0 22px #51d6ff,inset 0 0 0 16px #1b80a5}.device-stage[data-theme=goggle]{background:#251f11}.device-stage[data-theme=goggle] .eye{border-color:#775f18;box-shadow:inset 0 0 0 8px #171104}.device-stage[data-theme=goggle] .eye:after{background:#fff1b0;box-shadow:0 0 16px #f2b84b,inset 0 0 0 19px #2e4148}.device-stage[data-theme=pet]{background:#17231f}.device-stage[data-theme=pet] .eye:after{background:#fbf7ef;box-shadow:0 0 18px #bfe8d4,inset 0 0 0 18px #4c7fd9}.device-stage[data-expression=listen] .eye:after{transform:scale(1.08)}.device-stage[data-expression=blink] .eye:after{height:16px;border-radius:999px}.device-stage[data-expression=sleepy] .eye:after{height:12px;border-radius:999px}.pet-head-stage{--pet-x:0;--pet-y:0;--pet-roll:0;--pupil-x:0px;--pupil-y:0px;display:none;position:relative;z-index:1;justify-content:center;align-items:center;margin-top:10px;min-height:220px;perspective:680px;isolation:isolate}.pet-stage-hint{position:absolute;right:10px;bottom:0;color:rgba(255,255,255,.48);font-size:12px}.pet-shadow{position:absolute;left:50%;bottom:2px;width:154px;height:28px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.38),transparent 70%);transform:translateX(-50%);filter:blur(1px)}.pet-head-img{display:none;width:224px;height:224px;object-fit:contain;position:relative;z-index:2;filter:drop-shadow(0 20px 26px rgba(0,0,0,.34));transform:rotateY(calc(var(--pet-x)*1deg)) rotateX(calc(var(--pet-y)*-0.75deg)) rotateZ(calc(var(--pet-roll)*1deg));transform-style:preserve-3d;transition:transform .16s ease,filter .2s ease;animation:petFloat 4.8s ease-in-out infinite}.pet-head-stage.asset-ready .pet-head{display:none}.pet-head-stage.asset-ready .pet-head-img{display:block}.pet-head{width:196px;aspect-ratio:1;border-radius:47% 48% 45% 44%;background:radial-gradient(circle at 32% 25%,rgba(255,225,162,.55) 0 18%,transparent 19%),radial-gradient(circle at 68% 70%,rgba(91,50,24,.24) 0 4%,transparent 5%),linear-gradient(135deg,#c97835 0%,#e4a765 52%,#a56531 100%);border:8px solid #101614;box-shadow:inset -22px -22px 0 rgba(76,40,17,.25),inset 16px 14px 0 rgba(255,231,184,.34),0 20px 44px rgba(0,0,0,.28);position:relative;transform:rotateY(calc(var(--pet-x)*1deg)) rotateX(calc(var(--pet-y)*-0.75deg)) rotateZ(calc(var(--pet-roll)*1deg));transform-style:preserve-3d;transition:transform .22s ease,filter .22s ease;animation:petFloat 4.8s ease-in-out infinite}.pet-head:before,.pet-head:after{content:'';position:absolute;top:-12px;width:36px;height:36px;border-radius:12px;background:#d68b49;border:8px solid #101614;box-shadow:inset -5px -6px 0 rgba(70,37,16,.22)}.pet-head:before{left:26px}.pet-head:after{right:26px}.pet-eye{position:absolute;top:55px;width:45px;height:45px;border-radius:50%;background:#fff;border:7px solid #101614;overflow:hidden;transform:translateZ(20px)}.pet-eye.left{left:43px}.pet-eye.right{right:43px}.pet-eye i{display:block;width:11px;height:11px;border-radius:50%;background:#101614;margin:14px auto;transform:translate(var(--pupil-x),var(--pupil-y));transition:transform .12s ease}.pet-brow{position:absolute;top:43px;width:36px;height:7px;border-radius:999px;background:#101614;opacity:.86;transform:translateZ(24px)}.pet-brow.left{left:47px}.pet-brow.right{right:47px}.pet-nose{position:absolute;left:87px;top:106px;width:18px;height:13px;border-radius:50%;background:#57351f;transform:translateZ(25px)}.pet-mouth{position:absolute;left:94px;top:122px;width:4px;height:42px;background:#101614;border-radius:4px;transform:translateZ(28px);transition:all .16s ease}.pet-cheek{position:absolute;top:100px;width:28px;height:12px;border-radius:999px;background:rgba(236,117,92,.35);filter:blur(.2px);transform:translateZ(15px)}.pet-cheek.left{left:34px}.pet-cheek.right{right:34px}.device-stage[data-chat-mode=pet_head] .eye-pair{display:none}.device-stage[data-chat-mode=pet_head] .pet-head-stage{display:flex}.device-stage[data-pet-state=speak] .pet-mouth,.device-stage[data-expression=speaking] .pet-mouth{animation:petTalk .34s steps(2,end) infinite}.device-stage[data-pet-state=sing] .pet-mouth{animation:petSing .42s ease-in-out infinite}.device-stage[data-pet-state=happy] .pet-mouth,.device-stage[data-expression=happy] .pet-mouth{width:46px;height:24px;left:72px;background:transparent;border-bottom:7px solid #101614}.device-stage[data-pet-state=laugh] .pet-mouth{width:44px;height:34px;left:74px;border-radius:0 0 999px 999px;background:#2b1610}.device-stage[data-pet-state=cry] .pet-head,.device-stage[data-pet-state=cry] .pet-head-img{filter:saturate(.82) drop-shadow(0 20px 26px rgba(0,0,0,.34))}.device-stage[data-pet-state=cry] .pet-eye:after{content:'';position:absolute;left:22px;top:27px;width:7px;height:18px;border-radius:999px;background:#7bd5ff}.device-stage[data-pet-state=sleepy] .pet-eye,.device-stage[data-expression=sleepy] .pet-eye{height:13px;margin-top:15px;border-radius:999px}.device-stage[data-pet-state=think] .pet-head{animation:petThink 2.3s ease-in-out infinite}.device-stage[data-pet-state=listen] .pet-head{--pet-roll:-4;animation:petListen 2s ease-in-out infinite}.device-stage[data-pet-state=surprised] .pet-eye{transform:translateZ(20px) scale(1.16)}.device-stage[data-pet-state=surprised] .pet-mouth{width:24px;height:24px;left:84px;border-radius:50%;background:#2b1610}.device-stage[data-pet-state=blink] .pet-eye{height:12px;margin-top:16px;border-radius:999px}.device-stage[data-pet-local=blink] .pet-eye{height:12px;margin-top:16px;border-radius:999px}.device-stage[data-pet-local=listen] .pet-head{--pet-roll:-4}.device-stage[data-pet-local=think] .pet-head{filter:saturate(1.05) contrast(1.04)}.device-stage[data-pet-local=surprised] .pet-eye{transform:translateZ(20px) scale(1.12)}.device-stage[data-pet-local=happy] .pet-mouth{width:42px;height:24px;left:75px;background:transparent;border-bottom:7px solid #101614}.device-stage[data-scene-severity=error]{box-shadow:0 18px 45px rgba(180,61,42,.26)}.device-stage[data-scene-severity=warn]{box-shadow:0 18px 45px rgba(166,107,0,.22)}.sync-line{display:flex;gap:8px;flex-wrap:wrap}.mini-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:18px}.mini span{display:block;min-height:20px}.last-sync{font-variant-numeric:tabular-nums}.dot.warn{background:#f2b84b}.dot.bad{background:#ee6f57}@keyframes petFloat{0%,100%{margin-top:0}50%{margin-top:-5px}}@keyframes petTalk{0%{width:8px;height:18px;left:91px;border-radius:8px;background:#2b1610}100%{width:25px;height:23px;left:83px;border-radius:50%;background:#2b1610}}@keyframes petSing{0%,100%{width:24px;height:24px;left:84px;border-radius:50%;background:#2b1610}50%{width:38px;height:32px;left:76px;border-radius:0 0 999px 999px;background:#2b1610}}@keyframes petThink{0%,100%{transform:rotateY(-8deg) rotateZ(-2deg)}50%{transform:rotateY(9deg) rotateZ(2deg)}}@keyframes petListen{0%,100%{transform:rotateY(-14deg) rotateZ(-4deg)}50%{transform:rotateY(6deg) rotateZ(2deg)}}@media(max-width:1080px){.mini-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:680px){.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .control-block{margin-top:18px}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}.section-head h2{font-size:20px;margin:0;letter-spacing:0}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.control-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.control-card{border:1px solid var(--line);background:white;border-radius:8px;padding:14px;text-align:left;min-height:88px;color:var(--ink);display:flex;flex-direction:column;justify-content:space-between}.control-card b{display:block;font-size:17px;margin-bottom:6px}.control-card small{color:var(--muted);line-height:1.35}.control-card.primary-soft{background:#f8fbf5;border-color:#cbd9cf}.control-card.eye-soft{background:#f8fbff;border-color:#cbd8e6}.control-card.chat-soft{background:#fffaf2;border-color:#e4d5ba}.control-card.app-soft{background:#fbfaf8;border-color:#ded8cb}@media(max-width:860px){.control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-head{align-items:flex-start;flex-direction:column}.control-card b{font-size:16px}}@media(max-width:420px){.control-grid{grid-template-columns:1fr}}
+.pet-head-stage{--shadow-x:0px;--shadow-scale:1;--light-x:50%;--light-y:34%;--pet-scale:1;--pet-z:0px;--rig-x:0px;--rig-y:0px;--rig-rx:0deg;--rig-ry:0deg;--rig-rz:0deg;--gloss-x:0px;--gloss-y:0px;--drop-x:0px}.pet-head-stage:before{content:'';position:absolute;inset:10px 48px 22px;border-radius:50%;background:radial-gradient(ellipse at var(--light-x) var(--light-y),rgba(255,229,165,.22),rgba(122,202,184,.10) 38%,transparent 70%);filter:blur(8px);opacity:.95;transform:translateZ(-80px);pointer-events:none}.pet-rig{position:relative;z-index:2;width:238px;height:238px;display:grid;place-items:center;transform:translate3d(var(--rig-x),var(--rig-y),var(--pet-z)) rotateY(var(--rig-ry)) rotateX(var(--rig-rx)) rotateZ(var(--rig-rz)) scale(var(--pet-scale));transform-origin:center 62%;transform-style:preserve-3d;transition:filter .18s ease}.pet-rig:before{content:'';position:absolute;inset:13px 12px 9px;border-radius:48% 48% 44% 44%;background:linear-gradient(145deg,rgba(255,255,255,.22),transparent 26%,rgba(0,0,0,.18) 78%);mix-blend-mode:screen;opacity:.45;transform:translateZ(45px);pointer-events:none}.pet-rig:after{content:'';position:absolute;inset:-12px;border-radius:50%;background:linear-gradient(112deg,transparent 10%,rgba(255,255,255,.18) 34%,transparent 48%);opacity:.18;transform:translate3d(var(--gloss-x),var(--gloss-y),56px) rotate(-8deg);pointer-events:none}.pet-rig .pet-head-img{width:236px;height:236px;transform:translateZ(42px);animation:none;filter:drop-shadow(var(--drop-x) 22px 24px rgba(0,0,0,.38)) drop-shadow(0 0 20px rgba(191,232,212,.14))}.pet-rig .pet-head{transform:translateZ(42px)}.pet-shadow{width:176px;height:34px;bottom:0;background:radial-gradient(ellipse,rgba(0,0,0,.46),rgba(0,0,0,.18) 42%,transparent 74%);transform:translateX(calc(-50% + var(--shadow-x))) scaleX(var(--shadow-scale));filter:blur(2px)}.pet-stage-hint{bottom:8px}.pet-head-stage.state-pop .pet-rig{animation:petPop .38s cubic-bezier(.18,1.25,.32,1)}.device-stage[data-pet-state=speak] .pet-rig{animation:petSpeakBob .62s ease-in-out infinite}.device-stage[data-pet-state=sing] .pet-rig{animation:petSingBob .72s ease-in-out infinite}.device-stage[data-pet-state=laugh] .pet-rig{animation:petLaughBob .42s ease-in-out infinite}.device-stage[data-pet-state=think] .pet-rig{animation:petLookAround 2.4s ease-in-out infinite}.device-stage[data-pet-state=listen] .pet-rig{animation:petListenLean 2s ease-in-out infinite}@keyframes petPop{0%{transform:translate3d(0,8px,0) rotateY(0) rotateX(0) scale(.965)}65%{transform:translate3d(var(--rig-x),calc(var(--rig-y) - 4px),var(--pet-z)) rotateY(var(--rig-ry)) rotateX(var(--rig-rx)) rotateZ(var(--rig-rz)) scale(1.035)}100%{transform:translate3d(var(--rig-x),var(--rig-y),var(--pet-z)) rotateY(var(--rig-ry)) rotateX(var(--rig-rx)) rotateZ(var(--rig-rz)) scale(var(--pet-scale))}}@keyframes petSpeakBob{0%,100%{margin-top:0}50%{margin-top:-4px}}@keyframes petSingBob{0%,100%{margin-top:0;filter:saturate(1)}50%{margin-top:-7px;filter:saturate(1.12)}}@keyframes petLaughBob{0%,100%{margin-top:0;transform:translate3d(var(--rig-x),var(--rig-y),var(--pet-z)) rotateZ(-1deg) scale(var(--pet-scale))}50%{margin-top:-6px;transform:translate3d(var(--rig-x),var(--rig-y),var(--pet-z)) rotateZ(2deg) scale(1.035)}}@keyframes petLookAround{0%,100%{filter:contrast(1)}50%{filter:contrast(1.05) saturate(1.05)}}@keyframes petListenLean{0%,100%{margin-left:-4px}50%{margin-left:5px}}
 """
 
 
@@ -146,6 +147,7 @@ let rec=null,lastReply='',lastLive={},continuousVoice=false,continuousRestartTim
 const PET_ANIMS={blink:{frames:6,fps:12,loop:false,fallback:'idle'},speak:{frames:8,fps:10,loop:true,fallback:'speak'},sing:{frames:10,fps:10,loop:true,fallback:'sing'},laugh:{frames:8,fps:12,loop:true,fallback:'laugh'}};
 const PET_VIEW_STATES=new Set(['idle','listen','think','speak']);
 let petPreview={state:'idle',animation:'',view:'yaw_c',frame:0,lastFrameAt:0,lastSrc:''};
+let petMotion={x:0,y:0,tx:0,ty:0,active:false};
 function q(id){return document.getElementById(id)}
 function out(v){const el=q('out');if(el)el.textContent=typeof v==='string'?v:JSON.stringify(v,null,2)}
 async function postJson(url,payload){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const t=await r.text();try{return JSON.parse(t)}catch(e){return {ok:false,status:r.status,raw:t}}}
@@ -285,10 +287,45 @@ function renderPetAsset(){
   petPreview.lastSrc=src;
   img.src=src;
 }
+function applyPetMotion(pet,x,y){
+  const roll=x*2.4;
+  pet.style.setProperty('--pet-x',String((x*18).toFixed(1)));
+  pet.style.setProperty('--pet-y',String((y*12).toFixed(1)));
+  pet.style.setProperty('--pet-roll',String(roll.toFixed(1)));
+  pet.style.setProperty('--rig-x',(x*9.5).toFixed(1)+'px');
+  pet.style.setProperty('--rig-y',(y*4.8).toFixed(1)+'px');
+  pet.style.setProperty('--rig-ry',(x*18).toFixed(1)+'deg');
+  pet.style.setProperty('--rig-rx',(y*-10).toFixed(1)+'deg');
+  pet.style.setProperty('--rig-rz',roll.toFixed(1)+'deg');
+  pet.style.setProperty('--shadow-x',(x*-18).toFixed(1)+'px');
+  pet.style.setProperty('--shadow-scale',(1+Math.abs(x)*0.10).toFixed(3));
+  pet.style.setProperty('--light-x',(50+x*16).toFixed(1)+'%');
+  pet.style.setProperty('--light-y',(34+y*9).toFixed(1)+'%');
+  pet.style.setProperty('--gloss-x',(x*-6).toFixed(1)+'px');
+  pet.style.setProperty('--gloss-y',(y*-4).toFixed(1)+'px');
+  pet.style.setProperty('--drop-x',(x*-3.2).toFixed(1)+'px');
+  pet.style.setProperty('--pet-scale',(1.012+Math.abs(x)*0.012-y*0.006).toFixed(3));
+  pet.style.setProperty('--pupil-x',(x*6).toFixed(1)+'px');
+  pet.style.setProperty('--pupil-y',(y*5).toFixed(1)+'px');
+  const view=viewFromPointer(x);
+  if(view!==petPreview.view){petPreview.view=view;renderPetAsset()}
+}
+function startPetMotionLoop(pet){
+  if(petMotion.active)return;
+  petMotion.active=true;
+  const tick=()=>{
+    petMotion.x+=(petMotion.tx-petMotion.x)*0.18;
+    petMotion.y+=(petMotion.ty-petMotion.y)*0.18;
+    applyPetMotion(pet,petMotion.x,petMotion.y);
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 function setPetPreview(state,animation,view){
   const local=q('deviceStage')?.dataset.petLocal||'';
   let nextState=local||state||'idle';
   let nextAnimation=animation||'';
+  const changed=petPreview.state!==nextState||petPreview.animation!==nextAnimation;
   if(local==='blink')nextAnimation='blink';
   if(!nextAnimation&&PET_ANIMS[nextState])nextAnimation=nextState;
   if(nextAnimation&&PET_ANIMS[nextAnimation])nextState=PET_ANIMS[nextAnimation].fallback||nextState;
@@ -298,6 +335,13 @@ function setPetPreview(state,animation,view){
   petPreview.frame=0;
   petPreview.lastFrameAt=0;
   renderPetAsset();
+  const pet=q('petHeadStage');
+  if(changed&&pet){
+    pet.classList.remove('state-pop');
+    void pet.offsetWidth;
+    pet.classList.add('state-pop');
+    setTimeout(()=>pet.classList.remove('state-pop'),420);
+  }
 }
 function setupPetStage(){
   const stage=q('deviceStage');
@@ -309,27 +353,20 @@ function setupPetStage(){
     img.addEventListener('error',()=>pet.classList.remove('asset-ready'));
     if(img.complete&&img.naturalWidth>0)pet.classList.add('asset-ready');
   }
+  startPetMotionLoop(pet);
   const move=(clientX,clientY)=>{
     const rect=pet.getBoundingClientRect();
     const cx=rect.left+rect.width/2;
     const cy=rect.top+rect.height/2;
     const x=clamp((clientX-cx)/(rect.width/2),-1,1);
     const y=clamp((clientY-cy)/(rect.height/2),-1,1);
-    pet.style.setProperty('--pet-x',(x*18).toFixed(1));
-    pet.style.setProperty('--pet-y',(y*12).toFixed(1));
-    pet.style.setProperty('--pet-roll',(x*2.2).toFixed(1));
-    pet.style.setProperty('--pupil-x',(x*6).toFixed(1)+'px');
-    pet.style.setProperty('--pupil-y',(y*5).toFixed(1)+'px');
-    petPreview.view=viewFromPointer(x);
-    renderPetAsset();
+    petMotion.tx=x;
+    petMotion.ty=y;
   };
   stage.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
   stage.addEventListener('pointerleave',()=>{
-    pet.style.setProperty('--pet-x','0');
-    pet.style.setProperty('--pet-y','0');
-    pet.style.setProperty('--pet-roll','0');
-    pet.style.setProperty('--pupil-x','0px');
-    pet.style.setProperty('--pupil-y','0px');
+    petMotion.tx=0;
+    petMotion.ty=0;
   });
   const ambient=['blink','listen','think','surprised','happy'];
   setInterval(()=>{
@@ -479,7 +516,7 @@ _APP_TEMPLATE = Template("""<!doctype html><html lang="zh-CN"><meta charset="utf
     <div class="device-stage" id="deviceStage" data-online="$online_attr" data-theme="$theme" data-chat-mode="$chat_mode" data-expression="$expression">
       <div class="status-strip"><span class="pill"><i id="deviceDot" class="dot $state_class"></i><span id="deviceState">$state_label</span></span><span class="pill" id="scenePill">$scene</span></div>
       <div class="eye-pair"><div class="eye"></div><div class="eye"></div></div>
-      <div class="pet-head-stage" id="petHeadStage"><span class="pet-shadow"></span><img class="pet-head-img" id="petHeadAsset" alt="" src="/assets/pet_head/keyframes/idle.png"><div class="pet-head"><span class="pet-brow left"></span><span class="pet-brow right"></span><span class="pet-eye left"><i></i></span><span class="pet-eye right"><i></i></span><span class="pet-cheek left"></span><span class="pet-cheek right"></span><span class="pet-nose"></span><span class="pet-mouth"></span></div><span class="pet-stage-hint">鼠标会被它盯上</span></div>
+      <div class="pet-head-stage" id="petHeadStage"><span class="pet-shadow"></span><div class="pet-rig" id="petRig"><img class="pet-head-img" id="petHeadAsset" alt="" src="/assets/pet_head/keyframes/idle.png"><div class="pet-head"><span class="pet-brow left"></span><span class="pet-brow right"></span><span class="pet-eye left"><i></i></span><span class="pet-eye right"><i></i></span><span class="pet-cheek left"></span><span class="pet-cheek right"></span><span class="pet-nose"></span><span class="pet-mouth"></span></div></div><span class="pet-stage-hint">鼠标会被它盯上</span></div>
       <div class="status-strip sync-line"><span class="pill">主题 <span id="themePill">$theme</span></span><span class="pill">界面 <span id="chatModePill">$chat_mode</span></span><span class="pill">页面 <span id="pagePill">$page</span></span><span class="pill">表情 <span id="expressionPill">$expression</span></span></div>
     </div>
     <div class="panel stack">
