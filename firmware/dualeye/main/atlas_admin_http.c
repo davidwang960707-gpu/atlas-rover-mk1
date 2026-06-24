@@ -38,14 +38,15 @@
 #include "atlas_scene.h"
 #include "atlas_sr_probe.h"
 #include "atlas_wifi.h"
+#include "common/atlas_common_assets.h"
 #include "common/atlas_common_device_status.h"
 
 static const char *TAG = "atlas_admin";
 
 #define ATLAS_FIRMWARE_VERSION "0.14.8-pet-head-yaw"
 #define ATLAS_FIRMWARE_CHANNEL "dev"
-#define ATLAS_RESOURCE_VERSION "dualeye-assets-v0.6-pet-head-yaw"
-#define ATLAS_FONT_VERSION "atlas_font_zh_16_3500"
+#define ATLAS_RESOURCE_VERSION ATLAS_COMMON_RESOURCE_VERSION
+#define ATLAS_FONT_VERSION ATLAS_COMMON_FONT_VERSION
 #define ATLAS_TOOL_SCHEMA_VERSION "atlas.tools.v0.desk_apps"
 #define ATLAS_BRAIN_SESSION_PROTOCOL "atlas.brain.session.v1"
 #define ATLAS_BRAIN_SESSION_STAGE "P1_dualeye_persistent_ws"
@@ -298,16 +299,6 @@ static bool format_clock_snapshot(char *time_text,
 static const char *atlas_firmware_build_tag(void)
 {
     return "atlas-dualeye-" __DATE__ " " __TIME__;
-}
-
-static bool local_file_exists(const char *path)
-{
-    FILE *fp = fopen(path, "rb");
-    if (fp == NULL) {
-        return false;
-    }
-    fclose(fp);
-    return true;
 }
 
 static uint32_t now_ms(void)
@@ -2515,31 +2506,10 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     size_t spiffs_used = 0;
     const esp_err_t spiffs_err = esp_spiffs_info("storage", &spiffs_total, &spiffs_used);
     const bool storage_ok = spiffs_err == ESP_OK && spiffs_total > 0;
-    const bool manifest_ok = local_file_exists("/spiffs/atlas_eyes/manifest.json");
-    const bool pet_ok = local_file_exists("/spiffs/atlas_eyes/pet/idle/left.png");
-    const bool goggle_ok = local_file_exists("/spiffs/atlas_eyes/goggle/idle/left.png");
-    const bool tomoe_ok = local_file_exists("/spiffs/atlas_eyes/tomoe_spin/idle/left.png");
-    const bool smoking_ok = local_file_exists("/spiffs/atlas_eyes/no_smoking/idle/left.png");
-    const bool pet_head_manifest_ok = local_file_exists("/spiffs/atlas_pet_head/manifest.json");
-    const bool pet_head_idle_ok = local_file_exists("/spiffs/atlas_pet_head/keyframes/idle.png");
-    const bool pet_head_speak_ok = local_file_exists("/spiffs/atlas_pet_head/animations/speak/frame_00.png");
-    const bool pet_head_view_ok = local_file_exists("/spiffs/atlas_pet_head/views/idle/yaw_l30.png") &&
-                                  local_file_exists("/spiffs/atlas_pet_head/views/think/yaw_r15.png");
-    const bool pet_head_turn_ok =
-        local_file_exists("/spiffs/atlas_pet_head/transitions/turn_yaw_c_to_yaw_l30/frame_00.png") &&
-        local_file_exists("/spiffs/atlas_pet_head/transitions/turn_yaw_r30_to_yaw_c/frame_05.png");
-    const uint8_t asset_ok_count = (manifest_ok ? 1u : 0u) +
-                                   (pet_ok ? 1u : 0u) +
-                                   (goggle_ok ? 1u : 0u) +
-                                   (tomoe_ok ? 1u : 0u) +
-                                   (smoking_ok ? 1u : 0u) +
-                                   (pet_head_manifest_ok ? 1u : 0u) +
-                                   (pet_head_idle_ok ? 1u : 0u) +
-                                   (pet_head_speak_ok ? 1u : 0u) +
-                                   (pet_head_view_ok ? 1u : 0u) +
-                                   (pet_head_turn_ok ? 1u : 0u);
-    const bool assets_pass = storage_ok && asset_ok_count >= 9u;
-    const bool assets_warn = storage_ok && asset_ok_count > 0u && asset_ok_count < 9u;
+    atlas_common_assets_probe_t asset_probe;
+    atlas_common_assets_probe(&asset_probe);
+    const bool assets_pass = atlas_common_assets_probe_pass(&asset_probe, storage_ok);
+    const bool assets_warn = atlas_common_assets_probe_warn(&asset_probe, storage_ok);
     const bool wifi_pass = wifi.sta_connected;
     const bool wifi_warn = !wifi.sta_connected && wifi.ap_started;
     const bool brain_pass = llm.configured && strcmp(llm.mode, "host") == 0 && llm.base_url[0] != '\0';
@@ -2681,16 +2651,16 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              (unsigned)spiffs_used,
              spiffs_error,
              assets_status,
-             json_bool(manifest_ok),
-             json_bool(pet_ok),
-             json_bool(goggle_ok),
-             json_bool(tomoe_ok),
-             json_bool(smoking_ok),
-             json_bool(pet_head_manifest_ok),
-             json_bool(pet_head_idle_ok),
-             json_bool(pet_head_speak_ok),
-             json_bool(pet_head_view_ok),
-             json_bool(pet_head_turn_ok),
+             json_bool(asset_probe.eye_manifest),
+             json_bool(asset_probe.eye_pet_idle),
+             json_bool(asset_probe.eye_goggle_idle),
+             json_bool(asset_probe.eye_tomoe_idle),
+             json_bool(asset_probe.eye_no_smoking_idle),
+             json_bool(asset_probe.pet_head_manifest),
+             json_bool(asset_probe.pet_head_idle),
+             json_bool(asset_probe.pet_head_speak),
+             json_bool(asset_probe.pet_head_view),
+             json_bool(asset_probe.pet_head_turn),
              wifi_status,
              wifi_mode,
              json_bool(wifi.sta_connected),

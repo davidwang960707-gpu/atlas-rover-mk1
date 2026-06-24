@@ -121,6 +121,8 @@ sdcard/
 - 旧版 `atlas_eyes/manifest.json` 和 `atlas_pet_head/manifest.json` 继续可用。
 - 顶层 manifest 缺失时，固件按旧路径检查关键资源。
 - 新资源包必须向 `/api/selftest` 暴露关键检查项。
+- 固件 common 层以 `atlas_common_assets.*` 固化 legacy SPIFFS 路径和 `atlas.asset.manifest.v0` 协议标识；新增 manifest 字段只能作为兼容扩展，不能删除 `/api/status.fingerprint.resource_version`、`/api/system/info.storage.assets_version` 和 `/api/selftest.checks[].detail` 已有字段。
+- 无 SD 卡场景继续以 SPIFFS 内置资源为准；`sdcard/` 目录名只表示构建输入，不要求运行时挂载 SD 卡。
 
 ## 8. 验收方法
 
@@ -136,4 +138,3 @@ curl http://DUALEYE_IP/api/selftest
 - `pet_head_assets=pass`
 - `font_zh=pass/warn`，不能导致页面文字变方框
 - 状态页面能看到资源版本
-

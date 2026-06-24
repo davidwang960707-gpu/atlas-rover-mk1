@@ -9,6 +9,7 @@
 
 #include "esp_log.h"
 
+#include "common/atlas_common_assets.h"
 #include "common/atlas_common_ui_state.h"
 
 #if CONFIG_ATLAS_DISPLAY_WAVESHARE_LVGL
@@ -128,8 +129,6 @@ static bool s_lvgl_ready;
 static bool s_assets_ready;
 static bool s_lvgl_asset_fs_registered;
 
-#define ATLAS_ASSET_MOUNT_PATH "/spiffs"
-#define ATLAS_ASSET_LVGL_LETTER 'A'
 #define ATLAS_VALIDATED_EYE_ASSET_MAX 192
 
 static char s_validated_eye_assets[ATLAS_VALIDATED_EYE_ASSET_MAX][128];
@@ -176,24 +175,6 @@ static uint16_t clamp_u16(int value, uint16_t min, uint16_t max)
     return (uint16_t)value;
 }
 
-static void asset_path_to_local(char *dst, size_t dst_size, const char *path)
-{
-    if (dst == NULL || dst_size == 0) {
-        return;
-    }
-    if (path == NULL) {
-        dst[0] = '\0';
-        return;
-    }
-
-    const char *rel = strchr(path, ':');
-    rel = rel == NULL ? path : rel + 1;
-    while (*rel == '/') {
-        ++rel;
-    }
-    snprintf(dst, dst_size, "%s/%s", ATLAS_ASSET_MOUNT_PATH, rel);
-}
-
 static void *asset_fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
 {
     (void)drv;
@@ -202,7 +183,7 @@ static void *asset_fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode
     }
 
     char local_path[176];
-    asset_path_to_local(local_path, sizeof(local_path), path);
+    atlas_common_assets_lvgl_path_to_local(local_path, sizeof(local_path), path);
     return fopen(local_path, "rb");
 }
 
@@ -264,7 +245,7 @@ static void register_lvgl_asset_fs(void)
 
     static lv_fs_drv_t fs_drv;
     lv_fs_drv_init(&fs_drv);
-    fs_drv.letter = ATLAS_ASSET_LVGL_LETTER;
+    fs_drv.letter = ATLAS_COMMON_ASSET_LVGL_LETTER;
     fs_drv.cache_size = 4096;
     fs_drv.open_cb = asset_fs_open;
     fs_drv.close_cb = asset_fs_close;
@@ -282,8 +263,8 @@ static esp_err_t mount_asset_spiffs(void)
     }
 
     const esp_vfs_spiffs_conf_t conf = {
-        .base_path = ATLAS_ASSET_MOUNT_PATH,
-        .partition_label = "storage",
+        .base_path = ATLAS_COMMON_ASSET_MOUNT_PATH,
+        .partition_label = ATLAS_COMMON_ASSET_PARTITION_LABEL,
         .max_files = 8,
         .format_if_mount_failed = false,
     };
@@ -304,24 +285,6 @@ static esp_err_t mount_asset_spiffs(void)
     }
     s_assets_ready = true;
     return ESP_OK;
-}
-
-static bool theme_has_eye_assets(const char *theme_id)
-{
-    return theme_id != NULL &&
-           (strcmp(theme_id, "raptor") == 0 ||
-            strcmp(theme_id, "mecha") == 0 ||
-            strcmp(theme_id, "goggle") == 0 ||
-            strcmp(theme_id, "pet") == 0 ||
-            strcmp(theme_id, "blue_pupil") == 0 ||
-            strcmp(theme_id, "no_smoking") == 0 ||
-            strcmp(theme_id, "tomoe_spin") == 0);
-}
-
-static bool theme_uses_clockwise_rotation(const char *theme_id)
-{
-    return theme_id != NULL &&
-           strcmp(theme_id, "tomoe_spin") == 0;
 }
 
 static bool s_tomoe_spin_active;
@@ -441,11 +404,11 @@ static void apply_eye_asset_motion(size_t index, atlas_expression_t expression, 
         zoom = 274;
     }
 
-    if (!theme_uses_clockwise_rotation(theme_id)) {
+    if (!atlas_common_assets_theme_uses_clockwise_rotation(theme_id)) {
         s_tomoe_spin_active = false;
     }
 
-    if (theme_uses_clockwise_rotation(theme_id)) {
+    if (atlas_common_assets_theme_uses_clockwise_rotation(theme_id)) {
         angle = tomoe_spin_angle(now_ms);
         x = 0;
         y = 0;
@@ -465,7 +428,7 @@ static void apply_eye_asset_motion(size_t index, atlas_expression_t expression, 
 static bool asset_exists(const char *lvgl_src)
 {
     char local_path[176];
-    asset_path_to_local(local_path, sizeof(local_path), lvgl_src);
+    atlas_common_assets_lvgl_path_to_local(local_path, sizeof(local_path), lvgl_src);
     FILE *file = fopen(local_path, "rb");
     if (file == NULL) {
         return false;
@@ -666,11 +629,7 @@ static bool show_pet_head_keyframe(size_t index, const char *state, uint16_t zoo
 
     const char *safe_state = (state == NULL || state[0] == '\0') ? "idle" : state;
     char src[128];
-    snprintf(src,
-             sizeof(src),
-             "%c:/atlas_pet_head/keyframes/%s.png",
-             ATLAS_ASSET_LVGL_LETTER,
-             safe_state);
+    atlas_common_assets_pet_head_keyframe_lvgl_path(src, sizeof(src), safe_state);
 
     if (strcmp(eye->asset_src, src) != 0) {
         if (!asset_exists(src) || !validate_eye_asset(src)) {
@@ -703,12 +662,7 @@ static bool show_pet_head_view(size_t index,
     const char *safe_state = (state == NULL || state[0] == '\0') ? "idle" : state;
     const char *safe_view = (view == NULL || view[0] == '\0') ? "yaw_c" : view;
     char src[128];
-    snprintf(src,
-             sizeof(src),
-             "%c:/atlas_pet_head/views/%s/%s.png",
-             ATLAS_ASSET_LVGL_LETTER,
-             safe_state,
-             safe_view);
+    atlas_common_assets_pet_head_view_lvgl_path(src, sizeof(src), safe_state, safe_view);
 
     if (strcmp(eye->asset_src, src) != 0) {
         if (!asset_exists(src) || !validate_eye_asset(src)) {
@@ -752,12 +706,7 @@ static bool show_pet_head_transition(size_t index,
         frame = frame_count - 1;
     }
     char src[128];
-    snprintf(src,
-             sizeof(src),
-             "%c:/atlas_pet_head/transitions/%s/frame_%02u.png",
-             ATLAS_ASSET_LVGL_LETTER,
-             transition,
-             frame);
+    atlas_common_assets_pet_head_transition_lvgl_path(src, sizeof(src), transition, frame);
 
     if (strcmp(eye->asset_src, src) != 0) {
         if (!asset_exists(src) || !validate_eye_asset(src)) {
@@ -797,12 +746,7 @@ static bool show_pet_head_animation(size_t index,
     const uint32_t frame_ms = 1000u / fps;
     const uint8_t frame = (uint8_t)((now_ms / (frame_ms == 0 ? 1u : frame_ms)) % frame_count);
     char src[128];
-    snprintf(src,
-             sizeof(src),
-             "%c:/atlas_pet_head/animations/%s/frame_%02u.png",
-             ATLAS_ASSET_LVGL_LETTER,
-             animation,
-             frame);
+    atlas_common_assets_pet_head_animation_lvgl_path(src, sizeof(src), animation, frame);
 
     if (strcmp(eye->asset_src, src) != 0) {
         if (!asset_exists(src) || !validate_eye_asset(src)) {
@@ -931,20 +875,14 @@ static bool show_pet_head_for_page(size_t index,
 static bool render_eye_asset(size_t index, atlas_expression_t expression, uint32_t now_ms)
 {
     atlas_lvgl_eye_t *eye = &s_eye[index];
-    if (!s_assets_ready || eye->asset_img == NULL || !theme_has_eye_assets(s_theme->id)) {
+    if (!s_assets_ready || eye->asset_img == NULL || !atlas_common_assets_theme_has_eye_assets(s_theme->id)) {
         return false;
     }
 
     const char *eye_name = index == 0 ? "left" : "right";
     const char *state = asset_state_for_expression(expression, now_ms, index);
     char src[128];
-    snprintf(src,
-             sizeof(src),
-             "%c:/atlas_eyes/%s/%s/%s.png",
-             ATLAS_ASSET_LVGL_LETTER,
-             s_theme->id,
-             state,
-             eye_name);
+    atlas_common_assets_eye_lvgl_path(src, sizeof(src), s_theme->id, state, eye_name);
 
     if (strcmp(eye->asset_src, src) != 0) {
         if (!asset_exists(src)) {

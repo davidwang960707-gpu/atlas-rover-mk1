@@ -92,7 +92,25 @@
 - `/api/status`、`/api/status/lite` 的 `ui/chat/apps/scene` 字段保持兼容。
 - Brain 未配置或离线时仍显示结构化 Brain 离线页，本地双眼、时钟、番茄、日历和宠物头可继续切换。
 
-### P5 Tool Schema V0 adapter
+### P5 assets/resource manifest common 层
+
+目标：把资源版本、SPIFFS 路径、眼睛主题/宠物头关键资源检查和 LVGL 资源路径构造抽成 common helper，保留显示层实际加载与 fallback 行为。
+
+本轮边界：
+
+- 新增 `firmware/dualeye/main/common/atlas_common_assets.*`。
+- common 层定义 `atlas.asset.manifest.v0`、`dualeye-assets-v0.6-pet-head-yaw`、`atlas_font_zh_16_3500`、SPIFFS mount path、LVGL drive letter 和 legacy 关键资源路径。
+- `/api/selftest` 复用 common assets probe，但保留 `eye_assets` detail 里的旧字段名和 pass/warn/fail 语义。
+- `atlas_display.c` 复用 common 的 LVGL path builder、主题资源判断和 pet_head 路径构造；PNG header 校验、SPIFFS mount、透明底动画 fallback、中文字体 fallback 均保持原位。
+- 更新 `specs/atlas_asset_manifest_v0.md`：新 manifest 字段只能兼容式新增；无 SD 卡场景继续按 SPIFFS 内置资源检查。
+
+下一步验收：
+
+- 构建通过。
+- `/api/status.fingerprint.resource_version`、`/api/system/info.storage.assets_version`、`/api/selftest` 资源字段保持兼容。
+- 实机继续检查主题切换、pet_head 透明底动画、时钟/番茄/日历中文字体显示。
+
+### 后续 Tool Schema V0 adapter
 
 目标：把工具表和工具调用从 HTTP handler 中拆成 schema adapter。
 

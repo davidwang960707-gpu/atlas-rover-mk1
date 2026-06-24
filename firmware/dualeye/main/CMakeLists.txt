@@ -9,6 +9,7 @@ idf_component_register(
         "common/atlas_common_opus_stream.c"
         "common/atlas_common_device_status.c"
         "common/atlas_common_ui_state.c"
+        "common/atlas_common_assets.c"
         "atlas_font_zh_16.c"
         "atlas_brain_intent.c"
         "atlas_config.c"
