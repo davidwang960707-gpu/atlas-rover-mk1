@@ -9,7 +9,6 @@ architecture boundary.
 
 from __future__ import annotations
 
-import argparse
 import base64
 import hashlib
 import html
@@ -53,6 +52,11 @@ from atlas_brain_audio_routes import (
     handle_dualeye_opus_stream_start,
     handle_dualeye_opus_stream_stop,
     handle_speak,
+)
+from atlas_brain_config import (
+    ENABLE_ROVER_SKILLS,
+    AtlasBrainConfig,
+    load_config,
 )
 from atlas_brain_core import (
     AppDescriptor,
@@ -114,16 +118,6 @@ from atlas_brain_weather import (
 from atlas_web_ui import render_admin_page
 
 
-DEFAULT_DUALEYE_URL = "http://192.168.4.1"
-DEFAULT_PORT = 8787
-DEFAULT_SPEED = 30
-DEFAULT_DURATION_MS = 500
-DEFAULT_LLM_BASE_URL = "https://api.xiaomimimo.com/v1"
-DEFAULT_LLM_MODEL = "xiaomi/mimo-v2.5-pro"
-DEFAULT_ASR_MODEL = "mimo-v2.5-asr"
-DEFAULT_TTS_MODEL = "mimo-v2.5-tts"
-DEFAULT_TTS_VOICE = "mimo_default"
-ENABLE_ROVER_SKILLS = os.getenv("ATLAS_ENABLE_ROVER_SKILLS", "0").strip().lower() in {"1", "true", "yes", "on"}
 NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 BRAIN_EVENT_LOCK = threading.Lock()
 BRAIN_EVENTS: list[dict[str, Any]] = []
@@ -689,29 +683,19 @@ def text_to_intents(text: str, speed: int, duration_ms: int) -> list[dict[str, A
 
 
 class Bridge:
-    def __init__(self,
-                 dualeye_url: str,
-                 pin: str,
-                 speed: int,
-                 duration_ms: int,
-                 dry_run: bool,
-                 llm_base_url: str,
-                 llm_api_key: str,
-                 llm_model: str,
-                 asr_model: str,
-                 tts_model: str,
-                 tts_voice: str) -> None:
-        self.dualeye_url = dualeye_url.rstrip("/")
-        self.pin = pin.strip()
-        self.speed = speed
-        self.duration_ms = duration_ms
-        self.dry_run = dry_run
-        self.llm_base_url = llm_base_url.rstrip("/")
-        self.llm_api_key = llm_api_key.strip()
-        self.llm_model = llm_model.strip()
-        self.asr_model = asr_model.strip()
-        self.tts_model = tts_model.strip()
-        self.tts_voice = tts_voice.strip()
+    def __init__(self, config: AtlasBrainConfig) -> None:
+        self.config = config
+        self.dualeye_url = config.dualeye_url.rstrip("/")
+        self.pin = config.pin.strip()
+        self.speed = config.speed
+        self.duration_ms = config.duration_ms
+        self.dry_run = config.dry_run
+        self.llm_base_url = config.llm_base_url.rstrip("/")
+        self.llm_api_key = config.llm_api_key.strip()
+        self.llm_model = config.llm_model.strip()
+        self.asr_model = config.asr_model.strip()
+        self.tts_model = config.tts_model.strip()
+        self.tts_voice = config.tts_voice.strip()
         self.last_status: dict[str, Any] = {}
         self.session = RobotSession(self.dualeye_url)
         self.runtime = AtlasBrainRuntime()
@@ -2326,39 +2310,9 @@ runAll();
     return Handler
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Atlas Brain server for DualEye")
-    parser.add_argument("--dualeye-url", default=os.environ.get("ATLAS_DUALEYE_URL", DEFAULT_DUALEYE_URL))
-    parser.add_argument("--pin", default=os.environ.get("ATLAS_PAIRING_PIN", ""))
-    parser.add_argument("--host", default=os.environ.get("ATLAS_BRIDGE_HOST", "0.0.0.0"))
-    parser.add_argument("--port", type=int, default=int(os.environ.get("ATLAS_BRIDGE_PORT", DEFAULT_PORT)))
-    parser.add_argument("--speed", type=int, default=int(os.environ.get("ATLAS_BRIDGE_SPEED", DEFAULT_SPEED)))
-    parser.add_argument("--duration-ms", type=int, default=int(os.environ.get("ATLAS_BRIDGE_DURATION_MS", DEFAULT_DURATION_MS)))
-    parser.add_argument("--llm-base-url", default=os.environ.get("ATLAS_LLM_BASE_URL", DEFAULT_LLM_BASE_URL))
-    parser.add_argument("--llm-api-key", default=os.environ.get("ATLAS_LLM_API_KEY", ""))
-    parser.add_argument("--llm-model", default=os.environ.get("ATLAS_LLM_MODEL", DEFAULT_LLM_MODEL))
-    parser.add_argument("--asr-model", default=os.environ.get("ATLAS_ASR_MODEL", DEFAULT_ASR_MODEL))
-    parser.add_argument("--tts-model", default=os.environ.get("ATLAS_TTS_MODEL", DEFAULT_TTS_MODEL))
-    parser.add_argument("--tts-voice", default=os.environ.get("ATLAS_TTS_VOICE", DEFAULT_TTS_VOICE))
-    parser.add_argument("--dry-run", action="store_true", help="parse commands without posting to DualEye")
-    return parser.parse_args()
-
-
 def main() -> None:
-    args = parse_args()
-    bridge = Bridge(
-        dualeye_url=args.dualeye_url,
-        pin=args.pin,
-        speed=clamp_int(args.speed, 1, 80),
-        duration_ms=clamp_int(args.duration_ms, 100, 2000),
-        dry_run=args.dry_run,
-        llm_base_url=args.llm_base_url,
-        llm_api_key=args.llm_api_key,
-        llm_model=args.llm_model,
-        asr_model=args.asr_model,
-        tts_model=args.tts_model,
-        tts_voice=args.tts_voice,
-    )
+    config = load_config()
+    bridge = Bridge(config)
     if bridge.pin:
         print(f"DualEye configured: {bridge.dualeye_url}, pairing={bridge.pin}")
     else:
@@ -2368,9 +2322,9 @@ def main() -> None:
         except Exception as exc:
             print(f"DualEye status unavailable for now: {exc}")
     handler = make_handler(bridge)
-    server = ThreadingHTTPServer((args.host, args.port), handler)
-    print(f"Atlas Brain server: http://127.0.0.1:{args.port}")
-    print(f"LAN URL for DualEye/phone on same Wi-Fi: http://{local_lan_ip()}:{args.port}")
+    server = ThreadingHTTPServer((config.host, config.port), handler)
+    print(f"Atlas Brain server: http://127.0.0.1:{config.port}")
+    print(f"LAN URL for DualEye/phone on same Wi-Fi: http://{local_lan_ip()}:{config.port}")
     server.serve_forever()
 
 
