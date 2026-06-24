@@ -6,9 +6,9 @@
 #include <string.h>
 
 #include "atlas_display.h"
+#include "common/atlas_common_ui_state.h"
 
 #define ATLAS_WIFI_CONFIG_BOOT_HINT_MS 9000u
-#define ATLAS_MANUAL_PAGE_OVERRIDE_MS 8000u
 
 static void copy_text(char *dst, size_t dst_size, const char *src)
 {
@@ -16,25 +16,6 @@ static void copy_text(char *dst, size_t dst_size, const char *src)
         return;
     }
     strlcpy(dst, src == NULL ? "" : src, dst_size);
-}
-
-static bool is_app_page(atlas_page_t page)
-{
-    return page == ATLAS_PAGE_CLOCK ||
-           page == ATLAS_PAGE_MUSIC ||
-           page == ATLAS_PAGE_STORY ||
-           page == ATLAS_PAGE_CHAT ||
-           page == ATLAS_PAGE_CALENDAR ||
-           page == ATLAS_PAGE_POMODORO;
-}
-
-static bool is_manual_display_page(atlas_page_t page)
-{
-    return page == ATLAS_PAGE_EYES ||
-           page == ATLAS_PAGE_CLOCK ||
-           page == ATLAS_PAGE_STATUS ||
-           page == ATLAS_PAGE_VOICE ||
-           is_app_page(page);
 }
 
 static bool runtime_state_can_be_overridden(atlas_runtime_state_t runtime_state)
@@ -243,10 +224,7 @@ void atlas_scene_resolve(const atlas_ui_state_t *ui,
     const uint8_t requested_audio = ui == NULL ? 0 : ui->audio_level;
     const bool recent_manual_page =
         ui != NULL &&
-        ui->last_event_ms != 0 &&
-        now_ms >= ui->last_event_ms &&
-        now_ms - ui->last_event_ms <= ATLAS_MANUAL_PAGE_OVERRIDE_MS &&
-        is_manual_display_page(requested_page) &&
+        atlas_common_ui_recent_manual_page(requested_page, ui->last_event_ms, now_ms) &&
         runtime_state_can_be_overridden(runtime_state);
     char subtitle[72];
     char hint[96];
@@ -372,7 +350,7 @@ void atlas_scene_resolve(const atlas_ui_state_t *ui,
     }
 
     if (recent_manual_page) {
-        if (is_app_page(requested_page)) {
+        if (atlas_common_ui_page_is_app(requested_page)) {
             scene_set(scene,
                       ATLAS_SCENE_APP,
                       requested_page,
@@ -537,7 +515,7 @@ void atlas_scene_resolve(const atlas_ui_state_t *ui,
         return;
     }
 
-    if (is_app_page(requested_page)) {
+    if (atlas_common_ui_page_is_app(requested_page)) {
         scene_set(scene,
                   ATLAS_SCENE_APP,
                   requested_page,

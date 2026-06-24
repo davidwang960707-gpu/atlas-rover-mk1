@@ -13,6 +13,7 @@
 #include "atlas_runtime.h"
 #include "atlas_scene.h"
 #include "atlas_wifi.h"
+#include "common/atlas_common_ui_state.h"
 
 static const char *TAG = "atlas_ui";
 
@@ -48,19 +49,6 @@ static bool is_motion_intent(atlas_voice_event_t event)
            event == ATLAS_VOICE_EVENT_MOVE_BACKWARD ||
            event == ATLAS_VOICE_EVENT_TURN_LEFT ||
            event == ATLAS_VOICE_EVENT_TURN_RIGHT;
-}
-
-static bool is_persistent_page(atlas_page_t page)
-{
-    return page == ATLAS_PAGE_CLOCK ||
-           page == ATLAS_PAGE_STATUS ||
-           page == ATLAS_PAGE_ALARM ||
-           page == ATLAS_PAGE_PHOTO ||
-           page == ATLAS_PAGE_MUSIC ||
-           page == ATLAS_PAGE_STORY ||
-           page == ATLAS_PAGE_CHAT ||
-           page == ATLAS_PAGE_CALENDAR ||
-           page == ATLAS_PAGE_POMODORO;
 }
 
 static uint32_t safety_stop_delay_ms(uint16_t duration_ms)
@@ -148,7 +136,7 @@ void atlas_ui_init(atlas_ui_state_t *state)
         .last_ack = ATLAS_ROVER_ACK_NONE,
         .moving = false,
         .charging = false,
-        .chat_mode = "pet_head",
+        .chat_mode = ATLAS_COMMON_UI_DEFAULT_CHAT_MODE,
         .chat_text = "",
         .calendar_title = "电子宠物日历",
         .calendar_note = "今日状态：待命，晚间记得充电",
@@ -173,8 +161,9 @@ void atlas_ui_apply_config(atlas_ui_state_t *state, const atlas_config_t *config
     }
 
     atlas_ui_lock();
-    copy_state_text(state->chat_mode, sizeof(state->chat_mode),
-                    atlas_config_chat_mode_is_valid(config->ui.chat_mode) ? config->ui.chat_mode : "pet_head");
+    copy_state_text(state->chat_mode,
+                    sizeof(state->chat_mode),
+                    atlas_common_ui_chat_mode_or_default(config->ui.chat_mode));
     copy_state_text(state->calendar_title, sizeof(state->calendar_title), config->calendar.title);
     copy_state_text(state->calendar_note, sizeof(state->calendar_note), config->calendar.note);
     copy_state_text(state->pomodoro_task_name, sizeof(state->pomodoro_task_name), config->pomodoro.task_name);
@@ -521,7 +510,7 @@ void atlas_ui_tick(atlas_ui_state_t *state, const atlas_config_t *config, uint32
         (void)atlas_ui_stop(state, now_ms);
     }
 
-    if (!state->moving && is_persistent_page(state->page) && state->audio_level == 0 &&
+    if (!state->moving && atlas_common_ui_page_is_persistent(state->page) && state->audio_level == 0 &&
         (state->expression == ATLAS_EXPR_SPEAKING ||
          state->expression == ATLAS_EXPR_THINKING ||
          state->expression == ATLAS_EXPR_LISTEN) &&
@@ -537,7 +526,7 @@ void atlas_ui_tick(atlas_ui_state_t *state, const atlas_config_t *config, uint32
     }
 
     const bool explicit_recent = now_ms - state->last_event_ms <= 3500u;
-    if (!state->moving && !explicit_recent && !is_persistent_page(state->page) &&
+    if (!state->moving && !explicit_recent && !atlas_common_ui_page_is_persistent(state->page) &&
         state->expression != ATLAS_EXPR_CHARGING && state->expression != ATLAS_EXPR_ERROR &&
         atlas_pet_phase_is_character_active(&state->pet)) {
         state->page = ATLAS_PAGE_EYES;
@@ -546,7 +535,7 @@ void atlas_ui_tick(atlas_ui_state_t *state, const atlas_config_t *config, uint32
         state->audio_level = 0;
     }
 
-    if (!state->moving && !is_persistent_page(state->page) && state->expression != ATLAS_EXPR_IDLE &&
+    if (!state->moving && !atlas_common_ui_page_is_persistent(state->page) && state->expression != ATLAS_EXPR_IDLE &&
         state->expression != ATLAS_EXPR_CHARGING && state->expression != ATLAS_EXPR_ERROR &&
         !atlas_pet_phase_is_character_active(&state->pet) && now_ms - state->last_event_ms > 3500) {
         state->page = ATLAS_PAGE_EYES;
@@ -608,8 +597,9 @@ void atlas_ui_tick(atlas_ui_state_t *state, const atlas_config_t *config, uint32
         .pet_ip_valid = false,
     };
 
-    copy_state_text(payload.chat_mode, sizeof(payload.chat_mode),
-                    atlas_config_chat_mode_is_valid(state->chat_mode) ? state->chat_mode : "pet_head");
+    copy_state_text(payload.chat_mode,
+                    sizeof(payload.chat_mode),
+                    atlas_common_ui_chat_mode_or_default(state->chat_mode));
     copy_state_text(payload.chat_text, sizeof(payload.chat_text), state->chat_text);
     copy_state_text(payload.calendar_title, sizeof(payload.calendar_title), state->calendar_title);
     copy_state_text(payload.calendar_note, sizeof(payload.calendar_note), state->calendar_note);

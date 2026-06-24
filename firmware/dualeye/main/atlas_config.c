@@ -8,6 +8,7 @@
 #include "nvs_flash.h"
 
 #include "atlas_expression.h"
+#include "common/atlas_common_ui_state.h"
 
 static const char *TAG = "atlas_config";
 static const char *NS = "atlas";
@@ -59,7 +60,7 @@ void atlas_config_defaults(atlas_config_t *config)
     copy_string(config->llm.mode, sizeof(config->llm.mode), "off");
     copy_string(config->llm.provider, sizeof(config->llm.provider), "openai_compatible");
     copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
-    copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), "pet_head");
+    copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     config->ui.brightness = 70;
     config->ui.volume = 90;
     copy_string(config->pomodoro.task_name, sizeof(config->pomodoro.task_name), "巡检任务");
@@ -120,7 +121,11 @@ esp_err_t atlas_config_load(atlas_config_t *config)
     (void)nvs_get_string_default(handle, "llm_model", config->llm.model, sizeof(config->llm.model), "");
     (void)nvs_get_string_default(handle, "llm_key", config->llm.api_key, sizeof(config->llm.api_key), "");
     (void)nvs_get_string_default(handle, "ui_theme", config->ui.theme, sizeof(config->ui.theme), "classic");
-    (void)nvs_get_string_default(handle, "chat_mode", config->ui.chat_mode, sizeof(config->ui.chat_mode), "pet_head");
+    (void)nvs_get_string_default(handle,
+                                 "chat_mode",
+                                 config->ui.chat_mode,
+                                 sizeof(config->ui.chat_mode),
+                                 ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     (void)nvs_get_string_default(handle, "pom_task", config->pomodoro.task_name, sizeof(config->pomodoro.task_name), "巡检任务");
     if (!atlas_expression_theme_is_valid(config->ui.theme)) {
         copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
@@ -128,7 +133,7 @@ esp_err_t atlas_config_load(atlas_config_t *config)
         copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
     }
     if (!atlas_config_chat_mode_is_valid(config->ui.chat_mode)) {
-        copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), "pet_head");
+        copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     }
     if (!nvs_get_u16(handle, "pom_focus", &value_u16)) {
         config->pomodoro.focus_minutes = value_u16 == 0 ? 25 : value_u16;
@@ -311,7 +316,7 @@ esp_err_t atlas_config_save_ui(const atlas_ui_config_t *ui)
         clipped.volume = 100;
     }
     if (!atlas_config_chat_mode_is_valid(clipped.chat_mode)) {
-        copy_string(clipped.chat_mode, sizeof(clipped.chat_mode), "pet_head");
+        copy_string(clipped.chat_mode, sizeof(clipped.chat_mode), ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     }
 
     nvs_handle_t handle;
@@ -469,8 +474,5 @@ bool atlas_config_ai_control_allowed(const atlas_config_t *config)
 
 bool atlas_config_chat_mode_is_valid(const char *mode)
 {
-    return mode != NULL &&
-           (strcmp(mode, "text") == 0 ||
-            strcmp(mode, "pet_head") == 0 ||
-            strcmp(mode, "eyes_only") == 0);
+    return atlas_common_ui_chat_mode_is_valid(mode);
 }

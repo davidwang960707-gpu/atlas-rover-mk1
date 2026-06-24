@@ -9,6 +9,8 @@
 
 #include "esp_log.h"
 
+#include "common/atlas_common_ui_state.h"
+
 #if CONFIG_ATLAS_DISPLAY_WAVESHARE_LVGL
 #include <assert.h>
 
@@ -612,18 +614,7 @@ static void hide_page_content(atlas_lvgl_eye_t *eye)
 
 static const char *display_chat_mode(const atlas_display_payload_t *payload)
 {
-    if (payload != NULL && atlas_config_chat_mode_is_valid(payload->chat_mode)) {
-        return payload->chat_mode;
-    }
-    return "pet_head";
-}
-
-static bool page_uses_chat_mode(atlas_page_t page)
-{
-    return page == ATLAS_PAGE_CHAT ||
-           page == ATLAS_PAGE_VOICE ||
-           page == ATLAS_PAGE_MUSIC ||
-           page == ATLAS_PAGE_STORY;
+    return atlas_common_ui_chat_mode_or_default(payload == NULL ? NULL : payload->chat_mode);
 }
 
 static const char *pet_head_state_for_expression(atlas_page_t page, atlas_expression_t expression)
@@ -1368,7 +1359,8 @@ static void render_lvgl_eye(size_t index,
         return;
     }
 
-    if (page_uses_chat_mode(page) && strcmp(display_chat_mode(payload), "eyes_only") == 0) {
+    if (atlas_common_ui_page_uses_chat_mode(page) &&
+        strcmp(display_chat_mode(payload), ATLAS_COMMON_UI_CHAT_MODE_EYES_ONLY) == 0) {
         if (render_eye_asset(index, expression, now_ms)) {
             return;
         }
@@ -1880,7 +1872,8 @@ static void set_eye_page_content(size_t index,
     lv_obj_align(eye->content, LV_ALIGN_CENTER, 0, 0);
     lv_obj_align(eye->status_text, LV_ALIGN_BOTTOM_MID, 0, -10);
 
-    if (page_uses_chat_mode(page) && strcmp(display_chat_mode(payload), "pet_head") == 0) {
+    if (atlas_common_ui_page_uses_chat_mode(page) &&
+        strcmp(display_chat_mode(payload), ATLAS_COMMON_UI_CHAT_MODE_PET_HEAD) == 0) {
         char short_text[104];
         char title[32];
         const bool story = page == ATLAS_PAGE_STORY;

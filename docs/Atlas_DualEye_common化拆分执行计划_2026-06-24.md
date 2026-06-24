@@ -74,7 +74,25 @@
 - `/api/selftest.summary` 数量与旧逻辑一致，Brain WS 离线仍为 warn 而非 fail。
 - 后续 P3b 可把 `/api/sr/status` 的 WakeNet/AEC model partition 与 heap 风险也接入 `atlas_common_device_status`。
 
-### P4 Tool Schema V0 adapter
+### P4 UI/page/app state common 层
+
+目标：把页面状态、chat mode 默认值、应用页/手动页/持久页分类，以及 Brain 离线时的显示降级策略入口抽成可复用 common contract。
+
+本轮边界：
+
+- 新增 `firmware/dualeye/main/common/atlas_common_ui_state.*`。
+- common 层定义 `atlas.ui.state.v0`、`pet_head/text/eyes_only` chat mode、`pet_head` 默认值、手动页面保留窗口和 transient 回眼睛页窗口。
+- `atlas_ui.c` 复用 common 的持久页和 chat mode 规范化；双眼、时钟、番茄、日历状态字段仍由原 wrapper 维护。
+- `atlas_scene.c` 复用 common 的应用页/手动页判断；Brain 离线仍走结构化 `brain_offline` scene，不改 HTTP API 字段，不切黑屏。
+- `atlas_display.c` 复用 common 的 chat mode 和宠物头入口判断；渲染资源路径、宠物头动画、时钟/番茄/日历渲染逻辑保持原位。
+
+下一步验收：
+
+- 构建通过。
+- `/api/status`、`/api/status/lite` 的 `ui/chat/apps/scene` 字段保持兼容。
+- Brain 未配置或离线时仍显示结构化 Brain 离线页，本地双眼、时钟、番茄、日历和宠物头可继续切换。
+
+### P5 Tool Schema V0 adapter
 
 目标：把工具表和工具调用从 HTTP handler 中拆成 schema adapter。
 
@@ -84,7 +102,7 @@
 - app 层注册 eyes、clock、calendar、pomodoro、status、audio、ota 等 DualEye tool handlers。
 - 固件只更新 `specs/atlas_tool_schema_v0.md` 的兼容扩展，不直接改 Brain 实现。
 
-### P5 OTA manifest/包管理接口
+### 后续 OTA manifest/包管理接口
 
 目标：把 OTA manifest/status/packages/apply 从 HTTP handler 中拆成 manifest adapter。
 
