@@ -39,7 +39,7 @@ const char *atlas_llm_client_mode_label(const char *mode)
         return "外部宿主/调试桥";
     }
     if (strcmp(mode, "embedded") == 0) {
-        return "端侧 MimiClaw";
+        return "端侧 Atlas Brain";
     }
     if (strcmp(mode, "cloud") == 0) {
         return "云端大模型";

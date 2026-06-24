@@ -59,9 +59,17 @@ void atlas_config_defaults(atlas_config_t *config)
     copy_string(config->llm.mode, sizeof(config->llm.mode), "off");
     copy_string(config->llm.provider, sizeof(config->llm.provider), "openai_compatible");
     copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
+    copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), "pet_head");
     config->ui.brightness = 70;
-    config->ui.volume = 60;
-    config->safety.motion_enabled = true;
+    config->ui.volume = 90;
+    copy_string(config->pomodoro.task_name, sizeof(config->pomodoro.task_name), "巡检任务");
+    config->pomodoro.focus_minutes = 25;
+    config->pomodoro.break_minutes = 5;
+    config->pomodoro.enabled = true;
+    copy_string(config->calendar.title, sizeof(config->calendar.title), "电子宠物日历");
+    copy_string(config->calendar.note, sizeof(config->calendar.note), "今日状态：待命，晚间记得充电");
+    config->calendar.enabled = true;
+    config->safety.motion_enabled = false;
     copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     config->safety.max_speed_percent = 40;
     config->safety.max_duration_ms = 700;
@@ -90,6 +98,8 @@ esp_err_t atlas_config_load(atlas_config_t *config)
     }
 
     atlas_config_defaults(config);
+    uint8_t value_u8 = 0;
+    uint16_t value_u16 = 0;
 
     nvs_handle_t handle;
     esp_err_t err = nvs_open(NS, NVS_READONLY, &handle);
@@ -110,18 +120,39 @@ esp_err_t atlas_config_load(atlas_config_t *config)
     (void)nvs_get_string_default(handle, "llm_model", config->llm.model, sizeof(config->llm.model), "");
     (void)nvs_get_string_default(handle, "llm_key", config->llm.api_key, sizeof(config->llm.api_key), "");
     (void)nvs_get_string_default(handle, "ui_theme", config->ui.theme, sizeof(config->ui.theme), "classic");
+    (void)nvs_get_string_default(handle, "chat_mode", config->ui.chat_mode, sizeof(config->ui.chat_mode), "pet_head");
+    (void)nvs_get_string_default(handle, "pom_task", config->pomodoro.task_name, sizeof(config->pomodoro.task_name), "巡检任务");
     if (!atlas_expression_theme_is_valid(config->ui.theme)) {
         copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
     } else if (strcmp(config->ui.theme, "atlas_blue") == 0) {
         copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
+    }
+    if (!atlas_config_chat_mode_is_valid(config->ui.chat_mode)) {
+        copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), "pet_head");
+    }
+    if (!nvs_get_u16(handle, "pom_focus", &value_u16)) {
+        config->pomodoro.focus_minutes = value_u16 == 0 ? 25 : value_u16;
+    } else {
+        config->pomodoro.focus_minutes = 25;
+    }
+    if (!nvs_get_u16(handle, "pom_break", &value_u16)) {
+        config->pomodoro.break_minutes = value_u16 == 0 ? 5 : value_u16;
+    } else {
+        config->pomodoro.break_minutes = 5;
+    }
+    if (nvs_get_u8(handle, "pom_enabled", &value_u8) == ESP_OK) {
+        config->pomodoro.enabled = value_u8 != 0;
+    }
+    (void)nvs_get_string_default(handle, "cal_title", config->calendar.title, sizeof(config->calendar.title), "电子宠物日历");
+    (void)nvs_get_string_default(handle, "cal_note", config->calendar.note, sizeof(config->calendar.note), "今日状态：待命，晚间记得充电");
+    if (nvs_get_u8(handle, "cal_enabled", &value_u8) == ESP_OK) {
+        config->calendar.enabled = value_u8 != 0;
     }
     (void)nvs_get_string_default(handle, "ctrl_mode", config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     if (strcmp(config->safety.control_mode, "manual") != 0 && strcmp(config->safety.control_mode, "ai") != 0) {
         copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     }
 
-    uint8_t value_u8 = 0;
-    uint16_t value_u16 = 0;
     if (nvs_get_u8(handle, "motion_en", &value_u8) == ESP_OK) {
         config->safety.motion_enabled = value_u8 != 0;
     }
@@ -134,6 +165,9 @@ esp_err_t atlas_config_load(atlas_config_t *config)
     if (nvs_get_u8(handle, "confirm_patrol", &value_u8) == ESP_OK) {
         config->safety.require_confirm_for_patrol = value_u8 != 0;
     }
+#if !ATLAS_ROVER_MOTION_BUILD_ENABLED
+    config->safety.motion_enabled = false;
+#endif
     if (nvs_get_u8(handle, "brightness", &value_u8) == ESP_OK) {
         config->ui.brightness = value_u8;
     }
@@ -211,6 +245,9 @@ esp_err_t atlas_config_save_safety(const atlas_safety_config_t *safety)
     }
 
     atlas_safety_config_t clipped = *safety;
+#if !ATLAS_ROVER_MOTION_BUILD_ENABLED
+    clipped.motion_enabled = false;
+#endif
     if (clipped.max_speed_percent > 80) {
         clipped.max_speed_percent = 80;
     }
@@ -273,10 +310,16 @@ esp_err_t atlas_config_save_ui(const atlas_ui_config_t *ui)
     if (clipped.volume > 100) {
         clipped.volume = 100;
     }
+    if (!atlas_config_chat_mode_is_valid(clipped.chat_mode)) {
+        copy_string(clipped.chat_mode, sizeof(clipped.chat_mode), "pet_head");
+    }
 
     nvs_handle_t handle;
     ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &handle), TAG, "nvs_open failed");
     esp_err_t err = nvs_set_string_checked(handle, "ui_theme", clipped.theme);
+    if (err == ESP_OK) {
+        err = nvs_set_string_checked(handle, "chat_mode", clipped.chat_mode);
+    }
     if (err == ESP_OK) {
         err = nvs_set_u8(handle, "brightness", clipped.brightness);
     }
@@ -288,10 +331,90 @@ esp_err_t atlas_config_save_ui(const atlas_ui_config_t *ui)
     }
     nvs_close(handle);
     ESP_LOGI(TAG,
-             "ui config saved: theme=%s brightness=%u volume=%u",
+             "ui config saved: theme=%s chat_mode=%s brightness=%u volume=%u",
              clipped.theme,
+             clipped.chat_mode,
              clipped.brightness,
              clipped.volume);
+    return err;
+}
+
+esp_err_t atlas_config_save_pomodoro(const atlas_pomodoro_config_t *pomodoro)
+{
+    if (pomodoro == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    atlas_pomodoro_config_t clipped = *pomodoro;
+    if (clipped.focus_minutes == 0) {
+        clipped.focus_minutes = 25;
+    }
+    if (clipped.break_minutes == 0) {
+        clipped.break_minutes = 5;
+    }
+    if (clipped.focus_minutes > 120) {
+        clipped.focus_minutes = 120;
+    }
+    if (clipped.break_minutes > 30) {
+        clipped.break_minutes = 30;
+    }
+
+    nvs_handle_t handle;
+    ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &handle), TAG, "nvs_open failed");
+    esp_err_t err = nvs_set_string_checked(handle, "pom_task", clipped.task_name);
+    if (err == ESP_OK) {
+        err = nvs_set_u16(handle, "pom_focus", clipped.focus_minutes);
+    }
+    if (err == ESP_OK) {
+        err = nvs_set_u16(handle, "pom_break", clipped.break_minutes);
+    }
+    if (err == ESP_OK) {
+        err = nvs_set_u8(handle, "pom_enabled", clipped.enabled ? 1 : 0);
+    }
+    if (err == ESP_OK) {
+        err = nvs_commit(handle);
+    }
+    nvs_close(handle);
+    ESP_LOGI(TAG,
+             "pomodoro config saved: task=%s focus=%u break=%u enabled=%s",
+             clipped.task_name,
+             clipped.focus_minutes,
+             clipped.break_minutes,
+             clipped.enabled ? "enabled" : "disabled");
+    return err;
+}
+
+esp_err_t atlas_config_save_calendar(const atlas_calendar_config_t *calendar)
+{
+    if (calendar == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    atlas_calendar_config_t clipped = *calendar;
+    if (clipped.title[0] == '\0') {
+        copy_string(clipped.title, sizeof(clipped.title), "电子宠物日历");
+    }
+    if (clipped.note[0] == '\0') {
+        copy_string(clipped.note, sizeof(clipped.note), "今日状态：待命，晚间记得充电");
+    }
+
+    nvs_handle_t handle;
+    ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &handle), TAG, "nvs_open failed");
+    esp_err_t err = nvs_set_u8(handle, "cal_enabled", clipped.enabled ? 1 : 0);
+    if (err == ESP_OK) {
+        err = nvs_set_string_checked(handle, "cal_title", clipped.title);
+    }
+    if (err == ESP_OK) {
+        err = nvs_set_string_checked(handle, "cal_note", clipped.note);
+    }
+    if (err == ESP_OK) {
+        err = nvs_commit(handle);
+    }
+    nvs_close(handle);
+    ESP_LOGI(TAG,
+             "calendar config saved: title=%s enabled=%s",
+             clipped.title,
+             clipped.enabled ? "enabled" : "disabled");
     return err;
 }
 
@@ -322,9 +445,14 @@ bool atlas_config_has_llm_api_key(const atlas_config_t *config)
     return config != NULL && config->llm.api_key[0] != '\0';
 }
 
+bool atlas_config_motion_supported(void)
+{
+    return ATLAS_ROVER_MOTION_BUILD_ENABLED != 0;
+}
+
 bool atlas_config_motion_allowed(const atlas_config_t *config)
 {
-    return config != NULL && config->safety.motion_enabled;
+    return atlas_config_motion_supported() && config != NULL && config->safety.motion_enabled;
 }
 
 bool atlas_config_manual_control_allowed(const atlas_config_t *config)
@@ -337,4 +465,12 @@ bool atlas_config_ai_control_allowed(const atlas_config_t *config)
 {
     return atlas_config_motion_allowed(config) &&
            strcmp(config->safety.control_mode, "ai") == 0;
+}
+
+bool atlas_config_chat_mode_is_valid(const char *mode)
+{
+    return mode != NULL &&
+           (strcmp(mode, "text") == 0 ||
+            strcmp(mode, "pet_head") == 0 ||
+            strcmp(mode, "eyes_only") == 0);
 }

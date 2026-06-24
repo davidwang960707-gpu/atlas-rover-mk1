@@ -1,6 +1,7 @@
 #include "atlas_pet.h"
 
 #include <string.h>
+#include <strings.h>
 
 #define ATLAS_PET_SLEEPY_AFTER_MS (3u * 60u * 1000u)
 #define ATLAS_PET_SLEEP_AFTER_MS (8u * 60u * 1000u)
@@ -122,7 +123,11 @@ void atlas_pet_handle_event(atlas_pet_state_t *pet, atlas_pet_event_t event, uin
     switch (event) {
     case ATLAS_PET_EVENT_TOUCH:
         add_metric(&pet->mood, 12);
-        add_metric(&pet->energy, -1);
+        if (pet->energy <= 10u || pet->phase == ATLAS_PET_PHASE_SLEEPY || pet->phase == ATLAS_PET_PHASE_SLEEPING) {
+            add_metric(&pet->energy, 30);
+        } else {
+            add_metric(&pet->energy, -1);
+        }
         add_metric(&pet->curiosity, 5);
         begin_phase(pet, ATLAS_PET_PHASE_HAPPY, now_ms, 6000, true);
         break;
@@ -316,15 +321,19 @@ bool atlas_pet_event_from_name(const char *name, atlas_pet_event_t *event)
         }
     }
 
-    if (strcmp(name, "move") == 0 || strcmp(name, "cruise") == 0) {
+    if (strcasecmp(name, "move") == 0 || strcasecmp(name, "cruise") == 0) {
         *event = ATLAS_PET_EVENT_PATROL;
         return true;
     }
-    if (strcmp(name, "sleep") == 0) {
+    if (strcasecmp(name, "wake") == 0 || strcasecmp(name, "awake") == 0 || strcmp(name, "唤醒") == 0) {
+        *event = ATLAS_PET_EVENT_TOUCH;
+        return true;
+    }
+    if (strcasecmp(name, "sleep") == 0) {
         *event = ATLAS_PET_EVENT_REST;
         return true;
     }
-    if (strcmp(name, "talk") == 0) {
+    if (strcasecmp(name, "talk") == 0) {
         *event = ATLAS_PET_EVENT_CHAT;
         return true;
     }

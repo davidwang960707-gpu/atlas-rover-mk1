@@ -1,10 +1,10 @@
 # Atlas Rover Mk.1
 
-一个还在长身体的桌面巡游机器人原型。
+一个还在长身体的桌面智能硬件 / 桌面巡游机器人原型。
 
-它现在的样子，大概是：铜丝焊接车架、Waveshare ESP32-S3 DualEye 双圆屏、双板 UART 控制、N20/DRV8833 底盘、语音交互、双目表情，还有一点点“我想活起来”的执念。
+它现在的样子，大概是：铜丝焊接车架、Waveshare ESP32-S3 DualEye 双圆屏、语音交互、双目表情、电子宠物、番茄/时钟/日历应用，还有一点点“我想活起来”的执念。N20/DRV8833 底盘方案先保留为后续可选模块，这一版实体优先把桌面智能硬件本体做稳。
 
-我们知道它还很粗糙：机械结构没经过足够多次打样，DualEye 真屏驱动已经接入但还没充分真机标定，MimiClaw 语音链路也还在搭骨架。这个仓库不是“成品展示柜”，更像一个公开的工作台。欢迎大神路过时顺手指点，尤其欢迎指出不合理、不安全、不优雅的地方。
+我们知道它还很粗糙：机械结构没经过足够多次打样，DualEye 真屏驱动已经接入但还没充分真机标定，Atlas Brain / Mac 桥的语音链路也还在继续打磨。这个仓库不是“成品展示柜”，更像一个公开的工作台。欢迎大神路过时顺手指点，尤其欢迎指出不合理、不安全、不优雅的地方。
 <img width="2506" height="2348" alt="image" src="https://github.com/user-attachments/assets/82bc6d5b-bc66-4e5b-b9d4-6708805ef747" />
 
 
@@ -14,8 +14,8 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 
 - 双实体圆屏，每块屏幕显示一只眼睛。
 - DualEye 负责表情、页面、语音、触摸和高层意图。
-- Seeed XIAO ESP32C3 底盘板负责普通 N20 电机、DRV8833、限速、开环短时差速控制和超时停车。
-- DualEye 与底盘板通过 3.3 V TTL UART 通信。
+- Seeed XIAO ESP32C3 底盘板负责普通 N20 电机、DRV8833、限速、开环短时差速控制和超时停车；当前软件构建默认暂停动态底盘，先做静态桌面伴侣体验。
+- DualEye 与底盘板通过 3.3 V TTL UART 通信，后续恢复动态版本时再启用。
 - 车架尽量保留黄铜/铜丝手工 DIY 的质感。
 
 核心原则很朴素：先跑起来，再跑稳，再变好看。
@@ -28,11 +28,11 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 | 采购清单 | 已有中文清单和规格复审 |
 | 双目表情方案 | 已有 V0.6，按“一屏一眼”设计并补充页面视觉、应用能力映射和候选界面推荐 |
 | Web 表情预览 | 已可在 VS Code Live Preview 中查看，支持 5 套主题、16 个表情、时钟/状态/语音/音乐/故事/对话/日历/番茄页评审 |
-| DualEye 固件 | V0.5 可编译，已同步 5 套主题 palette，接入 Waveshare GC9A01/LVGL 双屏后端，并新增 MimiClaw 结构化意图入口 |
-| Web 应用/管理界面 | V0.4 已拆分 `/app` 日常应用页和 `/admin` 管理后台，支持表情、页面、主题、移动、MimiClaw 应用占位和配置管理 |
-| 真机双屏显示 | 已接 Waveshare 官方同款 GC9A01/LVGL 初始化，真机需继续实测触摸和复杂页面 |
-| 语音 MimiClaw | DualEye 已提供 `/api/mimiclaw/intent`，MimiClaw 集成方案见 `docs/MimiClaw集成方案_Atlas_Rover_Mk1.md` |
-| 底盘开环控制 | XIAO ESP32C3 底盘固件 V0.1 已补齐，支持 UART `AR1,`、DRV8833 PWM、限速、动作时长截止和 STOP；待真车标定左右电机方向 |
+| DualEye 固件 | `0.14.7-acceptance` 已实机烧录验收，接入 Waveshare GC9A01/LVGL 双屏、SPIFFS 主题资源、3500 常用汉字、时钟/日历/番茄/电子宠物页面、三种对话界面 `pet_head/text/eyes_only`、2.5D 土拨鼠头关键帧/动画、语音 turn runtime 诊断、`atlas_audio_service`、主动 Atlas Brain `/ws/brain` 常驻会话、WS binary TTS 下行、Brain 离线本地页面降级、真实 OPUS 60ms 上行流、ESP-SR WakeNet 模型资源探针和完整自检/OTA 包接口 |
+| Web 应用/管理界面 | DualEye `/app` 日常控制页和 `/admin` 本地管理后台已可用；Mac 侧 Atlas Brain 新增 `atlas.ui.set_chat_mode`、`atlas.pet.set_state`、`atlas.pet.play_animation` 工具，设备 App 页会同步真实主题、页面、表情和对话界面模式，并按“一个设备一个 App 页、管理端平台化”收敛 |
+| 真机双屏显示 | 已接 Waveshare 官方同款 GC9A01/LVGL 初始化，4 套核心眼睛主题和新增主题资源已内置；番茄/时钟/日历页面仍会继续打磨视觉 |
+| 语音 Atlas Brain/MiMo | DualEye 通过 Atlas Brain / Mac 桥接对接 MiMo LLM/ASR/TTS；Atlas Brain 已拆出 `atlas_brain_providers.py` Provider 层，支持会话状态、Provider 诊断、技能系统、角色切换、天气、联网搜索骨架和平台化设备列表；`/api/device/opus-turn/start` 已可把 DualEye OPUS packet 封装 Ogg、解码 WAV 并进入 ASR |
+| 底盘开环控制 | XIAO ESP32C3 底盘固件 V0.1 已补齐但本轮默认不启用动态移动；服务端默认不注册 rover 移动技能，固件 `motion_supported=false`，后续动态版再恢复 |
 
 ## 仓库结构
 
@@ -76,14 +76,30 @@ idf.py set-target esp32s3
 idf.py build
 ```
 
-当前 V0.5 已通过本地构建，并按 DualEye 官方规格配置为 16MB Flash、PSRAM 和 4MB 应用分区；固件已接入 Waveshare GC9A01/LVGL 双屏后端和 MimiClaw 结构化意图入口，下一步重点是真机校准旋转、背光、触摸、复杂页面和完整 MimiClaw agent loop 合并。
+当前 `0.14.7-acceptance` 已通过本地构建并完成实机 app-only 烧录验收，按 DualEye 官方规格配置为 16MB Flash、PSRAM、双 OTA app 分区、ESP-SR `model` 分区和 4MB `storage` 资源分区；SPIFFS 资源分区内置双眼 PNG、2.5D 土拨鼠头资源和 3500 常用汉字压缩字库，`model` 分区打包 `wn9_nihaoxiaozhi_tts` 作为 WakeNet 资源验证模型。构建结果：`atlas_rover_dualeye.bin` 大小 `0x23b7c0`，5MB app slot 剩余约 55%；`storage` 资源目录已压缩到约 3.6MB，可进入 4MB 分区。
+
+这版分区表已变化，首次升级必须全量烧录，不能只刷 app：
+
+```bash
+cd "firmware/dualeye"
+idf.py flash
+```
+
+烧录前可先跑：
+
+```bash
+python3 tools/atlas_brain_server.py --dry-run --host 127.0.0.1 --port 8787
+python3 tools/simulate_opus_stream.py --url ws://127.0.0.1:8787/ws/audio --duration-ms 1800
+python3 tools/check_atlas_providers.py --brain-url http://127.0.0.1:8787
+python3 tools/check_atlas_preflash.py --brain-url http://127.0.0.1:8787 --skip-dualeye
+```
 
 烧录后：
 
 - 没有 Wi-Fi 配置时，DualEye 会开启 `AtlasRover-XXXX` 热点，手机/电脑连接后访问 `http://192.168.4.1`。
-- 串口日志会打印 6 位配对码；STOP 不需要配对码，移动和配置修改需要配对码。
-- Web 管理页可以配置 Wi-Fi、LLM 模式、Base URL、Model、API Key 和移动安全限制。
-- API Key 只保存在设备 NVS，不写入源码、不提交到 GitHub、不在日志中输出。
+- 串口日志会打印 6 位配对码；配置修改需要配对码。STOP 保留为后续底盘安全入口。
+- Web 管理页可以配置 Wi-Fi、LLM 模式、Base URL、Model、API Key、音频和界面设置；本轮动态底盘默认暂停。
+- Atlas Brain 的 API Key 只保存在本地 `.atlas-brain.env`；如果后续启用设备直连云端模式，设备侧 Key 只进 NVS。两种方式都不写入源码、不提交到 GitHub、不在日志中输出。
 
 ## 编译 XIAO 底盘固件
 
@@ -113,7 +129,11 @@ idf.py build
 ## 进展记录
 
 - [项目进展日志](docs/项目进展日志.md)
+- [Atlas Brain 改造记录 2026-06-23](docs/Atlas_Brain改造记录_2026-06-23.md)
 - [开发路线图](docs/开发路线图.md)
+- [智能体架构设计 V0.11](docs/Atlas智能体架构设计_V0.11.md)
+- [桌面智能硬件平台化执行记录 V0.12](docs/Atlas桌面智能硬件平台化执行记录_V0.12.md)
+- [80 分加固包记录 2026-06-23](docs/Atlas_80分加固包_2026-06-23.md)
 - [面包板临时联调接线说明](docs/面包板临时联调接线说明_Atlas_Rover_Mk1.md)
 - [后桥、前桥、底板与 64T 齿轮轮方案](docs/后桥前桥与64T齿轮轮方案_Atlas_Rover_Mk1.md)
 

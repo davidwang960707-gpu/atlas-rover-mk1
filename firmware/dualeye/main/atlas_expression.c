@@ -4,6 +4,132 @@
 #include <string.h>
 
 static const atlas_theme_palette_t s_theme_palettes[ATLAS_THEME_COUNT] = {
+    [ATLAS_THEME_RAPTOR] = {
+        .id = "raptor",
+        .name_zh = "猛禽眼",
+        .bg_rgb = 0x050608u,
+        .panel_rgb = 0x101217u,
+        .panel_2_rgb = 0x0B0E12u,
+        .stage_bg_rgb = 0x050608u,
+        .eye_bg_rgb = 0x050708u,
+        .line_rgb = 0xF5A623u,
+        .primary_rgb = 0xFF8F3Cu,
+        .positive_rgb = 0x7AE6B8u,
+        .danger_rgb = 0xFF6B4Bu,
+        .amber_rgb = 0xF5A623u,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0xFFE3A3u,
+        .text_rgb = 0xF5F2EBu,
+        .muted_rgb = 0xA49C90u,
+    },
+    [ATLAS_THEME_MECHA] = {
+        .id = "mecha",
+        .name_zh = "机械电子眼",
+        .bg_rgb = 0x070A10u,
+        .panel_rgb = 0x0F141Bu,
+        .panel_2_rgb = 0x0A0F15u,
+        .stage_bg_rgb = 0x070A10u,
+        .eye_bg_rgb = 0x06090Fu,
+        .line_rgb = 0x79A5FFu,
+        .primary_rgb = 0x5EE6FFu,
+        .positive_rgb = 0x8BFFADu,
+        .danger_rgb = 0xFF7D6Bu,
+        .amber_rgb = 0xF4CF88u,
+        .rose_rgb = 0xFF75C3u,
+        .tear_rgb = 0x5EE6FFu,
+        .text_rgb = 0xDCEEFFu,
+        .muted_rgb = 0x98A6B3u,
+    },
+    [ATLAS_THEME_GOGGLE] = {
+        .id = "goggle",
+        .name_zh = "护目镜眼",
+        .bg_rgb = 0x0B0A06u,
+        .panel_rgb = 0x19150Au,
+        .panel_2_rgb = 0x141009u,
+        .stage_bg_rgb = 0x0B0A06u,
+        .eye_bg_rgb = 0x0B0A06u,
+        .line_rgb = 0xF7E17Bu,
+        .primary_rgb = 0xFFE86Bu,
+        .positive_rgb = 0x9DFF7Eu,
+        .danger_rgb = 0xFF6B4Bu,
+        .amber_rgb = 0xFFDE76u,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0xFFD95Du,
+        .text_rgb = 0xFFF7D5u,
+        .muted_rgb = 0xC8B47Au,
+    },
+    [ATLAS_THEME_PET] = {
+        .id = "pet",
+        .name_zh = "电子宠物巡游",
+        .bg_rgb = 0x080B0Fu,
+        .panel_rgb = 0x121A20u,
+        .panel_2_rgb = 0x0F171Du,
+        .stage_bg_rgb = 0x080B0Fu,
+        .eye_bg_rgb = 0x070B10u,
+        .line_rgb = 0x7FC3F3u,
+        .primary_rgb = 0x5FE1B4u,
+        .positive_rgb = 0xA8F06Au,
+        .danger_rgb = 0xFFB65Au,
+        .amber_rgb = 0xFFC37Au,
+        .rose_rgb = 0xFFA6CCu,
+        .tear_rgb = 0x89D6FFu,
+        .text_rgb = 0xEFFAEEu,
+        .muted_rgb = 0xA1B8B2u,
+    },
+    [ATLAS_THEME_BLUE_PUPIL] = {
+        .id = "blue_pupil",
+        .name_zh = "蓝色瞳孔",
+        .bg_rgb = 0x020509u,
+        .panel_rgb = 0x0A1420u,
+        .panel_2_rgb = 0x06101Au,
+        .stage_bg_rgb = 0x020509u,
+        .eye_bg_rgb = 0x020509u,
+        .line_rgb = 0x65E6FFu,
+        .primary_rgb = 0x65E6FFu,
+        .positive_rgb = 0x8BFFADu,
+        .danger_rgb = 0xFF6B4Bu,
+        .amber_rgb = 0xF4CF88u,
+        .rose_rgb = 0xFF75C3u,
+        .tear_rgb = 0x65E6FFu,
+        .text_rgb = 0xE6F8FFu,
+        .muted_rgb = 0x91B8C6u,
+    },
+    [ATLAS_THEME_NO_SMOKING] = {
+        .id = "no_smoking",
+        .name_zh = "禁烟禁电子烟",
+        .bg_rgb = 0x0C0C0Cu,
+        .panel_rgb = 0x181313u,
+        .panel_2_rgb = 0x120E0Eu,
+        .stage_bg_rgb = 0x0C0C0Cu,
+        .eye_bg_rgb = 0x0C0C0Cu,
+        .line_rgb = 0xFF100Cu,
+        .primary_rgb = 0xFF100Cu,
+        .positive_rgb = 0xFFFFFFu,
+        .danger_rgb = 0xFF100Cu,
+        .amber_rgb = 0xFFD95Du,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0xFFFFFFu,
+        .text_rgb = 0xFFF5F5u,
+        .muted_rgb = 0xD4B2B2u,
+    },
+    [ATLAS_THEME_TOMOE_SPIN] = {
+        .id = "tomoe_spin",
+        .name_zh = "红色旋纹",
+        .bg_rgb = 0x080505u,
+        .panel_rgb = 0x160A0Au,
+        .panel_2_rgb = 0x100707u,
+        .stage_bg_rgb = 0x080505u,
+        .eye_bg_rgb = 0x080505u,
+        .line_rgb = 0xFF0804u,
+        .primary_rgb = 0xFF0804u,
+        .positive_rgb = 0xFFD95Du,
+        .danger_rgb = 0xFF0804u,
+        .amber_rgb = 0xFFD95Du,
+        .rose_rgb = 0xFF6AA9u,
+        .tear_rgb = 0xFFB3B0u,
+        .text_rgb = 0xFFECECu,
+        .muted_rgb = 0xC89C9Cu,
+    },
     [ATLAS_THEME_CLASSIC] = {
         .id = "classic",
         .name_zh = "经典蓝眼",
@@ -158,6 +284,10 @@ bool atlas_expression_from_name(const char *name, atlas_expression_t *expression
     if (name == NULL || expression == NULL) {
         return false;
     }
+    if (strcmp(name, "blink") == 0) {
+        *expression = ATLAS_EXPR_WINK;
+        return true;
+    }
 
     for (atlas_expression_t candidate = ATLAS_EXPR_IDLE; candidate < ATLAS_EXPR_COUNT; ++candidate) {
         if (strcmp(name, atlas_expression_name(candidate)) == 0) {
@@ -198,7 +328,7 @@ atlas_theme_t atlas_expression_theme_from_id(const char *theme_id)
     if (theme_id == NULL || theme_id[0] == '\0' || strcmp(theme_id, "atlas_blue") == 0) {
         return ATLAS_THEME_CLASSIC;
     }
-    for (atlas_theme_t theme = ATLAS_THEME_CLASSIC; theme < ATLAS_THEME_COUNT; ++theme) {
+    for (atlas_theme_t theme = ATLAS_THEME_RAPTOR; theme < ATLAS_THEME_COUNT; ++theme) {
         if (strcmp(theme_id, s_theme_palettes[theme].id) == 0) {
             return theme;
         }
@@ -229,7 +359,7 @@ bool atlas_expression_theme_is_valid(const char *theme_id)
     if (strcmp(theme_id, "atlas_blue") == 0) {
         return true;
     }
-    for (atlas_theme_t theme = ATLAS_THEME_CLASSIC; theme < ATLAS_THEME_COUNT; ++theme) {
+    for (atlas_theme_t theme = ATLAS_THEME_RAPTOR; theme < ATLAS_THEME_COUNT; ++theme) {
         if (strcmp(theme_id, s_theme_palettes[theme].id) == 0) {
             return true;
         }

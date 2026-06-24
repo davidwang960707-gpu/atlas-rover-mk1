@@ -5,6 +5,7 @@
 #include "esp_err.h"
 
 #include "atlas_config.h"
+#include "atlas_display.h"
 #include "atlas_ui.h"
 
 typedef uint32_t (*atlas_admin_now_ms_fn_t)(void);

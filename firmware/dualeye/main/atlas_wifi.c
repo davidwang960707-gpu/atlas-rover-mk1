@@ -1,7 +1,11 @@
 #include "atlas_wifi.h"
 
+#include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 
+#include "apps/esp_sntp.h"
 #include "esp_check.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -19,8 +23,38 @@ static const char *TAG = "atlas_wifi";
 
 static atlas_wifi_status_t s_status;
 static bool s_wifi_ready;
+static bool s_sntp_started;
+static bool s_sta_configured;
 static esp_netif_t *s_sta_netif;
 static esp_netif_t *s_ap_netif;
+
+static const char *wifi_disconnect_reason_name(uint8_t reason)
+{
+    switch (reason) {
+    case WIFI_REASON_BEACON_TIMEOUT:
+        return "BEACON_TIMEOUT";
+    case WIFI_REASON_NO_AP_FOUND:
+        return "NO_AP_FOUND";
+    case WIFI_REASON_AUTH_FAIL:
+        return "AUTH_FAIL";
+    case WIFI_REASON_ASSOC_FAIL:
+        return "ASSOC_FAIL";
+    case WIFI_REASON_HANDSHAKE_TIMEOUT:
+        return "HANDSHAKE_TIMEOUT";
+    case WIFI_REASON_CONNECTION_FAIL:
+        return "CONNECTION_FAIL";
+    case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+        return "4WAY_HANDSHAKE_TIMEOUT";
+    case WIFI_REASON_NO_AP_FOUND_W_COMPATIBLE_SECURITY:
+        return "NO_AP_FOUND_COMPATIBLE_SECURITY";
+    case WIFI_REASON_NO_AP_FOUND_IN_AUTHMODE_THRESHOLD:
+        return "NO_AP_FOUND_AUTHMODE_THRESHOLD";
+    case WIFI_REASON_NO_AP_FOUND_IN_RSSI_THRESHOLD:
+        return "NO_AP_FOUND_RSSI_THRESHOLD";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 const char *atlas_wifi_mode_name(atlas_wifi_mode_t mode)
 {
@@ -78,25 +112,67 @@ static esp_err_t switch_to_apsta(void)
     return configure_softap();
 }
 
+static void time_sync_cb(struct timeval *tv)
+{
+    if (tv == NULL) {
+        return;
+    }
+
+    time_t now = tv->tv_sec;
+    struct tm timeinfo = {0};
+    localtime_r(&now, &timeinfo);
+    char text[32];
+    strftime(text, sizeof(text), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    ESP_LOGI(TAG, "SNTP time synced: %s", text);
+}
+
+static void start_sntp_if_needed(void)
+{
+    if (s_sntp_started) {
+        return;
+    }
+
+    setenv("TZ", "CST-8", 1);
+    tzset();
+    esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
+    esp_sntp_setservername(0, "ntp.aliyun.com");
+    esp_sntp_set_time_sync_notification_cb(time_sync_cb);
+    esp_sntp_init();
+    s_sntp_started = true;
+    ESP_LOGI(TAG, "SNTP started: server=ntp.aliyun.com timezone=CST-8");
+}
+
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     (void)arg;
 
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        ESP_LOGI(TAG, "STA start, connecting");
-        (void)esp_wifi_connect();
+        if (s_sta_configured) {
+            ESP_LOGI(TAG, "STA start, connecting");
+            (void)esp_wifi_connect();
+        }
         return;
     }
 
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        const wifi_event_sta_disconnected_t *event = (const wifi_event_sta_disconnected_t *)event_data;
+        const uint8_t reason = event == NULL ? 0 : event->reason;
         s_status.sta_connected = false;
         s_status.sta_ip[0] = '\0';
-        if (s_status.sta_retry_count < ATLAS_WIFI_MAX_STA_RETRY) {
+        if (s_sta_configured && s_status.sta_retry_count < ATLAS_WIFI_MAX_STA_RETRY) {
             s_status.sta_retry_count++;
-            ESP_LOGW(TAG, "STA disconnected, retry %u/%u", s_status.sta_retry_count, ATLAS_WIFI_MAX_STA_RETRY);
+            ESP_LOGW(TAG,
+                     "STA disconnected, reason=%u(%s), retry %u/%u",
+                     reason,
+                     wifi_disconnect_reason_name(reason),
+                     s_status.sta_retry_count,
+                     ATLAS_WIFI_MAX_STA_RETRY);
             (void)esp_wifi_connect();
         } else if (!s_status.ap_started) {
-            ESP_LOGW(TAG, "STA failed, enabling SoftAP fallback");
+            ESP_LOGW(TAG,
+                     "STA failed, reason=%u(%s), enabling SoftAP fallback",
+                     reason,
+                     wifi_disconnect_reason_name(reason));
             (void)switch_to_apsta();
         }
         return;
@@ -120,7 +196,89 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
         s_status.sta_retry_count = 0;
         copy_ip(s_status.sta_ip, sizeof(s_status.sta_ip), &event->ip_info);
         ESP_LOGI(TAG, "STA connected: ip=%s admin=http://%s", s_status.sta_ip, s_status.sta_ip);
+        start_sntp_if_needed();
     }
+}
+
+static int compare_scan_record_rssi(const void *a, const void *b)
+{
+    const wifi_ap_record_t *left = (const wifi_ap_record_t *)a;
+    const wifi_ap_record_t *right = (const wifi_ap_record_t *)b;
+    return (int)right->rssi - (int)left->rssi;
+}
+
+static bool scan_result_has_ssid(const atlas_wifi_scan_result_t *result, const char *ssid)
+{
+    if (result == NULL || ssid == NULL || ssid[0] == '\0') {
+        return false;
+    }
+    for (size_t i = 0; i < result->count; ++i) {
+        if (strcmp(result->records[i].ssid, ssid) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool auth_is_secure(wifi_auth_mode_t authmode)
+{
+    return authmode != WIFI_AUTH_OPEN && authmode != WIFI_AUTH_OWE;
+}
+
+esp_err_t atlas_wifi_scan(atlas_wifi_scan_result_t *result)
+{
+    if (result == NULL || !s_wifi_ready) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    memset(result, 0, sizeof(*result));
+
+    if (s_status.mode == ATLAS_WIFI_MODE_AP) {
+        ESP_RETURN_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_APSTA), TAG, "enable APSTA for scan failed");
+        s_status.mode = ATLAS_WIFI_MODE_APSTA;
+    }
+
+    wifi_scan_config_t scan_config = {
+        .ssid = NULL,
+        .bssid = NULL,
+        .channel = 0,
+        .show_hidden = false,
+        .scan_type = WIFI_SCAN_TYPE_ACTIVE,
+        .scan_time.active.min = 80,
+        .scan_time.active.max = 160,
+    };
+
+    esp_err_t err = esp_wifi_scan_start(&scan_config, true);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Wi-Fi scan failed: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    uint16_t ap_count = 0;
+    ESP_RETURN_ON_ERROR(esp_wifi_scan_get_ap_num(&ap_count), TAG, "scan ap num failed");
+    if (ap_count == 0) {
+        return ESP_OK;
+    }
+
+    wifi_ap_record_t records[32];
+    uint16_t read_count = ap_count > 32 ? 32 : ap_count;
+    ESP_RETURN_ON_ERROR(esp_wifi_scan_get_ap_records(&read_count, records), TAG, "scan records failed");
+    qsort(records, read_count, sizeof(records[0]), compare_scan_record_rssi);
+
+    for (uint16_t i = 0; i < read_count && result->count < ATLAS_WIFI_SCAN_MAX_RESULTS; ++i) {
+        const char *ssid = (const char *)records[i].ssid;
+        if (ssid[0] == '\0' || scan_result_has_ssid(result, ssid)) {
+            continue;
+        }
+        atlas_wifi_scan_record_t *dst = &result->records[result->count++];
+        strlcpy(dst->ssid, ssid, sizeof(dst->ssid));
+        dst->rssi = records[i].rssi;
+        dst->channel = records[i].primary;
+        dst->authmode = records[i].authmode;
+        dst->secure = auth_is_secure(records[i].authmode);
+    }
+    ESP_LOGI(TAG, "Wi-Fi scan done: found=%u listed=%u", ap_count, (unsigned)result->count);
+    return ESP_OK;
 }
 
 esp_err_t atlas_wifi_start(const atlas_config_t *config)
@@ -131,6 +289,7 @@ esp_err_t atlas_wifi_start(const atlas_config_t *config)
 
     memset(&s_status, 0, sizeof(s_status));
     strlcpy(s_status.ap_ip, "192.168.4.1", sizeof(s_status.ap_ip));
+    s_sta_configured = atlas_config_has_wifi(config);
 
     esp_err_t err = esp_netif_init();
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
@@ -154,7 +313,7 @@ esp_err_t atlas_wifi_start(const atlas_config_t *config)
     ESP_RETURN_ON_ERROR(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_event_handler, NULL), TAG, "wifi handler failed");
     ESP_RETURN_ON_ERROR(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL), TAG, "ip handler failed");
 
-    if (atlas_config_has_wifi(config)) {
+    if (s_sta_configured) {
         wifi_config_t sta_config = {0};
         strlcpy((char *)sta_config.sta.ssid, config->wifi_ssid, sizeof(sta_config.sta.ssid));
         strlcpy((char *)sta_config.sta.password, config->wifi_password, sizeof(sta_config.sta.password));
@@ -162,19 +321,21 @@ esp_err_t atlas_wifi_start(const atlas_config_t *config)
         sta_config.sta.pmf_cfg.capable = true;
         sta_config.sta.pmf_cfg.required = false;
 
-        ESP_RETURN_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_STA), TAG, "set STA mode failed");
+        ESP_RETURN_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_APSTA), TAG, "set APSTA mode failed");
         ESP_RETURN_ON_ERROR(esp_wifi_set_config(WIFI_IF_STA, &sta_config), TAG, "set STA config failed");
-        s_status.mode = ATLAS_WIFI_MODE_STA;
-        ESP_LOGI(TAG, "Wi-Fi STA configured: ssid=%s", config->wifi_ssid);
+        s_status.mode = ATLAS_WIFI_MODE_APSTA;
+        ESP_RETURN_ON_ERROR(configure_softap(), TAG, "configure SoftAP failed");
+        ESP_LOGI(TAG, "Wi-Fi STA configured with AP fallback open: ssid=%s ap=%s", config->wifi_ssid, s_status.ap_ssid);
     } else {
-        ESP_RETURN_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_AP), TAG, "set AP mode failed");
-        s_status.mode = ATLAS_WIFI_MODE_AP;
+        ESP_RETURN_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_APSTA), TAG, "set APSTA mode failed");
+        s_status.mode = ATLAS_WIFI_MODE_APSTA;
         ESP_RETURN_ON_ERROR(configure_softap(), TAG, "configure SoftAP failed");
     }
 
     ESP_RETURN_ON_ERROR(esp_wifi_start(), TAG, "wifi start failed");
+    ESP_RETURN_ON_ERROR(esp_wifi_set_ps(WIFI_PS_NONE), TAG, "disable Wi-Fi power save failed");
     s_wifi_ready = true;
-    ESP_LOGI(TAG, "Wi-Fi started in %s mode", atlas_wifi_mode_name(s_status.mode));
+    ESP_LOGI(TAG, "Wi-Fi started in %s mode, power_save=off", atlas_wifi_mode_name(s_status.mode));
     return ESP_OK;
 }
 

@@ -1,32 +1,47 @@
 idf_component_register(
     SRCS
         "atlas_admin_http.c"
-        "atlas_mimiclaw_intent.c"
+        "atlas_audio.c"
+        "atlas_audio_service.c"
+        "atlas_brain_ws_client.c"
+        "atlas_font_zh_16.c"
+        "atlas_brain_intent.c"
         "atlas_config.c"
         "atlas_display.c"
         "atlas_expression.c"
         "atlas_llm_client.c"
-        "atlas_mimiclaw_adapter.c"
+        "atlas_brain_adapter.c"
+        "atlas_opus_stream.c"
         "atlas_pet.c"
         "atlas_pairing.c"
         "atlas_rover_uart.c"
+        "atlas_runtime.c"
+        "atlas_scene.c"
+        "atlas_sr_probe.c"
         "atlas_ui.c"
         "atlas_voice.c"
         "atlas_wifi.c"
         "main.c"
     INCLUDE_DIRS "."
     REQUIRES
+        app_update
         driver
         esp_lcd
         esp_event
+        esp_codec_dev
+        esp_driver_i2c
+        esp_driver_i2s
+        esp_http_client
         esp_http_server
         esp_netif
         esp_timer
         esp_wifi
+        esp_websocket_client
         esp_lcd_gc9a01
         esp_lcd_touch
         esp_lcd_touch_cst816s
         json
         lvgl
         nvs_flash
+        spiffs
 )

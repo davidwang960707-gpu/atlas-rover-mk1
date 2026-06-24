@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atlas DualEye 功能界面预览</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --panel: #101720;
+      --panel-2: #172433;
+      --line: #31445a;
+      --text: #f2f6fb;
+      --muted: #9fb0c2;
+      --cyan: #55dfff;
+      --mint: #62e1b5;
+      --amber: #f0bd4d;
+      --coral: #ff7768;
+      --pet-bg: #fffaf1;
+      --pet-ink: #141922;
+      --pet-muted: #76695d;
+      --pet-orange: #df9b56;
+      --pet-green: #78a66f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      background: #080b10;
+      color: var(--text);
+    }
+
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 4px 0 18px;
+      border-bottom: 1px solid #203040;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    button,
+    input {
+      font: inherit;
+      border: 1px solid #3f566f;
+      background: #14202b;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 12px;
+      min-height: 38px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button.active {
+      border-color: var(--cyan);
+      background: #102a38;
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    section {
+      min-width: 0;
+      border: 1px solid #243649;
+      background: #0d131b;
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .chip {
+      border: 1px solid #38546d;
+      border-radius: 999px;
+      padding: 4px 9px;
+      color: #c5d4e3;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .eyes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(220px, 240px));
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .screen {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      overflow: hidden;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 45%, #172536 0 40%, #0a0f16 72%),
+        #0a0f16;
+      box-shadow:
+        inset 0 0 0 1px #26394b,
+        inset 0 -18px 42px rgba(0, 0, 0, .62),
+        0 20px 36px rgba(0, 0, 0, .38);
+      isolation: isolate;
+    }
+
+    .pet-screen {
+      background:
+        radial-gradient(circle at 50% 42%, #fffdf6 0 44%, #f3e8d8 72%),
+        var(--pet-bg);
+      box-shadow:
+        inset 0 0 0 1px #f2d6af,
+        inset 0 -18px 38px rgba(112, 70, 34, .16),
+        0 20px 36px rgba(0, 0, 0, .3);
+    }
+
+    .screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      box-shadow: inset 0 0 36px rgba(0, 0, 0, .72);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .ring {
+      position: absolute;
+      inset: 11px;
+      border-radius: 50%;
+      background: conic-gradient(var(--cyan) calc(var(--p) * 1%), #1d2c3a 0);
+      z-index: 0;
+    }
+
+    .pet-screen .ring {
+      background: conic-gradient(var(--pet-orange) calc(var(--p) * 1%), #ead9c3 0);
+    }
+
+    .ring::after {
+      content: "";
+      position: absolute;
+      inset: 11px;
+      border-radius: 50%;
+      background: #0a0f16;
+      box-shadow: inset 0 0 28px rgba(85, 223, 255, .1);
+    }
+
+    .pet-screen .ring::after {
+      background: var(--pet-bg);
+      box-shadow: inset 0 0 28px rgba(223, 155, 86, .14);
+    }
+
+    .clock-time,
+    .timer-time {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1;
+      color: #eef9ff;
+      text-shadow: 0 0 18px rgba(85, 223, 255, .35);
+    }
+
+    .pet-screen .clock-time,
+    .pet-screen .timer-time {
+      color: var(--pet-ink);
+      text-shadow: 0 2px 0 rgba(223, 155, 86, .18);
+    }
+
+    .timer-time {
+      font-size: 39px;
+    }
+
+    .screen-status {
+      position: absolute;
+      left: 38px;
+      right: 38px;
+      top: 158px;
+      z-index: 3;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pet-screen .screen-status,
+    .pet-screen .screen-note,
+    .pet-screen .minute-text {
+      color: var(--pet-muted);
+    }
+
+    .pet-screen .screen-title {
+      color: var(--pet-ink);
+    }
+
+    .screen-stack {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 0 34px;
+    }
+
+    .screen-title {
+      color: #eef6ff;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .screen-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .bar {
+      position: absolute;
+      left: 52px;
+      right: 52px;
+      top: 151px;
+      height: 11px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #273c50;
+      background: #152230;
+      z-index: 3;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: calc(var(--p) * 1%);
+      background: linear-gradient(90deg, var(--cyan), var(--mint));
+    }
+
+    .pet-screen .bar {
+      border-color: #ddc4a2;
+      background: #efdfca;
+      top: 184px;
+      left: 58px;
+      right: 58px;
+    }
+
+    .pet-screen .bar > span {
+      background: linear-gradient(90deg, var(--pet-orange), var(--pet-green));
+    }
+
+    .minute-text {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 169px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      z-index: 3;
+    }
+
+    .pet-mark {
+      position: absolute;
+      left: 94px;
+      top: 34px;
+      width: 52px;
+      height: 34px;
+      border: 2px solid rgba(98, 225, 181, .95);
+      border-radius: 7px;
+      z-index: 3;
+    }
+
+    .pet-mark::before,
+    .pet-mark::after {
+      content: "";
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      background: var(--mint);
+      top: 9px;
+    }
+
+    .pet-mark::before {
+      left: 9px;
+    }
+
+    .pet-mark::after {
+      right: 9px;
+      background: var(--amber);
+    }
+
+    .pet-hero {
+      position: absolute;
+      left: 57px;
+      top: 8px;
+      width: 126px;
+      height: 126px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      z-index: 2;
+      filter: drop-shadow(0 9px 0 rgba(20, 25, 34, .08));
+    }
+
+    .pet-caption {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 134px;
+      z-index: 3;
+      display: grid;
+      gap: 5px;
+      text-align: center;
+    }
+
+    .pet-caption strong {
+      color: var(--pet-ink);
+      font-size: 16px;
+      line-height: 1.1;
+    }
+
+    .pet-caption span {
+      color: var(--pet-muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .pet-screen .minute-text {
+      top: 202px;
+    }
+
+    .pet-mode {
+      color: #7d5833;
+      border-color: #d8b37f;
+      background: #fff4df;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 90px;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .small-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .task-input {
+      width: 100%;
+    }
+
+    @media (max-width: 980px) {
+      .stage {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100vw - 20px, 420px);
+        padding-top: 14px;
+      }
+
+      header {
+        display: block;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+        margin-top: 12px;
+      }
+
+      .eyes {
+        grid-template-columns: 1fr;
+      }
+
+      .screen {
+        margin: 0 auto;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Atlas DualEye 功能界面预览</h1>
+        <p class="sub">桌面时钟 / 番茄专注，按 V0.8 固件圆屏布局模拟；当前展示电子宠物主题</p>
+      </div>
+      <div class="toolbar">
+        <button class="active" id="clockBtn">时钟</button>
+        <button id="pomodoroBtn">番茄</button>
+      </div>
+    </header>
+
+    <div class="stage">
+      <section id="clockSection">
+        <div class="section-head">
+          <h2>桌面时钟</h2>
+          <span class="chip pet-mode" id="clockChip">宠物报时</span>
+        </div>
+        <div class="eyes">
+          <div class="screen pet-screen" id="clockLeft" style="--p: 0">
+            <div class="ring"></div>
+            <div class="clock-time" id="clockTime">--:--</div>
+            <div class="screen-status" id="clockSecond">秒 --</div>
+          </div>
+          <div class="screen pet-screen" id="clockRight" style="--p: 0">
+            <img class="pet-hero" id="clockPet" src="preview_assets/epet_clock.png" alt="电子宠物报时">
+            <div class="pet-caption">
+              <strong>桌面时钟</strong>
+              <span id="clockDate">等待校时</span>
+            </div>
+            <div class="bar"><span></span></div>
+            <div class="minute-text" id="clockProgress">今日进度 0%</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pomodoroSection">
+        <div class="section-head">
+          <h2>番茄专注</h2>
+          <span class="chip pet-mode" id="pomodoroChip">宠物陪伴</span>
+        </div>
+        <div class="eyes">
+          <div class="screen pet-screen" id="pomodoroLeft" style="--p: 0">
+            <div class="ring"></div>
+            <div class="pet-mark"></div>
+            <div class="timer-time" id="timerTime">25:00</div>
+            <div class="screen-status" id="timerPhase">专注 0%</div>
+          </div>
+          <div class="screen pet-screen" id="pomodoroRight" style="--p: 0">
+            <img class="pet-hero" id="pomodoroPet" src="preview_assets/epet_awake.png" alt="电子宠物专注陪伴">
+            <div class="pet-caption">
+              <strong id="taskTitle">任务</strong>
+              <span id="taskName">固件测试</span>
+            </div>
+            <div class="bar"><span></span></div>
+            <div class="minute-text" id="taskProgress">0/25 min 0%</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <input class="task-input" id="taskInput" value="固件测试">
+          <input id="minuteInput" type="number" min="1" max="120" value="25">
+        </div>
+        <div class="small-row">
+          <button id="startBtn">开始</button>
+          <button id="stopBtn">重置</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let timer = {
+      running: false,
+      start: 0,
+      total: 25 * 60,
+      elapsed: 0,
+    };
+
+    function setActive(view) {
+      $("clockBtn").classList.toggle("active", view === "clock");
+      $("pomodoroBtn").classList.toggle("active", view === "pomodoro");
+      document.querySelector(view === "clock" ? "#clockSection" : "#pomodoroSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const seconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const progress = Math.floor(seconds * 100 / 86400);
+      $("clockTime").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      $("clockSecond").textContent = `秒 ${pad(now.getSeconds())}`;
+      $("clockDate").textContent = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      $("clockProgress").textContent = `今日进度 ${progress}%`;
+      $("clockChip").textContent = `${now.getHours() >= 22 || now.getHours() < 7 ? "困倦报时" : "宠物报时"} ${progress}%`;
+      $("clockPet").src = now.getHours() >= 22 || now.getHours() < 7 ? "preview_assets/epet_sleepy.png" : "preview_assets/epet_clock.png";
+      $("clockLeft").style.setProperty("--p", progress);
+      $("clockRight").style.setProperty("--p", progress);
+    }
+
+    function updatePomodoro() {
+      if (timer.running) {
+        timer.elapsed = Math.min(timer.total, Math.floor((Date.now() - timer.start) / 1000));
+        if (timer.elapsed >= timer.total) {
+          timer.running = false;
+        }
+      }
+      const remain = Math.max(0, timer.total - timer.elapsed);
+      const progress = timer.total === 0 ? 0 : Math.floor(timer.elapsed * 100 / timer.total);
+      const usedMin = Math.floor(timer.elapsed / 60);
+      const totalMin = Math.max(1, Math.floor(timer.total / 60));
+      $("timerTime").textContent = `${pad(Math.floor(remain / 60))}:${pad(remain % 60)}`;
+      $("timerPhase").textContent = `专注 ${progress}%`;
+      $("taskName").textContent = $("taskInput").value.trim() || "巡检任务";
+      $("taskProgress").textContent = `${usedMin}/${totalMin} min ${progress}%`;
+      $("pomodoroChip").textContent = timer.running ? "专注陪伴" : progress >= 100 ? "开心完成" : "等待开始";
+      $("pomodoroPet").src = timer.running ? "preview_assets/epet_focus.png" : progress >= 100 ? "preview_assets/epet_happy.png" : "preview_assets/epet_awake.png";
+      $("pomodoroLeft").style.setProperty("--p", progress);
+      $("pomodoroRight").style.setProperty("--p", progress);
+    }
+
+    $("clockBtn").addEventListener("click", () => setActive("clock"));
+    $("pomodoroBtn").addEventListener("click", () => setActive("pomodoro"));
+    $("startBtn").addEventListener("click", () => {
+      const minutes = Math.max(1, Math.min(120, Number($("minuteInput").value) || 25));
+      timer = { running: true, start: Date.now(), total: minutes * 60, elapsed: 0 };
+      updatePomodoro();
+    });
+    $("stopBtn").addEventListener("click", () => {
+      const minutes = Math.max(1, Math.min(120, Number($("minuteInput").value) || 25));
+      timer = { running: false, start: 0, total: minutes * 60, elapsed: 0 };
+      updatePomodoro();
+    });
+    $("taskInput").addEventListener("input", updatePomodoro);
+    $("minuteInput").addEventListener("change", () => {
+      if (!timer.running) {
+        timer.total = Math.max(1, Math.min(120, Number($("minuteInput").value) || 25)) * 60;
+        timer.elapsed = 0;
+        updatePomodoro();
+      }
+    });
+
+    updateClock();
+    updatePomodoro();
+    setInterval(updateClock, 1000);
+    setInterval(updatePomodoro, 1000);
+  </script>
+</body>
+</html>

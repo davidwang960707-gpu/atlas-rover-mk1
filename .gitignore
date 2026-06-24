@@ -12,9 +12,21 @@
 firmware/**/build/
 firmware/**/managed_components/
 firmware/**/sdkconfig.old
+atlas_sense_box_mk1/firmware/**/include/secrets.h
+atlas_sense_box_mk1/firmware/**/.pio/
 simulator_mac/build/
 .playwright-cli/
 output/playwright/
+output/platform_api_server.log
+outputs/
+tmp/
+var/
+var/platform_api/
+var/log/
+var/run/
+
+# Local secrets / runtime config
+.atlas-brain.env
 
 # Node dependencies
 node_modules

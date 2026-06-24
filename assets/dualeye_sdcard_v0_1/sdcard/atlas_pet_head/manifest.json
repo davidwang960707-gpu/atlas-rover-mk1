@@ -1,0 +1,109 @@
+{
+  "schema": "atlas.pet_head.v0.3",
+  "version": "0.3.0",
+  "canvas": [
+    240,
+    240
+  ],
+  "background": "transparent",
+  "style": "smooth_2_5d_soft_vinyl_marmot_head",
+  "asset_policy": "embedded_spiffs_no_sdcard",
+  "states": [
+    "idle",
+    "listen",
+    "speak",
+    "sing",
+    "happy",
+    "laugh",
+    "cry",
+    "sleepy",
+    "think",
+    "surprised",
+    "offline"
+  ],
+  "views": [
+    "yaw_l30",
+    "yaw_l15",
+    "yaw_c",
+    "yaw_r15",
+    "yaw_r30"
+  ],
+  "view_states": [
+    "idle",
+    "listen",
+    "think",
+    "speak"
+  ],
+  "animations": {
+    "blink": {
+      "frames": 6,
+      "fps": 12,
+      "loop": false,
+      "fallback": "idle"
+    },
+    "speak": {
+      "frames": 8,
+      "fps": 10,
+      "loop": true,
+      "fallback": "speak"
+    },
+    "sing": {
+      "frames": 10,
+      "fps": 10,
+      "loop": true,
+      "fallback": "sing"
+    },
+    "laugh": {
+      "frames": 8,
+      "fps": 12,
+      "loop": true,
+      "fallback": "laugh"
+    }
+  },
+  "transitions": [
+    {
+      "name": "turn_yaw_c_to_yaw_l30",
+      "from": "yaw_c",
+      "to": "yaw_l30",
+      "frames": 6,
+      "fps": 12
+    },
+    {
+      "name": "turn_yaw_l30_to_yaw_c",
+      "from": "yaw_l30",
+      "to": "yaw_c",
+      "frames": 6,
+      "fps": 12
+    },
+    {
+      "name": "turn_yaw_c_to_yaw_r30",
+      "from": "yaw_c",
+      "to": "yaw_r30",
+      "frames": 6,
+      "fps": 12
+    },
+    {
+      "name": "turn_yaw_r30_to_yaw_c",
+      "from": "yaw_r30",
+      "to": "yaw_c",
+      "frames": 6,
+      "fps": 12
+    }
+  ],
+  "runtime": {
+    "idle_micro_motion_fps": 8,
+    "speak_fps": 10,
+    "sing_fps": 10,
+    "laugh_fps": 12,
+    "max_ui_fps_budget": 12,
+    "audio_priority": true
+  },
+  "fallback_order": [
+    "transitions/{transition}/frame_%02u.png",
+    "animations/{animation}/{view}/frame_%02u.png",
+    "animations/{animation}/frame_%02u.png",
+    "views/{state}/{view}.png",
+    "keyframes/{state}.png",
+    "lvgl_builtin_pet_head"
+  ]
+}
