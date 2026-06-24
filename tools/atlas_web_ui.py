@@ -141,7 +141,7 @@ _LIVE_CSS = """
 
 
 _APP_JS = """
-let rec=null,lastReply='',lastLive={};
+let rec=null,lastReply='',lastLive={},continuousVoice=false,continuousRestartTimer=null;
 function q(id){return document.getElementById(id)}
 function out(v){const el=q('out');if(el)el.textContent=typeof v==='string'?v:JSON.stringify(v,null,2)}
 async function postJson(url,payload){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const t=await r.text();try{return JSON.parse(t)}catch(e){return {ok:false,status:r.status,raw:t}}}
@@ -149,7 +149,44 @@ async function getJson(url){const r=await fetch(url);const t=await r.text();try{
 function replyFrom(res){return (res&&res.llm&&res.llm.reply)||(res&&res.text_result&&res.text_result.llm&&res.text_result.llm.reply)||(res&&res.reply)||''}
 function setText(id,text,cls){const el=q(id);if(!el)return;el.textContent=text||'';el.className=cls||''}
 function ttsOptions(){const style=q('ttsStyle').value;return {tts_voice:q('ttsVoice').value,tts_style:style,tts_singing:q('ttsSinging').checked||style==='singing'}}
-async function playResultAudio(res){const src=(res&&res.tts_url)||(res&&res.audio_url)||(res&&res.tts&&res.tts.audio_url);if(src){const a=q('player');a.src=src;await a.play().catch(()=>{})}}
+function setVoiceState(text,cls){
+  setText('recState',text,cls||'muted');
+  setText('voiceLoopState',text,cls||'muted');
+}
+function setButton(id,text,cls){const el=q(id);if(!el)return;el.textContent=text;if(cls!==undefined)el.className=cls}
+function clearContinuousTimer(){if(continuousRestartTimer){clearTimeout(continuousRestartTimer);continuousRestartTimer=null}}
+function updateContinuousButton(){setButton('contBtn',continuousVoice?'停止连续对话':'连续对话',continuousVoice?'danger':'secondary')}
+function audioUrlForBrowser(src){
+  try{
+    const u=new URL(src,window.location.href);
+    if(u.pathname.startsWith('/tts/'))return u.pathname+u.search;
+  }catch(e){}
+  return src;
+}
+function scheduleContinuousRestart(delay){
+  if(!continuousVoice)return;
+  clearContinuousTimer();
+  continuousRestartTimer=setTimeout(()=>{if(continuousVoice&&!rec)startRec('full',{continuous:true}).catch(e=>setVoiceState('麦克风不可用','bad'))},delay||650);
+}
+async function playResultAudio(res,waitUntilEnd){
+  const src=(res&&res.tts_url)||(res&&res.audio_url)||(res&&res.tts&&res.tts.audio_url);
+  if(!src)return false;
+  const a=q('player');
+  if(!a)return false;
+  a.src=audioUrlForBrowser(src);
+  setVoiceState('播报中','ok');
+  await a.play().catch(()=>false);
+  if(waitUntilEnd){
+    await new Promise(resolve=>{
+      let done=false;
+      const finish=()=>{if(done)return;done=true;a.onended=null;a.onerror=null;resolve()};
+      a.onended=finish;
+      a.onerror=finish;
+      setTimeout(finish,20000);
+    });
+  }
+  return true;
+}
 function zhPage(v){return ({clock:'时钟',chat:'对话',pomodoro:'番茄',calendar:'日历',status:'状态',voice:'语音',music:'音乐',story:'故事',photo:'照片'}[v]||v||'待机')}
 function zhTheme(v){return ({raptor:'猛禽眼',mecha:'机械眼',goggle:'护目镜',pet:'电子宠物',blue_pupil:'蓝瞳',tomoe_spin:'红色旋纹',no_smoking:'禁烟'}[v]||v||'默认')}
 function zhChatMode(v){return ({pet_head:'土拨鼠头',text:'双屏文字',eyes_only:'纯眼睛'}[v]||v||'土拨鼠头')}
@@ -209,17 +246,114 @@ async function syncDevice(silent=true){
 }
 function afterAction(){setTimeout(()=>syncDevice(true),250);setTimeout(()=>syncDevice(true),1300)}
 function updateSummary(res){const reply=replyFrom(res);const asr=(res&&res.asr&&res.asr.text)||(res&&res.asr_text)||'';if(reply){lastReply=reply;setText('replyText',reply,'')}if(asr)setText('asrText',asr,'');if(res&&res.dualeye_play)setText('playState',res.dualeye_play.ok?'已播报':'等待设备连接',res.dualeye_play.ok?'ok':'warn');out(res);afterAction()}
-async function sendText(){const text=q('text').value.trim();if(!text)return out('先输入一句话');const res=await postJson('/turn/text',{text,speak:q('speak').checked,...ttsOptions()});updateSummary(res);if(q('speak').checked)await playResultAudio(res)}
+async function sendText(){const text=q('text').value.trim();if(!text)return out('先输入一句话');setVoiceState('思考中','warn');const res=await postJson('/turn/text',{text,speak:q('speak').checked,...ttsOptions()});updateSummary(res);if(q('speak').checked)await playResultAudio(res);setVoiceState(continuousVoice?'继续听':'待机',continuousVoice?'ok':'muted')}
 async function sendTextOnly(){const was=q('speak').checked;q('speak').checked=false;try{await sendText()}finally{q('speak').checked=was}}
-async function speakText(){const text=q('text').value.trim()||lastReply;if(!text)return out('没有可朗读内容');const res=await postJson('/speak',{text,...ttsOptions()});updateSummary(res);await playResultAudio(res)}
-async function skill(name,args,speak){const res=await postJson('/skill',{skill:name,args:args||{},speak:!!speak,...ttsOptions()});updateSummary(res);await playResultAudio(res)}
+async function speakText(){const text=q('text').value.trim()||lastReply;if(!text)return out('没有可朗读内容');setVoiceState('准备播报','warn');const res=await postJson('/speak',{text,...ttsOptions()});updateSummary(res);await playResultAudio(res);setVoiceState(continuousVoice?'继续听':'待机',continuousVoice?'ok':'muted')}
+async function skill(name,args,speak){const res=await postJson('/skill',{skill:name,args:args||{},speak:!!speak,...ttsOptions()});updateSummary(res);if(speak)await playResultAudio(res);setVoiceState(continuousVoice?'继续听':'待机',continuousVoice?'ok':'muted')}
 async function setChatMode(mode){await skill('atlas.ui.set_chat_mode',{mode},false)}
 async function petState(state,text){await skill('atlas.pet.set_state',{state,right_text:text||''},false)}
 async function petAnim(animation,text){await skill('atlas.pet.play_animation',{animation,right_text:text||''},false)}
 async function refreshStatus(silent=false){const h=await getJson('/health');setText('brainState',h.ok?'Brain 在线':'Brain 异常',h.ok?'ok':'bad');setText('providerState',(h.llm_enabled&&h.asr_enabled&&h.tts_enabled)?'模型已就绪':'模型待配置',(h.llm_enabled&&h.asr_enabled&&h.tts_enabled)?'ok':'warn');const live=await syncDevice(true);if(!silent)out({health:h,live})}
-async function toggleRec(mode){if(rec){await stopRec();return}await startRec(mode||'full')}
-async function startRec(mode){const stream=await navigator.mediaDevices.getUserMedia({audio:true});const ctx=new (window.AudioContext||window.webkitAudioContext)();const source=ctx.createMediaStreamSource(stream);const proc=ctx.createScriptProcessor(4096,1,1);const chunks=[];proc.onaudioprocess=e=>chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));source.connect(proc);proc.connect(ctx.destination);rec={stream,ctx,source,proc,chunks,sampleRate:ctx.sampleRate,mode};q('recBtn').textContent='停止并发送';q('recBtn').className='danger';q('recState').textContent=mode==='asr'?'识别中':'对话中'}
-async function stopRec(){const r=rec;rec=null;r.proc.disconnect();r.source.disconnect();r.stream.getTracks().forEach(t=>t.stop());await r.ctx.close();q('recBtn').textContent='开始对话';q('recBtn').className='';q('recState').textContent='处理中';const audio_data=wavDataUrl(r.chunks,r.sampleRate);let res;if(r.mode==='asr'){res=await postJson('/asr',{audio_data,language:'auto'});if(res.asr&&res.asr.text){q('text').value=res.asr.text;setText('asrText',res.asr.text,'')}}else{res=await postJson('/turn/audio',{audio_data,language:'auto',speak:q('speak').checked,...ttsOptions()});await playResultAudio(res)}updateSummary(res);q('recState').textContent='待机'}
+async function toggleContinuous(){
+  continuousVoice=!continuousVoice;
+  updateContinuousButton();
+  clearContinuousTimer();
+  if(continuousVoice){
+    if(rec)await stopRec({send:false});
+    try{
+      await startRec('full',{continuous:true});
+    }catch(e){
+      continuousVoice=false;
+      updateContinuousButton();
+      setVoiceState('麦克风不可用','bad');
+      out({ok:false,error:String(e),stage:'microphone'});
+    }
+  }else{
+    if(rec)await stopRec({send:false});
+    setVoiceState('待机','muted');
+  }
+}
+async function toggleRec(mode){if(rec){await stopRec({manual:true});return}await startRec(mode||'full',{continuous:false})}
+async function startRec(mode,opts){
+  if(rec)return;
+  opts=opts||{};
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const source=ctx.createMediaStreamSource(stream);
+  const proc=ctx.createScriptProcessor(4096,1,1);
+  const mute=ctx.createGain();
+  mute.gain.value=0;
+  const chunks=[];
+  rec={stream,ctx,source,proc,mute,chunks,sampleRate:ctx.sampleRate,mode,continuous:!!opts.continuous,startedAt:performance.now(),lastVoiceAt:0,speechStarted:false,processing:false,level:0};
+  proc.onaudioprocess=e=>{
+    const input=e.inputBuffer.getChannelData(0);
+    const frame=new Float32Array(input);
+    chunks.push(frame);
+    let sum=0;
+    for(let i=0;i<input.length;i++)sum+=input[i]*input[i];
+    const rms=Math.sqrt(sum/Math.max(1,input.length));
+    const current=rec;
+    if(!current)return;
+    current.level=Math.max(current.level*0.86,rms);
+    if(rms>0.018){
+      current.speechStarted=true;
+      current.lastVoiceAt=performance.now();
+      setVoiceState(mode==='asr'?'正在识别':'正在听你说','ok');
+    }
+  };
+  source.connect(proc);
+  proc.connect(mute);
+  mute.connect(ctx.destination);
+  setButton('recBtn',opts.continuous?'连续监听中':'停止并发送','danger');
+  setVoiceState(mode==='asr'?'正在识别':'正在听','ok');
+  rec.monitor=setInterval(()=>{
+    if(!rec||!rec.continuous||rec.processing)return;
+    const now=performance.now();
+    if(rec.speechStarted&&now-rec.lastVoiceAt>900&&now-rec.startedAt>1200)stopRec({auto:true});
+    if(!rec.speechStarted&&now-rec.startedAt>12000){stopRec({send:false});scheduleContinuousRestart(250)}
+  },220);
+}
+async function stopRec(opts){
+  opts=opts||{};
+  const r=rec;
+  if(!r||r.processing)return;
+  r.processing=true;
+  rec=null;
+  if(r.monitor)clearInterval(r.monitor);
+  try{r.proc.disconnect()}catch(e){}
+  try{r.source.disconnect()}catch(e){}
+  try{r.mute.disconnect()}catch(e){}
+  r.stream.getTracks().forEach(t=>t.stop());
+  await r.ctx.close().catch(()=>{});
+  setButton('recBtn','按一次说话','secondary');
+  if(opts.send===false){
+    setVoiceState(continuousVoice?'继续听':'待机',continuousVoice?'ok':'muted');
+    return;
+  }
+  if(!r.speechStarted&&r.continuous){
+    setVoiceState('继续听','ok');
+    scheduleContinuousRestart(300);
+    return;
+  }
+  setVoiceState(r.mode==='asr'?'识别中':'思考中','warn');
+  const audio_data=wavDataUrl(r.chunks,r.sampleRate);
+  let res;
+  if(r.mode==='asr'){
+    res=await postJson('/asr',{audio_data,language:'auto'});
+    if(res.asr&&res.asr.text){q('text').value=res.asr.text;setText('asrText',res.asr.text,'')}
+  }else{
+    res=await postJson('/turn/audio',{audio_data,language:'auto',speak:q('speak').checked,...ttsOptions()});
+    updateSummary(res);
+    if(q('speak').checked)await playResultAudio(res,r.continuous);
+  }
+  if(r.mode==='asr')updateSummary(res);
+  if(r.continuous&&continuousVoice){
+    setVoiceState('继续听','ok');
+    scheduleContinuousRestart(550);
+  }else{
+    setVoiceState('待机','muted');
+  }
+}
 function wavDataUrl(chunks,sampleRate){let len=0;chunks.forEach(c=>len+=c.length);const data=new Float32Array(len);let off=0;chunks.forEach(c=>{data.set(c,off);off+=c.length});const buf=new ArrayBuffer(44+data.length*2);const v=new DataView(buf);let p=0;function s(x){for(let i=0;i<x.length;i++)v.setUint8(p++,x.charCodeAt(i))}s('RIFF');v.setUint32(p,36+data.length*2,true);p+=4;s('WAVEfmt ');v.setUint32(p,16,true);p+=4;v.setUint16(p,1,true);p+=2;v.setUint16(p,1,true);p+=2;v.setUint32(p,sampleRate,true);p+=4;v.setUint32(p,sampleRate*2,true);p+=4;v.setUint16(p,2,true);p+=2;v.setUint16(p,16,true);p+=2;s('data');v.setUint32(p,data.length*2,true);p+=4;for(let i=0;i<data.length;i++,p+=2){let x=Math.max(-1,Math.min(1,data[i]));v.setInt16(p,x<0?x*0x8000:x*0x7fff,true)}let bin='';new Uint8Array(buf).forEach(b=>bin+=String.fromCharCode(b));return 'data:audio/wav;base64,'+btoa(bin)}
 function boot(){applyDeviceLive(window.ATLAS_INITIAL_LIVE||{});refreshStatus(true);setInterval(()=>syncDevice(true),3500)}
 """
@@ -240,9 +374,9 @@ _APP_TEMPLATE = Template("""<!doctype html><html lang="zh-CN"><meta charset="utf
       <div class="status-strip sync-line"><span class="pill">主题 <span id="themePill">$theme</span></span><span class="pill">界面 <span id="chatModePill">$chat_mode</span></span><span class="pill">页面 <span id="pagePill">$page</span></span><span class="pill">表情 <span id="expressionPill">$expression</span></span></div>
     </div>
     <div class="panel stack">
-      <div><p class="eyebrow">My robot</p><h1>$device_name</h1><p class="subtitle">说一句话，或者直接切换应用。机器人会把回复显示到 DualEye，并尝试自动播报。</p></div>
+      <div><p class="eyebrow">My robot</p><h1>$device_name</h1><p class="subtitle">听你说话，回应你，也把情绪和应用同步到双眼。</p></div>
       <div class="chat-box"><textarea id="text" placeholder="例如：给我讲个短故事 / 打开番茄专注 / 今天济南天气怎么样"></textarea></div>
-      <div class="row"><button onclick="sendText()">发送</button><button class="secondary" id="recBtn" onclick="toggleRec('full')">开始对话</button><button class="ghost" onclick="sendTextOnly()">只发文字</button><button class="ghost" onclick="toggleRec('asr')">语音转文字</button><button class="ghost" onclick="speakText()">朗读</button><label class="muted"><input id="speak" type="checkbox" checked> 自动播报</label><span id="recState" class="muted">待机</span></div>
+      <div class="row"><button class="secondary" id="contBtn" onclick="toggleContinuous()">连续对话</button><button onclick="sendText()">发送</button><button class="secondary" id="recBtn" onclick="toggleRec('full')">按一次说话</button><button class="ghost" onclick="sendTextOnly()">只发文字</button><button class="ghost" onclick="toggleRec('asr')">语音转文字</button><button class="ghost" onclick="speakText()">朗读</button><label class="muted"><input id="speak" type="checkbox" checked> 自动播报</label><span id="recState" class="muted">待机</span></div>
       <div class="tone-select"><select id="ttsVoice"><option value="mimo_default">默认音色</option><option value="冰糖">冰糖</option><option value="茉莉">茉莉</option><option value="苏打">苏打</option><option value="白桦">白桦</option><option value="Mia">Mia</option><option value="Chloe">Chloe</option></select><select id="ttsStyle"><option value="playful">俏皮</option><option value="sweet">甜美</option><option value="jiazi">夹子音</option><option value="excited">兴奋</option><option value="singing">唱歌</option><option value="default">自然</option></select></div>
       <label class="muted"><input id="ttsSinging" type="checkbox"> 唱歌模式</label>
       <audio id="player" controls></audio>
@@ -290,7 +424,7 @@ _APP_TEMPLATE = Template("""<!doctype html><html lang="zh-CN"><meta charset="utf
     <div class="mini"><b>Brain</b><span id="brainState" class="warn">检查中</span><p class="muted">$lan_url</p></div>
     <div class="mini"><b>模型</b><span id="providerState" class="warn">检查中</span><p class="muted">MiMo LLM / ASR / TTS</p></div>
     <div class="mini"><b>DualEye</b><span id="deviceConnState" class="$state_class">$state_label</span><p id="deviceIp" class="muted">$dualeye_url</p></div>
-    <div class="mini"><b>音频</b><span id="audioMode" class="muted">音频待机</span><p id="voiceWake" class="muted">连续语音检查中</p></div>
+    <div class="mini"><b>会话</b><span id="voiceLoopState" class="muted">待机</span><p id="audioMode" class="muted">音频待机</p></div>
     <div class="mini"><b>最近动作</b><span id="lastTurnState" class="muted">暂无会话</span><p id="lastSync" class="muted last-sync">等待同步</p></div>
     <div class="mini"><b>底盘</b><span class="warn">$rover_label</span><p id="sceneTitle" class="muted">这一版先做桌面机器人</p></div>
   </section>
