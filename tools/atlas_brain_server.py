@@ -38,11 +38,20 @@ from atlas_brain_audio import (
     latest_tts_wav,
     latest_turn_meta,
     parse_atlas_opus_frame,
-    recent_audio_streams,
     remember_audio_stream,
     remember_turn,
-    simulate_audio_stream,
     store_latest_tts,
+)
+from atlas_brain_audio_routes import (
+    audio_stream_status_payload,
+    handle_asr,
+    handle_audio_stream_simulate,
+    handle_browser_audio_turn,
+    handle_device_wav_turn,
+    handle_dualeye_opus_probe,
+    handle_dualeye_opus_stream_start,
+    handle_dualeye_opus_stream_stop,
+    handle_speak,
 )
 from atlas_brain_core import (
     AppDescriptor,
@@ -91,7 +100,25 @@ WEATHER_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 WEATHER_CACHE_TTL_SEC = 600
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-DUALEYE_BUILD_DIR = os.path.join(REPO_ROOT, "firmware", "dualeye", "build")
+
+
+def _resolve_dualeye_build_dir() -> tuple[str, str]:
+    env_path = os.getenv("ATLAS_FIRMWARE_BUILD_DIR", "").strip()
+    if env_path:
+        return os.path.abspath(os.path.expanduser(env_path)), "ATLAS_FIRMWARE_BUILD_DIR"
+
+    repo_local = os.path.join(REPO_ROOT, "firmware", "dualeye", "build")
+    if os.path.exists(repo_local):
+        return repo_local, "repo_local"
+
+    sibling = os.path.join(os.path.dirname(REPO_ROOT), "Atlas-One-Firmware", "firmware", "dualeye", "build")
+    if os.path.exists(sibling):
+        return os.path.abspath(sibling), "sibling_worktree"
+
+    return repo_local, "repo_local_missing"
+
+
+DUALEYE_BUILD_DIR, DUALEYE_BUILD_DIR_SOURCE = _resolve_dualeye_build_dir()
 OTA_PACKAGE_FILES = [
     ("bootloader", "bootloader/bootloader.bin", "0x0"),
     ("partition_table", "partition_table/partition-table.bin", "0x8000"),
@@ -1723,6 +1750,7 @@ def build_ota_manifest() -> dict[str, Any]:
         "transport": "http_app_ota_plus_usb_full_flash",
         "partition_layout": "dual_ota_app_plus_model_plus_storage",
         "build_dir": os.path.relpath(DUALEYE_BUILD_DIR, REPO_ROOT),
+        "build_dir_source": DUALEYE_BUILD_DIR_SOURCE,
         "packages": packages,
         "missing": missing,
         "flash_args": flash_args if ready else [],
@@ -2675,25 +2703,7 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 self.send_json({"ok": True, "protocol": "atlas.brain.session.v1", "stage": "P1_long_lived_json_session", "events": recent_brain_events(), "ws_endpoint": "/ws/brain"})
                 return
             if path == "/api/audio/stream/status":
-                try:
-                    dualeye_stream = bridge.dualeye_opus_stream_status()
-                except Exception as exc:
-                    dualeye_stream = {"ok": False, "error": str(exc), "dualeye_url": bridge.dualeye_url}
-                self.send_json({
-                    "ok": True,
-                    "protocol": "atlas.audio.stream.v0",
-                    "stage": "P2_dualeye_ws_opus_stream",
-                    "ws_endpoint": "/ws/audio",
-                    "ws_url_for_dualeye": self.audio_ws_url(),
-                    "dualeye_stream_start_endpoint": "/api/device/opus-stream/start",
-                    "dualeye_stream_stop_endpoint": "/api/device/opus-stream/stop",
-                    "dualeye_opus_probe_endpoint": "/api/device/opus-probe",
-                    "dualeye_opus_probe_notes": "探针仍保留；/api/device/opus-stream/start 触发 OPUS 真流，/api/device/opus-turn/start 在流结束后自动进入 ASR/LLM/TTS。",
-                    "dualeye_stream": dualeye_stream,
-                    "runtime": bridge.runtime.snapshot(),
-                    "last_stream": latest_audio_stream_meta(),
-                    "recent_streams": recent_audio_streams(),
-                })
+                self.send_json(audio_stream_status_payload(bridge, self.audio_ws_url()))
                 return
             if path == "/api/sr/status":
                 try:
@@ -2960,56 +2970,7 @@ runAll();
                 try:
                     length = int(self.headers.get("Content-Length", "0") or "0")
                     raw = self.rfile.read(length) if length > 0 else b""
-                    if len(raw) < 44 or not raw.startswith(b"RIFF"):
-                        self.send_json({"ok": False, "error": "WAV body required"}, HTTPStatus.BAD_REQUEST)
-                        return
-                    language = (query.get("language") or ["auto"])[-1] or "auto"
-                    speak_raw = str((query.get("speak") or ["1"])[-1]).lower()
-                    speak = speak_raw not in {"0", "false", "no"}
-                    audio_data_url = "data:audio/wav;base64," + base64.b64encode(raw).decode("ascii")
-                    result = bridge.send_audio(audio_data_url, language=language, speak=speak)
-                    tts_store = {"ready": False}
-                    if speak and isinstance(result.get("tts"), dict):
-                        tts_store = store_latest_tts(result["tts"])
-                    reply = reply_from_text_result(result.get("text_result", {}))
-                    asr_text = str(result.get("asr", {}).get("text", ""))
-                    device_asr_text = "" if result.get("ignored") else asr_text
-                    sys.stderr.write(
-                        "[voice-turn] "
-                        f"ok={bool(result.get('ok'))} "
-                        f"asr={log_snippet(asr_text)} "
-                        f"reply={log_snippet(reply)} "
-                        f"source={str(result.get('text_result', {}).get('source', ''))} "
-                        f"tts_ready={bool(tts_store.get('ready'))} "
-                        f"error={log_snippet(result.get('asr', {}).get('error', '') or result.get('error', '') or tts_store.get('error', ''), 120)}\n"
-                    )
-                    turn_error = str(result.get("asr", {}).get("error", "") or result.get("error", "") or tts_store.get("error", ""))
-                    device_intent_ok = bool(result.get("ok"))
-                    turn_ok = bool(device_intent_ok or tts_store.get("ready") or reply)
-                    remember_turn({
-                        "kind": "device_audio",
-                        "ok": turn_ok,
-                        "device_intent_ok": device_intent_ok,
-                        "asr_text": asr_text,
-                        "reply": reply,
-                        "source": str(result.get("text_result", {}).get("source", "")),
-                        "intent_count": len(result.get("text_result", {}).get("intents", [])),
-                        "tts_ready": bool(tts_store.get("ready")),
-                        "tts_bytes": int(tts_store.get("bytes", 0) or 0),
-                        "error": turn_error,
-                    })
-                    self.send_json({
-                        "ok": turn_ok,
-                        "device_intent_ok": device_intent_ok,
-                        "asr_text": device_asr_text,
-                        "reply": reply,
-                        "source": str(result.get("text_result", {}).get("source", "")),
-                        "intent_count": len(result.get("text_result", {}).get("intents", [])),
-                        "tts_ready": bool(tts_store.get("ready")),
-                        "tts_url": self.latest_tts_url() if tts_store.get("ready") else "",
-                        "tts": tts_store,
-                        "error": turn_error,
-                    }, HTTPStatus.OK if turn_ok else HTTPStatus.BAD_GATEWAY)
+                    handle_device_wav_turn(self, bridge, raw, query, self.latest_tts_url())
                 except Exception as exc:
                     sys.stderr.write(f"[voice-turn] exception={str(exc)[:200]!r}\n")
                     self.send_json({"ok": False, "error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -3031,56 +2992,16 @@ runAll();
                 })
                 return
             if path == "/api/audio/stream/simulate":
-                result = simulate_audio_stream(payload)
-                self.send_json({"ok": True, "protocol": "atlas.audio.stream.v0", "result": result})
+                handle_audio_stream_simulate(self, payload)
                 return
             if path == "/api/device/opus-probe":
-                duration_ms = clamp_int(int(payload.get("duration_ms", payload.get("duration", 1200)) or 1200), 60, 3000)
-                result = bridge.run_dualeye_opus_probe(duration_ms)
-                result.setdefault("protocol", "atlas.audio.stream.v0")
-                result.setdefault("stage", "P2_dualeye_real_opus_probe")
-                result.setdefault("notes", "DualEye 真机麦克风 PCM -> 60ms OPUS 编码探针；不是正式连续推流。")
-                remember_audio_stream({
-                    "ok": bool(result.get("ok")),
-                    "stage": result.get("stage", "P2_dualeye_real_opus_probe"),
-                    "codec": "opus",
-                    "sample_rate": 16000,
-                    "channels": 1,
-                    "frame_ms": 60,
-                    "frames": int(result.get("probe", {}).get("frames_encoded", 0) or 0) if isinstance(result.get("probe"), dict) else 0,
-                    "bytes": int(result.get("probe", {}).get("encoded_bytes", 0) or 0) if isinstance(result.get("probe"), dict) else 0,
-                    "source": "dualeye_opus_probe",
-                    "error": str(result.get("error", "")),
-                })
-                self.send_json(result, HTTPStatus.OK if result.get("ok") else HTTPStatus.BAD_GATEWAY)
+                handle_dualeye_opus_probe(self, bridge, payload)
                 return
             if path in {"/api/device/opus-stream/start", "/api/device/opus-turn/start"}:
-                duration_ms = clamp_int(int(payload.get("duration_ms", payload.get("duration", 5000)) or 5000), 0, 300000)
-                ws_url = str(payload.get("url", "") or "").strip() or self.audio_ws_url()
-                force_turn = path == "/api/device/opus-turn/start"
-                if force_turn or bool(payload.get("turn", payload.get("asr", False))):
-                    parsed_ws = urllib.parse.urlparse(ws_url)
-                    query = urllib.parse.parse_qs(parsed_ws.query)
-                    query["turn"] = ["1"]
-                    query["speak"] = ["1" if bool(payload.get("speak", True)) else "0"]
-                    query["language"] = [str(payload.get("language", "zh") or "zh")]
-                    query["tts_style"] = [str(payload.get("tts_style", bridge.session.default_tts_style) or bridge.session.default_tts_style)]
-                    if str(payload.get("tts_voice", "") or "").strip():
-                        query["tts_voice"] = [str(payload.get("tts_voice", "")).strip()]
-                    if bool(payload.get("tts_singing", False)):
-                        query["tts_singing"] = ["1"]
-                    ws_url = urllib.parse.urlunparse(parsed_ws._replace(query=urllib.parse.urlencode(query, doseq=True)))
-                result = bridge.start_dualeye_opus_stream(ws_url, duration_ms)
-                result.setdefault("protocol", "atlas.audio.stream.v0")
-                result.setdefault("stage", "P2_dualeye_ws_opus_stream")
-                result.setdefault("ws_url", ws_url)
-                self.send_json(result, HTTPStatus.OK if result.get("ok") else HTTPStatus.BAD_GATEWAY)
+                handle_dualeye_opus_stream_start(self, bridge, path, payload, self.audio_ws_url())
                 return
             if path == "/api/device/opus-stream/stop":
-                result = bridge.stop_dualeye_opus_stream()
-                result.setdefault("protocol", "atlas.audio.stream.v0")
-                result.setdefault("stage", "P2_dualeye_ws_opus_stream")
-                self.send_json(result, HTTPStatus.OK if result.get("ok") else HTTPStatus.BAD_GATEWAY)
+                handle_dualeye_opus_stream_stop(self, bridge)
                 return
             if path == "/api/sr/simulate":
                 result = simulate_sr_probe(payload)
@@ -3117,38 +3038,7 @@ runAll();
                 self.send_json(compact_audio_payload(result))
                 return
             if path == "/audio" or path == "/turn/audio":
-                audio_data = str(payload.get("audio_data", "")).strip()
-                language = str(payload.get("language", "auto") or "auto")
-                speak = bool(payload.get("speak", False))
-                tts_voice = str(payload.get("tts_voice", "")).strip()
-                tts_style = str(payload.get("tts_style", bridge.session.default_tts_style) or bridge.session.default_tts_style)
-                tts_singing = bool(payload.get("tts_singing", False))
-                if not audio_data:
-                    self.send_json({"ok": False, "error": "audio_data required"}, HTTPStatus.BAD_REQUEST)
-                    return
-                result = bridge.send_audio(audio_data,
-                                           language=language,
-                                           speak=speak,
-                                           tts_voice=tts_voice,
-                                           tts_style=tts_style,
-                                           tts_singing=tts_singing)
-                if speak and isinstance(result.get("tts"), dict):
-                    tts_store, tts_url, dualeye_play = self.cache_tts_and_push(result["tts"])
-                    result["tts_cached"] = tts_store
-                    result["tts_url"] = tts_url
-                    result["dualeye_play"] = dualeye_play
-                remember_turn({
-                    "kind": "browser_audio",
-                    "ok": bool(result.get("ok")),
-                    "asr_text": str(result.get("asr", {}).get("text", "")),
-                    "reply": reply_from_text_result(result.get("text_result", {}), fallback=""),
-                    "source": str(result.get("text_result", {}).get("source", "")),
-                    "intent_count": len(result.get("text_result", {}).get("intents", [])),
-                    "tts_ready": bool(result.get("tts_cached", {}).get("ready")),
-                    "dualeye_play": result.get("dualeye_play", {}),
-                    "error": str(result.get("asr", {}).get("error", "") or result.get("error", "")),
-                })
-                self.send_json(compact_audio_payload(result))
+                handle_browser_audio_turn(self, bridge, payload, self.latest_tts_url())
                 return
             if path in {"/api/tools/call", "/mcp/tools/call"}:
                 tool_name = str(payload.get("name") or payload.get("tool") or "").strip()
@@ -3249,44 +3139,10 @@ runAll();
                 self.send_json(result, HTTPStatus.OK if result.get("ok") else HTTPStatus.BAD_REQUEST)
                 return
             if path == "/asr":
-                audio_data = str(payload.get("audio_data", "")).strip()
-                language = str(payload.get("language", "auto") or "auto")
-                if not audio_data:
-                    self.send_json({"ok": False, "error": "audio_data required"}, HTTPStatus.BAD_REQUEST)
-                    return
-                asr = bridge.transcribe_audio(audio_data, language=language)
-                self.send_json({"ok": bool(asr.get("ok")), "asr": asr},
-                               HTTPStatus.OK if asr.get("ok") else HTTPStatus.BAD_GATEWAY)
+                handle_asr(self, bridge, payload)
                 return
             if path == "/speak":
-                text = str(payload.get("text", "")).strip()
-                voice = str(payload.get("voice", "")).strip()
-                if not voice:
-                    voice = str(payload.get("tts_voice", "")).strip()
-                tts_style = str(payload.get("tts_style", "default") or "default")
-                if tts_style == "default" and bridge.session.default_tts_style != "default":
-                    tts_style = bridge.session.default_tts_style
-                tts_singing = bool(payload.get("tts_singing", False))
-                audio_format = str(payload.get("format", "wav") or "wav")
-                result = bridge.synthesize_speech(text,
-                                                  voice=voice,
-                                                  audio_format=audio_format,
-                                                  style=tts_style,
-                                                  singing=tts_singing)
-                if result.get("ok"):
-                    tts_store, tts_url, dualeye_play = self.cache_tts_and_push(result)
-                    result["tts_cached"] = tts_store
-                    result["tts_url"] = tts_url
-                    result["dualeye_play"] = dualeye_play
-                remember_turn({
-                    "kind": "speak",
-                    "ok": bool(result.get("ok")),
-                    "text": text,
-                    "tts_ready": bool(result.get("tts_cached", {}).get("ready")),
-                    "dualeye_play": result.get("dualeye_play", {}),
-                    "error": str(result.get("error", "")),
-                })
-                self.send_json(compact_audio_payload(result))
+                handle_speak(self, bridge, payload, self.latest_tts_url())
                 return
             if path == "/intent":
                 intent = payload.get("intent", payload)
