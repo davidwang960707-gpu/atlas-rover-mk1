@@ -273,7 +273,17 @@ async function toggleContinuous(){
     setVoiceState('待机','muted');
   }
 }
-async function toggleRec(mode){if(rec){await stopRec({manual:true});return}await startRec(mode||'full',{continuous:false})}
+async function toggleRec(mode){
+  if(rec){await stopRec({manual:true});return}
+  try{
+    await startRec(mode||'full',{continuous:false});
+  }catch(e){
+    rec=null;
+    setButton('recBtn','按一次说话','secondary');
+    setVoiceState('麦克风不可用','bad');
+    out({ok:false,error:String(e),stage:'microphone'});
+  }
+}
 async function startRec(mode,opts){
   if(rec)return;
   opts=opts||{};
