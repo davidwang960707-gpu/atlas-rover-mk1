@@ -1,6 +1,5 @@
 #include "atlas_admin_http.h"
 
-#include <ctype.h>
 #include <stdbool.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -39,6 +38,7 @@
 #include "atlas_sr_probe.h"
 #include "atlas_wifi.h"
 #include "common/atlas_common_assets.h"
+#include "common/atlas_common_config.h"
 #include "common/atlas_common_device_status.h"
 
 static const char *TAG = "atlas_admin";
@@ -531,28 +531,7 @@ static void url_decode(char *dst, size_t dst_size, const char *src, size_t src_l
 
 static void trim_assign(char *s)
 {
-    if (s == NULL || s[0] == '\0') {
-        return;
-    }
-
-    char *start = s;
-    while (isspace((unsigned char)*start)) {
-        ++start;
-    }
-    if (*start == '\0') {
-        s[0] = '\0';
-        return;
-    }
-
-    char *end = start + strlen(start);
-    while (end > start && isspace((unsigned char)*(end - 1))) {
-        --end;
-    }
-    *end = '\0';
-
-    if (start != s) {
-        memmove(s, start, (size_t)(end - start + 1));
-    }
+    atlas_common_config_trim(s);
 }
 
 static bool form_get_value(const char *body, const char *key, char *out, size_t out_size)
@@ -4268,7 +4247,8 @@ static esp_err_t save_wifi_handler(httpd_req_t *req)
     char password[ATLAS_WIFI_PASSWORD_MAX] = "";
     (void)form_get_value(body, "ssid", ssid, sizeof(ssid));
     (void)form_get_value(body, "password", password, sizeof(password));
-    if (ssid[0] == '\0') {
+    atlas_common_config_trim(ssid);
+    if (!atlas_common_config_has_value(ssid)) {
         return send_error(req, "400 Bad Request", "ssid required");
     }
 
@@ -4296,9 +4276,16 @@ static esp_err_t save_llm_handler(httpd_req_t *req)
     (void)form_get_value(body, "provider", llm.provider, sizeof(llm.provider));
     (void)form_get_value(body, "base_url", llm.base_url, sizeof(llm.base_url));
     (void)form_get_value(body, "model", llm.model, sizeof(llm.model));
+    atlas_common_config_trim(llm.mode);
+    atlas_common_config_trim(llm.provider);
+    atlas_common_config_trim(llm.base_url);
+    atlas_common_config_trim(llm.model);
 
     char api_key[ATLAS_LLM_API_KEY_MAX] = "";
-    if (form_get_value(body, "api_key", api_key, sizeof(api_key)) && api_key[0] != '\0') {
+    if (form_get_value(body, "api_key", api_key, sizeof(api_key))) {
+        atlas_common_config_trim(api_key);
+    }
+    if (api_key[0] != '\0') {
         strlcpy(llm.api_key, api_key, sizeof(llm.api_key));
     }
 

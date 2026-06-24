@@ -8,22 +8,11 @@
 #include "nvs_flash.h"
 
 #include "atlas_expression.h"
+#include "common/atlas_common_config.h"
 #include "common/atlas_common_ui_state.h"
 
 static const char *TAG = "atlas_config";
 static const char *NS = "atlas";
-
-static void copy_string(char *dst, size_t dst_size, const char *src)
-{
-    if (dst == NULL || dst_size == 0) {
-        return;
-    }
-    if (src == NULL) {
-        dst[0] = '\0';
-        return;
-    }
-    strlcpy(dst, src, dst_size);
-}
 
 static esp_err_t nvs_get_string_default(nvs_handle_t handle,
                                         const char *key,
@@ -34,11 +23,11 @@ static esp_err_t nvs_get_string_default(nvs_handle_t handle,
     size_t required = value_size;
     esp_err_t err = nvs_get_str(handle, key, value, &required);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
-        copy_string(value, value_size, default_value);
+        atlas_common_config_copy_string(value, value_size, default_value);
         return ESP_OK;
     }
     if (err != ESP_OK) {
-        copy_string(value, value_size, default_value);
+        atlas_common_config_copy_string(value, value_size, default_value);
         return err;
     }
     return ESP_OK;
@@ -56,22 +45,30 @@ void atlas_config_defaults(atlas_config_t *config)
     }
 
     memset(config, 0, sizeof(*config));
-    copy_string(config->device_name, sizeof(config->device_name), "Atlas Rover Mk.1");
-    copy_string(config->llm.mode, sizeof(config->llm.mode), "off");
-    copy_string(config->llm.provider, sizeof(config->llm.provider), "openai_compatible");
-    copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
-    copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
+    atlas_common_config_copy_string(config->device_name,
+                                    sizeof(config->device_name),
+                                    atlas_common_config_default_device_name());
+    atlas_common_config_copy_string(config->llm.mode,
+                                    sizeof(config->llm.mode),
+                                    atlas_common_config_default_llm_mode());
+    atlas_common_config_copy_string(config->llm.provider,
+                                    sizeof(config->llm.provider),
+                                    atlas_common_config_default_llm_provider());
+    atlas_common_config_copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
+    atlas_common_config_copy_string(config->ui.chat_mode,
+                                    sizeof(config->ui.chat_mode),
+                                    ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     config->ui.brightness = 70;
     config->ui.volume = 90;
-    copy_string(config->pomodoro.task_name, sizeof(config->pomodoro.task_name), "巡检任务");
+    atlas_common_config_copy_string(config->pomodoro.task_name, sizeof(config->pomodoro.task_name), "巡检任务");
     config->pomodoro.focus_minutes = 25;
     config->pomodoro.break_minutes = 5;
     config->pomodoro.enabled = true;
-    copy_string(config->calendar.title, sizeof(config->calendar.title), "电子宠物日历");
-    copy_string(config->calendar.note, sizeof(config->calendar.note), "今日状态：待命，晚间记得充电");
+    atlas_common_config_copy_string(config->calendar.title, sizeof(config->calendar.title), "电子宠物日历");
+    atlas_common_config_copy_string(config->calendar.note, sizeof(config->calendar.note), "今日状态：待命，晚间记得充电");
     config->calendar.enabled = true;
     config->safety.motion_enabled = false;
-    copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
+    atlas_common_config_copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     config->safety.max_speed_percent = 40;
     config->safety.max_duration_ms = 700;
     config->safety.require_confirm_for_patrol = true;
@@ -112,11 +109,23 @@ esp_err_t atlas_config_load(atlas_config_t *config)
         return err;
     }
 
-    (void)nvs_get_string_default(handle, "device", config->device_name, sizeof(config->device_name), "Atlas Rover Mk.1");
+    (void)nvs_get_string_default(handle,
+                                 "device",
+                                 config->device_name,
+                                 sizeof(config->device_name),
+                                 atlas_common_config_default_device_name());
     (void)nvs_get_string_default(handle, "wifi_ssid", config->wifi_ssid, sizeof(config->wifi_ssid), "");
     (void)nvs_get_string_default(handle, "wifi_pass", config->wifi_password, sizeof(config->wifi_password), "");
-    (void)nvs_get_string_default(handle, "llm_mode", config->llm.mode, sizeof(config->llm.mode), "off");
-    (void)nvs_get_string_default(handle, "llm_provider", config->llm.provider, sizeof(config->llm.provider), "openai_compatible");
+    (void)nvs_get_string_default(handle,
+                                 "llm_mode",
+                                 config->llm.mode,
+                                 sizeof(config->llm.mode),
+                                 atlas_common_config_default_llm_mode());
+    (void)nvs_get_string_default(handle,
+                                 "llm_provider",
+                                 config->llm.provider,
+                                 sizeof(config->llm.provider),
+                                 atlas_common_config_default_llm_provider());
     (void)nvs_get_string_default(handle, "llm_base", config->llm.base_url, sizeof(config->llm.base_url), "");
     (void)nvs_get_string_default(handle, "llm_model", config->llm.model, sizeof(config->llm.model), "");
     (void)nvs_get_string_default(handle, "llm_key", config->llm.api_key, sizeof(config->llm.api_key), "");
@@ -128,12 +137,14 @@ esp_err_t atlas_config_load(atlas_config_t *config)
                                  ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     (void)nvs_get_string_default(handle, "pom_task", config->pomodoro.task_name, sizeof(config->pomodoro.task_name), "巡检任务");
     if (!atlas_expression_theme_is_valid(config->ui.theme)) {
-        copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
+        atlas_common_config_copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
     } else if (strcmp(config->ui.theme, "atlas_blue") == 0) {
-        copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
+        atlas_common_config_copy_string(config->ui.theme, sizeof(config->ui.theme), "classic");
     }
     if (!atlas_config_chat_mode_is_valid(config->ui.chat_mode)) {
-        copy_string(config->ui.chat_mode, sizeof(config->ui.chat_mode), ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
+        atlas_common_config_copy_string(config->ui.chat_mode,
+                                        sizeof(config->ui.chat_mode),
+                                        ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     }
     if (!nvs_get_u16(handle, "pom_focus", &value_u16)) {
         config->pomodoro.focus_minutes = value_u16 == 0 ? 25 : value_u16;
@@ -155,7 +166,7 @@ esp_err_t atlas_config_load(atlas_config_t *config)
     }
     (void)nvs_get_string_default(handle, "ctrl_mode", config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     if (strcmp(config->safety.control_mode, "manual") != 0 && strcmp(config->safety.control_mode, "ai") != 0) {
-        copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
+        atlas_common_config_copy_string(config->safety.control_mode, sizeof(config->safety.control_mode), "manual");
     }
 
     if (nvs_get_u8(handle, "motion_en", &value_u8) == ESP_OK) {
@@ -266,7 +277,7 @@ esp_err_t atlas_config_save_safety(const atlas_safety_config_t *safety)
         clipped.max_duration_ms = 100;
     }
     if (strcmp(clipped.control_mode, "manual") != 0 && strcmp(clipped.control_mode, "ai") != 0) {
-        copy_string(clipped.control_mode, sizeof(clipped.control_mode), "manual");
+        atlas_common_config_copy_string(clipped.control_mode, sizeof(clipped.control_mode), "manual");
     }
 
     nvs_handle_t handle;
@@ -305,9 +316,9 @@ esp_err_t atlas_config_save_ui(const atlas_ui_config_t *ui)
 
     atlas_ui_config_t clipped = *ui;
     if (!atlas_expression_theme_is_valid(clipped.theme)) {
-        copy_string(clipped.theme, sizeof(clipped.theme), "classic");
+        atlas_common_config_copy_string(clipped.theme, sizeof(clipped.theme), "classic");
     } else if (strcmp(clipped.theme, "atlas_blue") == 0) {
-        copy_string(clipped.theme, sizeof(clipped.theme), "classic");
+        atlas_common_config_copy_string(clipped.theme, sizeof(clipped.theme), "classic");
     }
     if (clipped.brightness > 100) {
         clipped.brightness = 100;
@@ -316,7 +327,9 @@ esp_err_t atlas_config_save_ui(const atlas_ui_config_t *ui)
         clipped.volume = 100;
     }
     if (!atlas_config_chat_mode_is_valid(clipped.chat_mode)) {
-        copy_string(clipped.chat_mode, sizeof(clipped.chat_mode), ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
+        atlas_common_config_copy_string(clipped.chat_mode,
+                                        sizeof(clipped.chat_mode),
+                                        ATLAS_COMMON_UI_DEFAULT_CHAT_MODE);
     }
 
     nvs_handle_t handle;
@@ -397,10 +410,10 @@ esp_err_t atlas_config_save_calendar(const atlas_calendar_config_t *calendar)
 
     atlas_calendar_config_t clipped = *calendar;
     if (clipped.title[0] == '\0') {
-        copy_string(clipped.title, sizeof(clipped.title), "电子宠物日历");
+        atlas_common_config_copy_string(clipped.title, sizeof(clipped.title), "电子宠物日历");
     }
     if (clipped.note[0] == '\0') {
-        copy_string(clipped.note, sizeof(clipped.note), "今日状态：待命，晚间记得充电");
+        atlas_common_config_copy_string(clipped.note, sizeof(clipped.note), "今日状态：待命，晚间记得充电");
     }
 
     nvs_handle_t handle;
@@ -442,12 +455,12 @@ esp_err_t atlas_config_reset_network_and_llm(void)
 
 bool atlas_config_has_wifi(const atlas_config_t *config)
 {
-    return config != NULL && config->wifi_ssid[0] != '\0';
+    return config != NULL && atlas_common_config_has_value(config->wifi_ssid);
 }
 
 bool atlas_config_has_llm_api_key(const atlas_config_t *config)
 {
-    return config != NULL && config->llm.api_key[0] != '\0';
+    return config != NULL && atlas_common_config_has_value(config->llm.api_key);
 }
 
 bool atlas_config_motion_supported(void)

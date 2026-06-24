@@ -110,6 +110,25 @@
 - `/api/status.fingerprint.resource_version`、`/api/system/info.storage.assets_version`、`/api/selftest` 资源字段保持兼容。
 - 实机继续检查主题切换、pet_head 透明底动画、时钟/番茄/日历中文字体显示。
 
+### P6 Wi-Fi / Provisioning / Config common 层
+
+目标：把 Wi-Fi 状态、配网配置、Brain URL、Pairing PIN、Provider 配置摘要抽成可复用边界，同时保留手机端配网和 AP fallback 行为。
+
+计划：
+
+- 新增 `firmware/dualeye/main/common/atlas_common_config.*`。
+- common 层定义 `atlas.config.v0`、`atlas.wifi.provisioning.v0`、默认设备名、LLM 默认 mode/provider、SoftAP SSID 前缀、默认 AP IP、STA 重试次数、AP channel/max_connection，以及表单字符串 copy/trim/has_value helper。
+- `atlas_config.c` 复用 common 默认值和 has_value 判断，但保留全部 NVS key 名称、保存流程和 API 语义。
+- `atlas_wifi.c` 复用 common SoftAP 常量，继续保持 `AtlasRover-XXXX`、`192.168.4.1`、APSTA fallback 和扫描行为。
+- `atlas_admin_http.c` 复用 common trim helper；Wi-Fi SSID 和 LLM 字段做输入归一化，Wi-Fi password 不 trim，避免破坏带空格密码。
+- `specs/atlas_device_status_v0.md` 只补兼容说明：新增配置字段只能可选追加，不能删除 `/api/config/wifi`、`/api/wifi/scan`、`/api/status` 既有字段。
+
+下一步验收：
+
+- 构建通过。
+- 手机连接 `AtlasRover-XXXX` 后 `/api/wifi/scan`、`/api/config/wifi` 仍按旧响应工作。
+- Brain 离线、Wi-Fi 未连接或 STA 失败时，双眼、时钟、番茄、日历、宠物头本地显示仍可用，不进入异常文字页/黑屏。
+
 ### 后续 Tool Schema V0 adapter
 
 目标：把工具表和工具调用从 HTTP handler 中拆成 schema adapter。

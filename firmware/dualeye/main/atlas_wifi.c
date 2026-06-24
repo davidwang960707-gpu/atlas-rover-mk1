@@ -15,11 +15,9 @@
 
 #include "lwip/inet.h"
 
-static const char *TAG = "atlas_wifi";
+#include "common/atlas_common_config.h"
 
-#define ATLAS_WIFI_MAX_STA_RETRY 5
-#define ATLAS_WIFI_AP_CHANNEL 1
-#define ATLAS_WIFI_AP_MAX_CONN 4
+static const char *TAG = "atlas_wifi";
 
 static atlas_wifi_status_t s_status;
 static bool s_wifi_ready;
@@ -84,7 +82,7 @@ static void build_ap_ssid(char *ssid, size_t ssid_size)
     if (esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP) != ESP_OK) {
         esp_fill_random(mac, sizeof(mac));
     }
-    snprintf(ssid, ssid_size, "AtlasRover-%02X%02X", mac[4], mac[5]);
+    snprintf(ssid, ssid_size, "%s-%02X%02X", ATLAS_COMMON_WIFI_AP_SSID_PREFIX, mac[4], mac[5]);
 }
 
 static esp_err_t configure_softap(void)
@@ -94,14 +92,14 @@ static esp_err_t configure_softap(void)
     wifi_config_t ap_config = {0};
     strlcpy((char *)ap_config.ap.ssid, s_status.ap_ssid, sizeof(ap_config.ap.ssid));
     ap_config.ap.ssid_len = strlen(s_status.ap_ssid);
-    ap_config.ap.channel = ATLAS_WIFI_AP_CHANNEL;
-    ap_config.ap.max_connection = ATLAS_WIFI_AP_MAX_CONN;
+    ap_config.ap.channel = ATLAS_COMMON_WIFI_AP_CHANNEL;
+    ap_config.ap.max_connection = ATLAS_COMMON_WIFI_AP_MAX_CONN;
     ap_config.ap.authmode = WIFI_AUTH_OPEN;
 
     ESP_RETURN_ON_ERROR(esp_wifi_set_config(WIFI_IF_AP, &ap_config), TAG, "set AP config failed");
     s_status.ap_started = true;
-    strlcpy(s_status.ap_ip, "192.168.4.1", sizeof(s_status.ap_ip));
-    ESP_LOGI(TAG, "SoftAP ready: ssid=%s url=http://192.168.4.1", s_status.ap_ssid);
+    strlcpy(s_status.ap_ip, ATLAS_COMMON_WIFI_AP_DEFAULT_IP, sizeof(s_status.ap_ip));
+    ESP_LOGI(TAG, "SoftAP ready: ssid=%s url=http://%s", s_status.ap_ssid, ATLAS_COMMON_WIFI_AP_DEFAULT_IP);
     return ESP_OK;
 }
 
@@ -159,14 +157,14 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
         const uint8_t reason = event == NULL ? 0 : event->reason;
         s_status.sta_connected = false;
         s_status.sta_ip[0] = '\0';
-        if (s_sta_configured && s_status.sta_retry_count < ATLAS_WIFI_MAX_STA_RETRY) {
+        if (s_sta_configured && s_status.sta_retry_count < ATLAS_COMMON_WIFI_MAX_STA_RETRY) {
             s_status.sta_retry_count++;
             ESP_LOGW(TAG,
                      "STA disconnected, reason=%u(%s), retry %u/%u",
                      reason,
                      wifi_disconnect_reason_name(reason),
                      s_status.sta_retry_count,
-                     ATLAS_WIFI_MAX_STA_RETRY);
+                     ATLAS_COMMON_WIFI_MAX_STA_RETRY);
             (void)esp_wifi_connect();
         } else if (!s_status.ap_started) {
             ESP_LOGW(TAG,
@@ -288,7 +286,7 @@ esp_err_t atlas_wifi_start(const atlas_config_t *config)
     }
 
     memset(&s_status, 0, sizeof(s_status));
-    strlcpy(s_status.ap_ip, "192.168.4.1", sizeof(s_status.ap_ip));
+    strlcpy(s_status.ap_ip, ATLAS_COMMON_WIFI_AP_DEFAULT_IP, sizeof(s_status.ap_ip));
     s_sta_configured = atlas_config_has_wifi(config);
 
     esp_err_t err = esp_netif_init();
