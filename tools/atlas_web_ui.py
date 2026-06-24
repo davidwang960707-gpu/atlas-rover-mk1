@@ -137,6 +137,7 @@ _BASE_CSS = """
 
 _LIVE_CSS = """
 .device-stage{transition:background .28s ease,box-shadow .28s ease}.device-stage[data-online=false]{background:#20231f}.device-stage[data-online=false] .eye{opacity:.62;filter:saturate(.55)}.device-stage[data-theme=raptor]{background:#251611}.device-stage[data-theme=raptor] .eye{border-color:#4a2118;box-shadow:inset 0 0 0 8px #100704}.device-stage[data-theme=raptor] .eye:after{width:26px;height:76px;border-radius:999px;background:#ffe2a8;box-shadow:0 0 18px #ff855e,inset 0 0 0 8px #a9211e}.device-stage[data-theme=mecha]{background:#101c24}.device-stage[data-theme=mecha] .eye{border-color:#24475a;box-shadow:inset 0 0 0 8px #061117}.device-stage[data-theme=mecha] .eye:after{background:#d4fbff;box-shadow:0 0 22px #51d6ff,inset 0 0 0 16px #1b80a5}.device-stage[data-theme=goggle]{background:#251f11}.device-stage[data-theme=goggle] .eye{border-color:#775f18;box-shadow:inset 0 0 0 8px #171104}.device-stage[data-theme=goggle] .eye:after{background:#fff1b0;box-shadow:0 0 16px #f2b84b,inset 0 0 0 19px #2e4148}.device-stage[data-theme=pet]{background:#17231f}.device-stage[data-theme=pet] .eye:after{background:#fbf7ef;box-shadow:0 0 18px #bfe8d4,inset 0 0 0 18px #4c7fd9}.device-stage[data-expression=listen] .eye:after{transform:scale(1.08)}.device-stage[data-expression=blink] .eye:after{height:16px;border-radius:999px}.device-stage[data-expression=sleepy] .eye:after{height:12px;border-radius:999px}.pet-head-stage{display:none;position:relative;z-index:1;justify-content:center;margin-top:20px}.pet-head{width:190px;aspect-ratio:1;border-radius:47% 48% 45% 44%;background:radial-gradient(circle at 38% 30%,#d99a5b 0 16%,transparent 17%),radial-gradient(circle at 68% 68%,#8b552e 0 3%,transparent 4%),linear-gradient(135deg,#c87b34 0%,#e2a15d 52%,#a96731 100%);border:8px solid #101614;box-shadow:inset -18px -22px 0 rgba(89,48,20,.22),inset 14px 12px 0 rgba(255,227,174,.35),0 20px 44px rgba(0,0,0,.28);position:relative}.pet-head:before,.pet-head:after{content:'';position:absolute;top:-12px;width:36px;height:36px;border-radius:12px;background:#d68b49;border:8px solid #101614}.pet-head:before{left:26px}.pet-head:after{right:26px}.pet-eye{position:absolute;top:56px;width:42px;height:42px;border-radius:50%;background:#fff;border:7px solid #101614}.pet-eye.left{left:45px}.pet-eye.right{right:45px}.pet-eye i{display:block;width:10px;height:10px;border-radius:50%;background:#101614;margin:14px auto}.pet-nose{position:absolute;left:86px;top:106px;width:18px;height:13px;border-radius:50%;background:#57351f}.pet-mouth{position:absolute;left:92px;top:122px;width:4px;height:42px;background:#101614;border-radius:4px}.device-stage[data-chat-mode=pet_head] .eye-pair{display:none}.device-stage[data-chat-mode=pet_head] .pet-head-stage{display:flex}.device-stage[data-expression=speaking] .pet-mouth{width:22px;height:22px;left:84px;border-radius:50%;background:#2b1610}.device-stage[data-expression=happy] .pet-mouth{width:46px;height:24px;left:72px;background:transparent;border-bottom:6px solid #101614}.device-stage[data-expression=sleepy] .pet-eye{height:13px;margin-top:14px}.device-stage[data-scene-severity=error]{box-shadow:0 18px 45px rgba(180,61,42,.26)}.device-stage[data-scene-severity=warn]{box-shadow:0 18px 45px rgba(166,107,0,.22)}.sync-line{display:flex;gap:8px;flex-wrap:wrap}.mini-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:18px}.mini span{display:block;min-height:20px}.last-sync{font-variant-numeric:tabular-nums}.dot.warn{background:#f2b84b}.dot.bad{background:#ee6f57}@media(max-width:1080px){.mini-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:680px){.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.control-block{margin-top:18px}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}.section-head h2{font-size:20px;margin:0;letter-spacing:0}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.control-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.control-card{border:1px solid var(--line);background:white;border-radius:8px;padding:14px;text-align:left;min-height:88px;color:var(--ink);display:flex;flex-direction:column;justify-content:space-between}.control-card b{display:block;font-size:17px;margin-bottom:6px}.control-card small{color:var(--muted);line-height:1.35}.control-card.primary-soft{background:#f8fbf5;border-color:#cbd9cf}.control-card.eye-soft{background:#f8fbff;border-color:#cbd8e6}.control-card.chat-soft{background:#fffaf2;border-color:#e4d5ba}.control-card.app-soft{background:#fbfaf8;border-color:#ded8cb}@media(max-width:860px){.control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-head{align-items:flex-start;flex-direction:column}.control-card b{font-size:16px}}@media(max-width:420px){.control-grid{grid-template-columns:1fr}}
 """
 
 
@@ -216,8 +217,11 @@ function applyDeviceLive(payload){
   setText('deviceState',online?'已连接':'等待设备',stateCls);
   setText('scenePill',scene.label||scene.title||device.scene||device.scene_title||(online?'待机':'设备离线'),'');
   setText('themePill',zhTheme(theme),'');
+  setText('themePill2',zhTheme(theme),'');
   setText('chatModePill',zhChatMode(chatMode),'');
+  setText('chatModePill2',zhChatMode(chatMode),'');
   setText('pagePill',zhPage(page),'');
+  setText('pagePill2',zhPage(page),'');
   setText('expressionPill',zhExpression(expression),'');
   setText('deviceConnState',online?'DualEye 在线':'DualEye 未连接',online?'ok':'warn');
   setText('deviceIp',device.sta_ip?('局域网 '+device.sta_ip):(device.url||''),'muted');
@@ -392,23 +396,47 @@ _APP_TEMPLATE = Template("""<!doctype html><html lang="zh-CN"><meta charset="utf
       <audio id="player" controls></audio>
     </div>
   </section>
-  <section class="quick-grid">
-    <button class="app-card" onclick="skill('atlas.role.switch',{role:'pet'},true)"><b>电子宠物</b><small>回到陪伴人格</small></button>
-    <button class="app-card" onclick="skill('atlas.role.switch',{role:'raptor'},true)"><b>猛禽眼</b><small>野兽主题</small></button>
-    <button class="app-card" onclick="skill('atlas.role.switch',{role:'mecha'},true)"><b>机械眼</b><small>电子主题</small></button>
-    <button class="app-card" onclick="skill('atlas.role.switch',{role:'goggle'},true)"><b>护目镜</b><small>黄色主题</small></button>
-    <button class="app-card" onclick="setChatMode('pet_head')"><b>土拨鼠头</b><small>左头右文字</small></button>
-    <button class="app-card" onclick="setChatMode('text')"><b>双屏文字</b><small>对话字幕</small></button>
-    <button class="app-card" onclick="setChatMode('eyes_only')"><b>纯眼睛</b><small>只做表情</small></button>
-    <button class="app-card" onclick="skill('atlas.pet.play_animation',{animation:'laugh',right_text:'哈哈，我在'},false)"><b>大笑</b><small>土拨鼠动画</small></button>
-    <button class="app-card" onclick="skill('atlas.clock.show',{},false)"><b>时钟</b><small>桌面时间</small></button>
-    <button class="app-card" onclick="skill('atlas.pomodoro.start',{task_name:'当前任务',focus_minutes:25},true)"><b>番茄</b><small>25 分钟专注</small></button>
-    <button class="app-card" onclick="skill('atlas.calendar.today',{},true)"><b>日历</b><small>今日卡片</small></button>
-    <button class="app-card" onclick="skill('atlas.weather.query',{location:''},true)"><b>天气</b><small>默认城市</small></button>
-    <button class="app-card" onclick="skill('atlas.music.play',{},true)"><b>音乐</b><small>播放入口</small></button>
-    <button class="app-card" onclick="skill('atlas.story.tell',{},true)"><b>故事</b><small>睡前/陪伴</small></button>
+  <section class="panel control-block">
+    <div class="section-head"><div><p class="eyebrow">Eyes</p><h2>眼睛展示</h2><p>只切双眼视觉主题，不改变对话界面。</p></div><span class="pill">当前 <span id="themePill2">$theme</span></span></div>
+    <div class="control-grid">
+      <button class="control-card eye-soft" onclick="skill('atlas.set_theme',{theme:'pet'},false)"><b>电子宠物眼</b><small>温和陪伴视觉</small></button>
+      <button class="control-card eye-soft" onclick="skill('atlas.set_theme',{theme:'raptor'},false)"><b>猛禽眼</b><small>野兽警戒视觉</small></button>
+      <button class="control-card eye-soft" onclick="skill('atlas.set_theme',{theme:'mecha'},false)"><b>机械眼</b><small>电子冷光视觉</small></button>
+      <button class="control-card eye-soft" onclick="skill('atlas.set_theme',{theme:'goggle'},false)"><b>护目镜</b><small>黄色护目镜视觉</small></button>
+      <button class="control-card eye-soft" onclick="skill('atlas.set_theme',{theme:'blue_pupil'},false)"><b>蓝瞳</b><small>圆形蓝色瞳孔</small></button>
+      <button class="control-card eye-soft" onclick="skill('atlas.set_theme',{theme:'tomoe_spin'},false)"><b>红色旋纹</b><small>旋纹视觉主题</small></button>
+      <button class="control-card eye-soft" onclick="skill('atlas.set_theme',{theme:'no_smoking'},false)"><b>禁烟</b><small>禁烟禁电子烟主题</small></button>
+    </div>
   </section>
-  <section class="panel stack" style="margin-top:18px">
+  <section class="panel control-block">
+    <div class="section-head"><div><p class="eyebrow">Conversation</p><h2>对话界面</h2><p>选择对话时双屏如何呈现。</p></div><span class="pill">当前 <span id="chatModePill2">$chat_mode</span></span></div>
+    <div class="control-grid">
+      <button class="control-card chat-soft" onclick="setChatMode('pet_head')"><b>土拨鼠头</b><small>左屏宠物头，右屏短文本</small></button>
+      <button class="control-card chat-soft" onclick="setChatMode('text')"><b>双屏文字</b><small>两块屏幕展示对话字幕</small></button>
+      <button class="control-card chat-soft" onclick="setChatMode('eyes_only')"><b>纯眼睛</b><small>不显示文字，只做眼神和表情</small></button>
+    </div>
+  </section>
+  <section class="panel control-block">
+    <div class="section-head"><div><p class="eyebrow">Apps</p><h2>桌面 App</h2><p>打开具体功能页，适合日常使用。</p></div><span class="pill">当前 <span id="pagePill2">$page</span></span></div>
+    <div class="control-grid">
+      <button class="control-card app-soft" onclick="skill('atlas.clock.show',{},false)"><b>时钟</b><small>桌面时间与圆形石英表</small></button>
+      <button class="control-card app-soft" onclick="skill('atlas.pomodoro.start',{task_name:'当前任务',focus_minutes:25},true)"><b>番茄</b><small>25 分钟专注</small></button>
+      <button class="control-card app-soft" onclick="skill('atlas.calendar.today',{},true)"><b>日历</b><small>今日卡片与提醒</small></button>
+      <button class="control-card app-soft" onclick="skill('atlas.weather.query',{location:''},true)"><b>天气</b><small>默认城市天气</small></button>
+      <button class="control-card app-soft" onclick="skill('atlas.music.play',{},true)"><b>音乐</b><small>播放入口与唱歌表情</small></button>
+      <button class="control-card app-soft" onclick="skill('atlas.story.tell',{},true)"><b>故事</b><small>睡前/陪伴故事</small></button>
+    </div>
+  </section>
+  <section class="panel control-block">
+    <div class="section-head"><div><p class="eyebrow">Persona</p><h2>人格模式</h2><p>联动主题、页面、TTS 风格和系统提示词。</p></div></div>
+    <div class="control-grid">
+      <button class="control-card primary-soft" onclick="skill('atlas.role.switch',{role:'pet'},true)"><b>电子宠物</b><small>回到陪伴人格</small></button>
+      <button class="control-card primary-soft" onclick="skill('atlas.role.switch',{role:'raptor'},true)"><b>猛禽</b><small>警戒感人格</small></button>
+      <button class="control-card primary-soft" onclick="skill('atlas.role.switch',{role:'mecha'},true)"><b>机械电子</b><small>清晰克制人格</small></button>
+      <button class="control-card primary-soft" onclick="skill('atlas.role.switch',{role:'goggle'},true)"><b>护目镜</b><small>明亮日常人格</small></button>
+    </div>
+  </section>
+  <section class="panel stack control-block">
     <div><p class="eyebrow">Pet Head V0.3</p><h2>宠物表现</h2><p class="subtitle">透明底、无 SD 卡、只有头。真机负责拟 3D 转头和嘴型动画，Brain 负责下发状态。</p></div>
     <div class="row">
       <span class="pill">状态 <span id="petVisualState">待机</span></span>
