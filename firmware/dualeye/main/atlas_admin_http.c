@@ -1522,7 +1522,9 @@ static esp_err_t status_handler(httpd_req_t *req)
              "\"theme\":\"%s\",\"chat_mode\":\"%s\",\"brightness\":%u,\"volume\":%u,\"chat_text\":\"%s\"},"
              "\"scene\":%s,"
              "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
-             "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
+             "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\","
+             "\"turn_count\":%" PRIu32 ",\"playback_count\":%" PRIu32 ",\"last_success_ms\":%" PRIu32 ","
+             "\"last_event_ms\":%" PRIu32 ",\"job_error_count\":%" PRIu32 ",\"consecutive_failures\":%" PRIu32 "},"
              "\"ui\":{\"chat_mode\":\"%s\",\"current_page\":\"%s\",\"rendered_page\":\"%s\",\"last_page_change_page\":\"%s\","
              "\"left_screen\":\"%s\",\"right_screen\":\"%s\",\"display_screens\":2,\"scene_severity\":\"%s\","
              "\"last_page_change_reason\":\"%s\",\"last_page_change_ms\":%" PRIu32 ","
@@ -1597,6 +1599,12 @@ static esp_err_t status_handler(httpd_req_t *req)
              voice_reason,
              json_bool(playback_recovered),
              runtime_reason,
+             audio_service_status.turn_count,
+             audio_service_status.playback_count,
+             audio_service_status.last_success_ms,
+             audio_service_status.last_event_ms,
+             audio_service_status.job_error_count,
+             audio_service_status.consecutive_failures,
              chat_mode,
              atlas_page_name(ui->page),
              atlas_page_name(scene.page),
@@ -1838,7 +1846,7 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
         !audio_service.busy &&
         audio_service.consecutive_failures == 0u;
 
-    char json[7800];
+    char json[8200];
     const int written = snprintf(json,
                                  sizeof(json),
                                  "{"
@@ -1852,7 +1860,9 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
                                  "\"ui\":{\"page\":\"%s\",\"expression\":\"%s\",\"theme\":\"%s\",\"chat_mode\":\"%s\",\"brightness\":%u,\"volume\":%u,\"chat_text\":\"%s\"},"
                                  "\"scene\":%s,"
                                  "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
-                                 "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
+                                 "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\","
+                                 "\"turn_count\":%" PRIu32 ",\"playback_count\":%" PRIu32 ",\"last_success_ms\":%" PRIu32 ","
+                                 "\"last_event_ms\":%" PRIu32 ",\"job_error_count\":%" PRIu32 ",\"consecutive_failures\":%" PRIu32 "},"
                                  "\"ui\":{\"chat_mode\":\"%s\",\"current_page\":\"%s\",\"rendered_page\":\"%s\",\"last_page_change_page\":\"%s\","
                                  "\"left_screen\":\"%s\",\"right_screen\":\"%s\",\"display_screens\":2,\"scene_severity\":\"%s\","
                                  "\"last_page_change_reason\":\"%s\",\"last_page_change_ms\":%" PRIu32 ","
@@ -1897,6 +1907,12 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
                                  voice_reason,
                                  json_bool(playback_recovered),
                                  runtime_reason,
+                                 audio_service.turn_count,
+                                 audio_service.playback_count,
+                                 audio_service.last_success_ms,
+                                 audio_service.last_event_ms,
+                                 audio_service.job_error_count,
+                                 audio_service.consecutive_failures,
                                  chat_mode,
                                  atlas_page_name(ui->page),
                                  atlas_page_name(scene.page),
@@ -2183,7 +2199,9 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
              "\"now_ms\":%" PRIu32 ","
              "\"voice_wake\":{\"enabled\":%s,\"busy\":%s,\"psram_stack\":%s,\"mute_ms\":%" PRIu32 ",\"triggers\":%" PRIu32 ",\"reason\":\"%s\"},"
              "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
-             "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
+             "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\","
+             "\"turn_count\":%" PRIu32 ",\"playback_count\":%" PRIu32 ",\"last_success_ms\":%" PRIu32 ","
+             "\"last_event_ms\":%" PRIu32 ",\"job_error_count\":%" PRIu32 ",\"consecutive_failures\":%" PRIu32 "},"
              "\"ui\":{\"chat_mode\":\"%s\",\"current_page\":\"%s\",\"rendered_page\":\"%s\",\"last_page_change_page\":\"%s\","
              "\"left_screen\":\"%s\",\"right_screen\":\"%s\",\"display_screens\":2,\"scene_severity\":\"%s\","
              "\"last_page_change_reason\":\"%s\",\"last_page_change_ms\":%" PRIu32 ","
@@ -2205,6 +2223,12 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
              voice_reason,
              json_bool(playback_recovered),
              runtime_reason,
+             audio_service_status.turn_count,
+             audio_service_status.playback_count,
+             audio_service_status.last_success_ms,
+             audio_service_status.last_event_ms,
+             audio_service_status.job_error_count,
+             audio_service_status.consecutive_failures,
              diag_chat_mode,
              atlas_page_name(s_ctx.ui_state->page),
              atlas_page_name(scene.page),
