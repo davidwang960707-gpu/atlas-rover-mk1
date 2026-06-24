@@ -41,6 +41,7 @@
 #include "common/atlas_common_config.h"
 #include "common/atlas_common_device_status.h"
 #include "common/atlas_common_tool_schema.h"
+#include "common/atlas_common_ui_state.h"
 
 static const char *TAG = "atlas_admin";
 
@@ -148,6 +149,11 @@ typedef struct {
 
 static atlas_brain_event_t s_brain_events[ATLAS_BRAIN_EVENT_HISTORY];
 static uint32_t s_brain_event_seq;
+static atlas_page_t s_last_page_change_page = ATLAS_PAGE_EYES;
+static uint32_t s_last_page_change_ms;
+static char s_last_page_change_reason[48] = "boot";
+static uint32_t s_last_manual_ui_ms;
+static char s_last_manual_ui_reason[48] = "boot";
 #if CONFIG_HTTPD_WS_SUPPORT
 static int s_brain_ws_fd = -1;
 static uint32_t s_brain_ws_session_seq;
@@ -312,6 +318,72 @@ static uint32_t remaining_ms(uint32_t now, uint32_t until)
     return until > now ? until - now : 0u;
 }
 
+static void note_page_change(atlas_page_t page, const char *reason, uint32_t ts)
+{
+    s_last_page_change_page = page;
+    s_last_page_change_ms = ts;
+    strlcpy(s_last_page_change_reason,
+            reason == NULL || reason[0] == '\0' ? "page change" : reason,
+            sizeof(s_last_page_change_reason));
+}
+
+static void describe_screen_plan(atlas_page_t page,
+                                 const char *chat_mode,
+                                 char *left,
+                                 size_t left_size,
+                                 char *right,
+                                 size_t right_size)
+{
+    const char *mode = atlas_common_ui_chat_mode_or_default(chat_mode);
+    const char *left_role = "left_eye";
+    const char *right_role = "right_eye";
+
+    if (atlas_common_ui_page_uses_chat_mode(page)) {
+        if (strcmp(mode, ATLAS_COMMON_UI_CHAT_MODE_PET_HEAD) == 0) {
+            left_role = "pet_head";
+            right_role = "short_text";
+        } else if (strcmp(mode, ATLAS_COMMON_UI_CHAT_MODE_TEXT) == 0) {
+            left_role = "text_left";
+            right_role = "text_right";
+        } else {
+            left_role = "eyes_only_left";
+            right_role = "eyes_only_right";
+        }
+    } else {
+        switch (page) {
+        case ATLAS_PAGE_CLOCK:
+            left_role = "analog_clock";
+            right_role = "digital_clock";
+            break;
+        case ATLAS_PAGE_STATUS:
+            left_role = "status_summary";
+            right_role = "status_detail";
+            break;
+        case ATLAS_PAGE_CALENDAR:
+            left_role = "calendar_title";
+            right_role = "calendar_note";
+            break;
+        case ATLAS_PAGE_POMODORO:
+            left_role = "pomodoro_timer";
+            right_role = "pomodoro_task";
+            break;
+        case ATLAS_PAGE_PHOTO:
+            left_role = "photo_left";
+            right_role = "photo_right";
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (left != NULL && left_size > 0) {
+        strlcpy(left, left_role, left_size);
+    }
+    if (right != NULL && right_size > 0) {
+        strlcpy(right, right_role, right_size);
+    }
+}
+
 static void voice_wake_mute_for(uint32_t duration_ms)
 {
     const uint32_t ts = now_ms();
@@ -324,6 +396,10 @@ static void manual_ui_override(uint32_t ts, const char *reason)
 {
     atlas_audio_service_status_t service_status;
     atlas_audio_service_get_status(&service_status);
+    strlcpy(s_last_manual_ui_reason,
+            reason == NULL || reason[0] == '\0' ? "manual ui" : reason,
+            sizeof(s_last_manual_ui_reason));
+    s_last_manual_ui_ms = ts;
     atlas_runtime_set_state(ATLAS_RUNTIME_STATE_IDLE, reason == NULL ? "manual ui" : reason, ts);
     atlas_audio_service_note_stage(service_status.continuous_enabled ?
                                        ATLAS_AUDIO_SERVICE_MODE_MONITORING :
@@ -349,6 +425,10 @@ static void ui_set_page_state(atlas_page_t page,
         atlas_pet_handle_event(&s_ctx.ui_state->pet, event, ts);
     }
     atlas_ui_unlock();
+    note_page_change(page,
+                     (s_last_manual_ui_ms == ts && s_last_manual_ui_reason[0] != '\0') ?
+                         s_last_manual_ui_reason : "runtime page state",
+                     ts);
 }
 
 static void ui_apply_page(atlas_page_t page, uint32_t ts)
@@ -379,6 +459,7 @@ static void ui_apply_page(atlas_page_t page, uint32_t ts)
     }
     s_ctx.ui_state->last_event_ms = ts;
     atlas_ui_unlock();
+    note_page_change(page, s_last_manual_ui_reason, ts);
 }
 
 static void ui_set_expression_state(atlas_expression_t expression, uint8_t audio_level, uint32_t ts)
@@ -1382,6 +1463,13 @@ static esp_err_t status_handler(httpd_req_t *req)
     }
     char scene_severity[32];
     json_escape(scene_severity, sizeof(scene_severity), scene.severity);
+    char left_screen[32];
+    char right_screen[32];
+    char last_page_reason[96];
+    char last_manual_reason[96];
+    describe_screen_plan(scene.page, ui->chat_mode, left_screen, sizeof(left_screen), right_screen, sizeof(right_screen));
+    json_escape(last_page_reason, sizeof(last_page_reason), s_last_page_change_reason);
+    json_escape(last_manual_reason, sizeof(last_manual_reason), s_last_manual_ui_reason);
     strlcpy(pairing_code, atlas_pairing_code(), sizeof(pairing_code));
     strlcpy(firmware, atlas_firmware_build_tag(), sizeof(firmware));
 
@@ -1435,7 +1523,11 @@ static esp_err_t status_handler(httpd_req_t *req)
              "\"scene\":%s,"
              "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
              "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
-             "\"ui\":{\"chat_mode\":\"%s\",\"scene_severity\":\"%s\",\"local_apps_available\":%s},"
+             "\"ui\":{\"chat_mode\":\"%s\",\"current_page\":\"%s\",\"rendered_page\":\"%s\",\"last_page_change_page\":\"%s\","
+             "\"left_screen\":\"%s\",\"right_screen\":\"%s\",\"display_screens\":2,\"scene_severity\":\"%s\","
+             "\"last_page_change_reason\":\"%s\",\"last_page_change_ms\":%" PRIu32 ","
+             "\"last_manual_override_reason\":\"%s\",\"last_manual_override_ms\":%" PRIu32 ","
+             "\"local_apps_available\":%s},"
              "\"offline\":{\"brain_online\":%s,\"brain_reason\":\"%s\",\"wifi_connected\":%s}},"
              "\"audio\":{\"initialized\":%s,\"i2c_ready\":%s,\"i2s_ready\":%s,\"input_ready\":%s,\"output_ready\":%s,"
              "\"sample_rate\":%" PRIu16 ",\"volume\":%" PRIu8 ",\"mic_level\":%" PRIu8 ",\"mic_rms\":%" PRIu32 ",\"mic_peak\":%" PRIu32 ","
@@ -1506,7 +1598,16 @@ static esp_err_t status_handler(httpd_req_t *req)
              json_bool(playback_recovered),
              runtime_reason,
              chat_mode,
+             atlas_page_name(ui->page),
+             atlas_page_name(scene.page),
+             atlas_page_name(s_last_page_change_page),
+             left_screen,
+             right_screen,
              scene_severity,
+             last_page_reason,
+             s_last_page_change_ms,
+             last_manual_reason,
+             s_last_manual_ui_ms,
              json_bool(local_apps_available),
              json_bool(brain_ws_status.connected),
              brain_offline_reason,
@@ -1724,6 +1825,13 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
     }
     char scene_severity[32];
     json_escape(scene_severity, sizeof(scene_severity), scene.severity);
+    char left_screen[32];
+    char right_screen[32];
+    char last_page_reason[96];
+    char last_manual_reason[96];
+    describe_screen_plan(scene.page, ui->chat_mode, left_screen, sizeof(left_screen), right_screen, sizeof(right_screen));
+    json_escape(last_page_reason, sizeof(last_page_reason), s_last_page_change_reason);
+    json_escape(last_manual_reason, sizeof(last_manual_reason), s_last_manual_ui_reason);
     const bool local_apps_available = true;
     const bool playback_recovered =
         audio_service.last_success_ms > 0u &&
@@ -1745,7 +1853,11 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
                                  "\"scene\":%s,"
                                  "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
                                  "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
-                                 "\"ui\":{\"chat_mode\":\"%s\",\"scene_severity\":\"%s\",\"local_apps_available\":%s},"
+                                 "\"ui\":{\"chat_mode\":\"%s\",\"current_page\":\"%s\",\"rendered_page\":\"%s\",\"last_page_change_page\":\"%s\","
+                                 "\"left_screen\":\"%s\",\"right_screen\":\"%s\",\"display_screens\":2,\"scene_severity\":\"%s\","
+                                 "\"last_page_change_reason\":\"%s\",\"last_page_change_ms\":%" PRIu32 ","
+                                 "\"last_manual_override_reason\":\"%s\",\"last_manual_override_ms\":%" PRIu32 ","
+                                 "\"local_apps_available\":%s},"
                                  "\"offline\":{\"brain_online\":%s,\"brain_reason\":\"%s\",\"wifi_connected\":%s}},"
                                  "\"apps\":{\"clock\":{\"enabled\":true,\"synced\":%s,\"time\":\"%s\",\"date\":\"%s\",\"weekday\":\"%s\"},"
                                  "\"calendar\":{\"enabled\":%s,\"title\":\"%s\",\"note\":\"%s\"},"
@@ -1786,7 +1898,16 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
                                  json_bool(playback_recovered),
                                  runtime_reason,
                                  chat_mode,
+                                 atlas_page_name(ui->page),
+                                 atlas_page_name(scene.page),
+                                 atlas_page_name(s_last_page_change_page),
+                                 left_screen,
+                                 right_screen,
                                  scene_severity,
+                                 last_page_reason,
+                                 s_last_page_change_ms,
+                                 last_manual_reason,
+                                 s_last_manual_ui_ms,
                                  json_bool(local_apps_available),
                                  json_bool(brain_ws_status.connected),
                                  brain_offline_reason,
@@ -2041,6 +2162,13 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
     json_escape(diag_chat_mode,
                 sizeof(diag_chat_mode),
                 atlas_config_chat_mode_is_valid(s_ctx.ui_state->chat_mode) ? s_ctx.ui_state->chat_mode : s_ctx.config->ui.chat_mode);
+    char left_screen[32];
+    char right_screen[32];
+    char last_page_reason[96];
+    char last_manual_reason[96];
+    describe_screen_plan(scene.page, s_ctx.ui_state->chat_mode, left_screen, sizeof(left_screen), right_screen, sizeof(right_screen));
+    json_escape(last_page_reason, sizeof(last_page_reason), s_last_page_change_reason);
+    json_escape(last_manual_reason, sizeof(last_manual_reason), s_last_manual_ui_reason);
     const bool playback_recovered =
         audio_service_status.last_success_ms > 0u &&
         !audio_service_status.busy &&
@@ -2056,7 +2184,11 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
              "\"voice_wake\":{\"enabled\":%s,\"busy\":%s,\"psram_stack\":%s,\"mute_ms\":%" PRIu32 ",\"triggers\":%" PRIu32 ",\"reason\":\"%s\"},"
              "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
              "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
-             "\"ui\":{\"chat_mode\":\"%s\",\"scene_severity\":\"%s\",\"local_apps_available\":true},"
+             "\"ui\":{\"chat_mode\":\"%s\",\"current_page\":\"%s\",\"rendered_page\":\"%s\",\"last_page_change_page\":\"%s\","
+             "\"left_screen\":\"%s\",\"right_screen\":\"%s\",\"display_screens\":2,\"scene_severity\":\"%s\","
+             "\"last_page_change_reason\":\"%s\",\"last_page_change_ms\":%" PRIu32 ","
+             "\"last_manual_override_reason\":\"%s\",\"last_manual_override_ms\":%" PRIu32 ","
+             "\"local_apps_available\":true},"
              "\"offline\":{\"brain_online\":%s,\"brain_reason\":\"%s\",\"wifi_connected\":%s}},"
              "\"scene\":%s,"
              "\"audio_service\":%s,"
@@ -2074,7 +2206,16 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
              json_bool(playback_recovered),
              runtime_reason,
              diag_chat_mode,
+             atlas_page_name(s_ctx.ui_state->page),
+             atlas_page_name(scene.page),
+             atlas_page_name(s_last_page_change_page),
+             left_screen,
+             right_screen,
              scene_severity,
+             last_page_reason,
+             s_last_page_change_ms,
+             last_manual_reason,
+             s_last_manual_ui_ms,
              json_bool(brain_ws_status.connected),
              brain_offline_reason,
              json_bool(wifi.sta_connected),
@@ -2562,6 +2703,12 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     atlas_audio_service_status_t audio_service;
     atlas_audio_service_get_status(&audio_service);
 
+    atlas_ui_state_t ui_snapshot;
+    atlas_ui_lock();
+    ui_snapshot = *s_ctx.ui_state;
+    atlas_ui_unlock();
+    const atlas_ui_state_t *ui = &ui_snapshot;
+
     size_t spiffs_total = 0;
     size_t spiffs_used = 0;
     const esp_err_t spiffs_err = esp_spiffs_info("storage", &spiffs_total, &spiffs_used);
@@ -2584,6 +2731,7 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     const bool desk_apps_pass = s_ctx.config->calendar.enabled && s_ctx.config->pomodoro.enabled;
     const bool voice_observability_pass = audio_service.initialized && audio_service.worker_started;
     const bool chat_modes_pass = atlas_config_chat_mode_is_valid(s_ctx.config->ui.chat_mode);
+    const bool display_surfaces_pass = true;
     const bool offline_fallback_pass = true;
     const bool ota_slots_pass =
         esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_OTA_0, NULL) != NULL &&
@@ -2613,6 +2761,8 @@ static esp_err_t selftest_handler(httpd_req_t *req)
         atlas_common_check_status_from_flags(voice_observability_pass, audio_service.initialized);
     const atlas_common_check_status_t chat_modes_check =
         atlas_common_check_status_from_flags(chat_modes_pass, true);
+    const atlas_common_check_status_t display_surfaces_check =
+        atlas_common_check_status_from_flags(display_surfaces_pass, true);
     const atlas_common_check_status_t offline_fallback_check =
         atlas_common_check_status_from_flags(offline_fallback_pass, true);
     const atlas_common_check_status_t experience_tools_check = ATLAS_COMMON_CHECK_PASS;
@@ -2639,6 +2789,7 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     atlas_common_selftest_summary_count(&summary, desk_apps_check);
     atlas_common_selftest_summary_count(&summary, voice_observability_check);
     atlas_common_selftest_summary_count(&summary, chat_modes_check);
+    atlas_common_selftest_summary_count(&summary, display_surfaces_check);
     atlas_common_selftest_summary_count(&summary, offline_fallback_check);
     atlas_common_selftest_summary_count(&summary, experience_tools_check);
     atlas_common_selftest_summary_count(&summary, memory_check);
@@ -2655,6 +2806,7 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     const char *desk_apps_status = atlas_common_check_status_name(desk_apps_check);
     const char *voice_observability_status = atlas_common_check_status_name(voice_observability_check);
     const char *chat_modes_status = atlas_common_check_status_name(chat_modes_check);
+    const char *display_surfaces_status = atlas_common_check_status_name(display_surfaces_check);
     const char *offline_fallback_status = atlas_common_check_status_name(offline_fallback_check);
     const char *experience_tools_status = atlas_common_check_status_name(experience_tools_check);
     const char *memory_status = atlas_common_check_status_name(memory_check);
@@ -2676,6 +2828,10 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     char runtime_reason[96];
     char configured_chat_mode[ATLAS_CHAT_MODE_MAX * 2];
     char brain_offline_reason[72];
+    char display_left[32];
+    char display_right[32];
+    char last_page_reason[96];
+    char last_manual_reason[96];
     json_escape(firmware, sizeof(firmware), atlas_firmware_build_tag());
     json_escape(wifi_mode, sizeof(wifi_mode), atlas_wifi_mode_name(wifi.mode));
     json_escape(wifi_sta_ip, sizeof(wifi_sta_ip), wifi.sta_ip);
@@ -2693,13 +2849,16 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     json_escape(voice_reason, sizeof(voice_reason), s_voice_wake_last_reason);
     json_escape(runtime_reason, sizeof(runtime_reason), atlas_runtime_get_reason());
     json_escape(configured_chat_mode, sizeof(configured_chat_mode), s_ctx.config->ui.chat_mode);
+    describe_screen_plan(ui->page, ui->chat_mode, display_left, sizeof(display_left), display_right, sizeof(display_right));
+    json_escape(last_page_reason, sizeof(last_page_reason), s_last_page_change_reason);
+    json_escape(last_manual_reason, sizeof(last_manual_reason), s_last_manual_ui_reason);
     json_escape(brain_offline_reason,
                 sizeof(brain_offline_reason),
                 brain_ws.connected ? "" :
                 (!brain_ws.enabled ? "disabled" :
                  (brain_ws.stage[0] == '\0' ? "not_connected" : brain_ws.stage)));
 
-    const size_t json_size = 8200;
+    const size_t json_size = 9000;
     char *json = (char *)calloc(1, json_size);
     if (json == NULL) {
         return send_error(req, "500 Internal Server Error", "no memory");
@@ -2729,6 +2888,7 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              "{\"id\":\"desk_apps\",\"status\":\"%s\",\"detail\":\"clock=true calendar=%s pomodoro=%s protocol=atlas.desk_apps.v0\"},"
              "{\"id\":\"experience_voice\",\"status\":\"%s\",\"detail\":\"continuous=%s reason=%s playback_action=%s runtime=%s last_failure=%s\"},"
              "{\"id\":\"experience_ui_modes\",\"status\":\"%s\",\"detail\":\"chat_mode=%s supported=pet_head,text,eyes_only apps=clock,pomodoro,calendar,pet_head\"},"
+             "{\"id\":\"display_surfaces\",\"status\":\"%s\",\"detail\":\"expected_screens=2 current_page=%s left=%s right=%s last_page_reason=%s last_manual_reason=%s\"},"
              "{\"id\":\"offline_fallback\",\"status\":\"%s\",\"detail\":\"brain_online=%s brain_reason=%s wifi_connected=%s local_apps=true no_black_screen_expected=true\"},"
              "{\"id\":\"experience_tools\",\"status\":\"%s\",\"detail\":\"/api/tools/list /api/tools/call /mcp/tools/list /mcp/tools/call display/chat/clock/pomodoro/calendar/pet_head motion=disabled\"},"
              "{\"id\":\"memory\",\"status\":\"%s\",\"detail\":\"free_heap=%u min_free=%u free_spiram=%u\"},"
@@ -2794,6 +2954,12 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              service_failure,
              chat_modes_status,
              configured_chat_mode,
+             display_surfaces_status,
+             atlas_page_name(ui->page),
+             display_left,
+             display_right,
+             last_page_reason,
+             last_manual_reason,
              offline_fallback_status,
              json_bool(brain_ws.connected),
              brain_offline_reason,
@@ -3061,8 +3227,16 @@ static esp_err_t tools_call_handler(httpd_req_t *req)
         char error[96] = "";
         err = atlas_brain_intent_parse_json(body, &intent, error, sizeof(error));
         if (err == ESP_OK) {
-            manual_ui_override(now_ms(), "tool call");
-            err = atlas_brain_intent_apply_intent(s_ctx.config, s_ctx.ui_state, &intent, now_ms(), result, sizeof(result));
+            const uint32_t ts = now_ms();
+            manual_ui_override(ts, "tool call");
+            err = atlas_brain_intent_apply_intent(s_ctx.config, s_ctx.ui_state, &intent, ts, result, sizeof(result));
+            if (err == ESP_OK) {
+                atlas_page_t applied_page = ATLAS_PAGE_EYES;
+                atlas_ui_lock();
+                applied_page = s_ctx.ui_state->page;
+                atlas_ui_unlock();
+                note_page_change(applied_page, "tool call", ts);
+            }
         } else if (error[0] != '\0') {
             strlcpy(result, error, sizeof(result));
         }
@@ -4293,7 +4467,9 @@ static esp_err_t app_action_handler(httpd_req_t *req)
 
     atlas_ui_lock();
     s_ctx.ui_state->last_event_ms = ts;
+    const atlas_page_t applied_page = s_ctx.ui_state->page;
     atlas_ui_unlock();
+    note_page_change(applied_page, "manual action", ts);
     return send_json(req, "{\"ok\":true,\"app\":\"action\",\"note\":\"backend accepted\"}");
 }
 
