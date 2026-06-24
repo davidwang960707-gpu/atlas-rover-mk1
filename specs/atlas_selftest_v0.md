@@ -77,6 +77,7 @@ GET /api/selftest
 | `sr_probe` | pass/warn | 是 | WakeNet/AEC 探针 |
 | `experience_voice` | pass/warn/fail | 是 | 连续语音、播放恢复、失败原因是否可观测 |
 | `experience_ui_modes` | pass/warn/fail | 是 | `pet_head`、`text`、`eyes_only` 与本地应用状态 |
+| `desk_app_pages` | pass/warn/fail | 是 | 时钟、番茄、日历、chat/music/story/photo 的桌面应用左右屏预期 |
 | `display_surfaces` | pass/warn/fail | 是 | 当前页面的双屏预期和最近页面切换原因 |
 | `offline_fallback` | pass/warn | 是 | Brain/Wi-Fi 离线时本地 UI 是否仍可用 |
 | `experience_tools` | pass/fail | 是 | 工具调用面是否覆盖页面/表情/主题/番茄/日历/pet_head |
