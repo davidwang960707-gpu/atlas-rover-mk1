@@ -7,48 +7,21 @@
 #include "esp_err.h"
 
 #include "atlas_audio.h"
+#include "common/atlas_common_audio_service.h"
 
-typedef uint32_t (*atlas_audio_service_now_ms_fn_t)(void);
+typedef atlas_common_audio_service_now_ms_fn_t atlas_audio_service_now_ms_fn_t;
+typedef atlas_common_audio_service_mode_t atlas_audio_service_mode_t;
+typedef atlas_common_audio_service_job_fn_t atlas_audio_service_job_fn_t;
+typedef atlas_common_audio_service_status_t atlas_audio_service_status_t;
 
-typedef enum {
-    ATLAS_AUDIO_SERVICE_MODE_IDLE = 0,
-    ATLAS_AUDIO_SERVICE_MODE_MONITORING,
-    ATLAS_AUDIO_SERVICE_MODE_RECORDING,
-    ATLAS_AUDIO_SERVICE_MODE_TRANSCRIBING,
-    ATLAS_AUDIO_SERVICE_MODE_THINKING,
-    ATLAS_AUDIO_SERVICE_MODE_PLAYING,
-    ATLAS_AUDIO_SERVICE_MODE_COOLDOWN,
-    ATLAS_AUDIO_SERVICE_MODE_ERROR,
-} atlas_audio_service_mode_t;
-
-typedef esp_err_t (*atlas_audio_service_job_fn_t)(void *ctx);
-
-typedef struct {
-    bool initialized;
-    bool worker_started;
-    bool psram_stack;
-    bool busy;
-    bool job_running;
-    bool continuous_enabled;
-    bool muted;
-    uint32_t mute_remaining_ms;
-    uint32_t muted_until_ms;
-    uint32_t capture_count;
-    uint32_t playback_count;
-    uint32_t monitor_count;
-    uint32_t turn_count;
-    uint32_t job_count;
-    uint32_t job_error_count;
-    uint32_t consecutive_failures;
-    uint32_t last_success_ms;
-    uint32_t last_event_ms;
-    uint32_t last_job_ms;
-    atlas_audio_service_mode_t mode;
-    esp_err_t last_error;
-    char mute_reason[32];
-    char last_action[32];
-    char last_failure[80];
-} atlas_audio_service_status_t;
+#define ATLAS_AUDIO_SERVICE_MODE_IDLE ATLAS_COMMON_AUDIO_SERVICE_MODE_IDLE
+#define ATLAS_AUDIO_SERVICE_MODE_MONITORING ATLAS_COMMON_AUDIO_SERVICE_MODE_MONITORING
+#define ATLAS_AUDIO_SERVICE_MODE_RECORDING ATLAS_COMMON_AUDIO_SERVICE_MODE_RECORDING
+#define ATLAS_AUDIO_SERVICE_MODE_TRANSCRIBING ATLAS_COMMON_AUDIO_SERVICE_MODE_TRANSCRIBING
+#define ATLAS_AUDIO_SERVICE_MODE_THINKING ATLAS_COMMON_AUDIO_SERVICE_MODE_THINKING
+#define ATLAS_AUDIO_SERVICE_MODE_PLAYING ATLAS_COMMON_AUDIO_SERVICE_MODE_PLAYING
+#define ATLAS_AUDIO_SERVICE_MODE_COOLDOWN ATLAS_COMMON_AUDIO_SERVICE_MODE_COOLDOWN
+#define ATLAS_AUDIO_SERVICE_MODE_ERROR ATLAS_COMMON_AUDIO_SERVICE_MODE_ERROR
 
 void atlas_audio_service_init(atlas_audio_service_now_ms_fn_t now_ms_fn);
 const char *atlas_audio_service_mode_name(atlas_audio_service_mode_t mode);
