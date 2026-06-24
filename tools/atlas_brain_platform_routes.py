@@ -148,9 +148,54 @@ def runtime_sessions_payload(bridge: Any) -> dict[str, Any]:
     }
 
 
+def provider_config_diagnostics(bridge: Any) -> dict[str, Any]:
+    def line(required: list[tuple[str, str, bool]]) -> dict[str, Any]:
+        missing = [field for field, _env, present in required if not present]
+        missing_env = [env for _field, env, present in required if not present]
+        return {
+            "configured": not missing,
+            "missing": missing,
+            "missing_env": missing_env,
+            "required_env": [env for _field, env, _present in required],
+            "fields": {
+                field: {"env": env, "present": bool(present)}
+                for field, env, present in required
+            },
+        }
+
+    api_key_present = bool(str(getattr(bridge, "llm_api_key", "") or "").strip())
+    base_url_present = bool(str(getattr(bridge, "llm_base_url", "") or "").strip())
+    return {
+        "protocol": "atlas.provider.diagnostics.v0",
+        "safe_for_ui": True,
+        "notes": "Only presence/absence is reported; secret values are never returned.",
+        "llm": line([
+            ("api_key", "ATLAS_LLM_API_KEY", api_key_present),
+            ("base_url", "ATLAS_LLM_BASE_URL", base_url_present),
+            ("model", "ATLAS_LLM_MODEL", bool(str(getattr(bridge, "llm_model", "") or "").strip())),
+        ]),
+        "asr": line([
+            ("api_key", "ATLAS_LLM_API_KEY", api_key_present),
+            ("base_url", "ATLAS_LLM_BASE_URL", base_url_present),
+            ("model", "ATLAS_ASR_MODEL", bool(str(getattr(bridge, "asr_model", "") or "").strip())),
+        ]),
+        "tts": line([
+            ("api_key", "ATLAS_LLM_API_KEY", api_key_present),
+            ("base_url", "ATLAS_LLM_BASE_URL", base_url_present),
+            ("model", "ATLAS_TTS_MODEL", bool(str(getattr(bridge, "tts_model", "") or "").strip())),
+            ("voice", "ATLAS_TTS_VOICE", bool(str(getattr(bridge, "tts_voice", "") or "").strip())),
+        ]),
+    }
+
+
 def providers_payload(bridge: Any) -> dict[str, Any]:
     snapshot = bridge.platform_snapshot()
-    return {"ok": True, "providers": snapshot["providers"], "summary": snapshot["summary"]}
+    return {
+        "ok": True,
+        "providers": snapshot["providers"],
+        "summary": snapshot["summary"],
+        "provider_diagnostics": provider_config_diagnostics(bridge),
+    }
 
 
 def protocols_payload(bridge: Any) -> dict[str, Any]:

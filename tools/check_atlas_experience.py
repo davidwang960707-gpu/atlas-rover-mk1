@@ -13,10 +13,14 @@ needs_device/skip，不会伪装为 pass。
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
+import os
+import subprocess
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 from typing import Any, Optional
 
 
@@ -37,6 +41,7 @@ EXPECTED_APP_TOOLS = {
     "atlas.pet.play_animation",
 }
 NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
 def http_json(url: str, timeout: float, *, method: str = "GET", payload: Optional[dict[str, Any]] = None) -> dict[str, Any]:
@@ -154,6 +159,38 @@ def check_tool_contract(payload: dict[str, Any]) -> tuple[list[str], list[str]]:
     return missing, warnings
 
 
+def service_git_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=REPO_ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return "unknown"
+
+
+def generated_timestamp() -> str:
+    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def provider_missing_lines(providers_payload: dict[str, Any]) -> list[str]:
+    diagnostics = providers_payload.get("provider_diagnostics")
+    if not isinstance(diagnostics, dict):
+        return ["Provider diagnostics missing from /api/providers"]
+    lines: list[str] = []
+    for key, label in (("llm", "LLM"), ("asr", "ASR"), ("tts", "TTS")):
+        item = diagnostics.get(key)
+        if not isinstance(item, dict):
+            lines.append(f"{label} diagnostics missing")
+            continue
+        missing_env = item.get("missing_env") if isinstance(item.get("missing_env"), list) else []
+        if missing_env:
+            lines.append(f"{label} 缺 {', '.join(str(env) for env in missing_env)}")
+    return lines
+
+
 def compact_check(item: dict[str, Any]) -> dict[str, Any]:
     payload = item.get("payload") if isinstance(item.get("payload"), dict) else {}
     name = str(item.get("name", ""))
@@ -207,6 +244,7 @@ def compact_check(item: dict[str, Any]) -> dict[str, Any]:
         compact = {
             "summary": payload.get("summary", {}),
             "providers": payload.get("providers", {}),
+            "provider_diagnostics": payload.get("provider_diagnostics", {}),
         }
     elif name == "Brain simulate turn":
         compact = {
@@ -229,6 +267,9 @@ def compact_check(item: dict[str, Any]) -> dict[str, Any]:
 
 
 def provider_configured(providers_payload: dict[str, Any]) -> bool:
+    diagnostics = providers_payload.get("provider_diagnostics")
+    if isinstance(diagnostics, dict):
+        return all(bool(diagnostics.get(name, {}).get("configured")) for name in ("llm", "asr", "tts"))
     providers = providers_payload.get("providers", {})
     if isinstance(providers, list):
         by_kind = {str(item.get("kind", "")): item for item in providers if isinstance(item, dict)}
@@ -273,8 +314,9 @@ def build_lines(checks: dict[str, dict[str, Any]], *, skip_dualeye: bool) -> lis
     voice_reasons: list[str] = []
     voice_next: list[str] = []
     if not provider_configured(providers):
-        voice_reasons.append("LLM/ASR/TTS Provider 未全部配置")
-        voice_next.append("配置 ATLAS_LLM_*、ATLAS_ASR_MODEL、ATLAS_TTS_* 后重启 Mac Brain")
+        provider_missing = provider_missing_lines(providers)
+        voice_reasons.extend(provider_missing)
+        voice_next.append("补齐上方缺失环境变量或 CLI 参数后重启 Mac Brain")
     if not simulate_ok:
         voice_reasons.append(f"simulate-turn 失败：{checks['Brain simulate turn'].get('error', '')}")
     if not recent_turns:
@@ -391,6 +433,82 @@ def summarize_lines(lines: list[dict[str, Any]]) -> dict[str, int]:
     return summary
 
 
+def markdown_escape(text: Any) -> str:
+    return str(text if text is not None else "").replace("|", "\\|").replace("\n", "<br>")
+
+
+def render_markdown_report(report: dict[str, Any]) -> str:
+    lines = [
+        "# Atlas 体验线验收报告",
+        "",
+        f"- Generated at: `{markdown_escape(report.get('generated_at'))}`",
+        f"- Service git commit: `{markdown_escape(report.get('service_git_commit'))}`",
+        f"- Brain URL: `{markdown_escape(report.get('brain_url'))}`",
+        f"- DualEye URL: `{markdown_escape(report.get('dualeye_url'))}`",
+        f"- Skip DualEye: `{markdown_escape(report.get('skip_dualeye'))}`",
+        f"- Summary: `PASS={report.get('summary', {}).get('pass', 0)} WARN={report.get('summary', {}).get('warn', 0)} NEEDS_DEVICE={report.get('summary', {}).get('needs_device', 0)} SKIP={report.get('summary', {}).get('skip', 0)} FAIL={report.get('summary', {}).get('fail', 0)}`",
+        "",
+        "## Experience Lines",
+        "",
+        "| Line | Status | State | Score | Reasons | Next Steps |",
+        "| --- | --- | --- | ---: | --- | --- |",
+    ]
+    for line in report.get("lines", []):
+        reasons = "; ".join(str(item) for item in line.get("reasons", []) if item)
+        next_steps = "; ".join(str(item) for item in line.get("next_steps", []) if item)
+        lines.append(
+            "| "
+            f"{markdown_escape(line.get('name'))} | "
+            f"{markdown_escape(line.get('status'))} | "
+            f"{markdown_escape(line.get('state'))} | "
+            f"{markdown_escape(line.get('score'))} | "
+            f"{markdown_escape(reasons)} | "
+            f"{markdown_escape(next_steps)} |"
+        )
+    lines.extend([
+        "",
+        "## Checks",
+        "",
+        "| Check | Status | Elapsed | Error | URL |",
+        "| --- | --- | ---: | --- | --- |",
+    ])
+    for check in report.get("checks", []):
+        lines.append(
+            "| "
+            f"{markdown_escape(check.get('name'))} | "
+            f"{markdown_escape(check.get('status'))} | "
+            f"{markdown_escape(check.get('elapsed_ms'))} ms | "
+            f"{markdown_escape(check.get('error'))} | "
+            f"`{markdown_escape(check.get('url'))}` |"
+        )
+    next_steps = [str(step) for step in report.get("next_steps", []) if step]
+    if next_steps:
+        lines.extend(["", "## Next Steps", ""])
+        lines.extend(f"- {step}" for step in next_steps)
+    provider_checks = [
+        check for check in report.get("checks", [])
+        if check.get("name") == "Brain providers"
+    ]
+    if provider_checks:
+        provider_diag = provider_checks[0].get("payload", {}).get("provider_diagnostics", {})
+        lines.extend(["", "## Provider Missing Config", ""])
+        for key in ("llm", "asr", "tts"):
+            item = provider_diag.get(key, {}) if isinstance(provider_diag, dict) else {}
+            missing = ", ".join(str(env) for env in item.get("missing_env", []) if env)
+            lines.append(f"- {key.upper()}: {'ready' if item.get('configured') else 'missing ' + (missing or 'unknown config')}")
+        lines.append("")
+        lines.append("Secret values are not included in this report.")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def write_text_report(path: str, content: str) -> None:
+    output = Path(path)
+    if output.parent and str(output.parent) != ".":
+        output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(content, encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Atlas 三条体验线验收台")
     parser.add_argument("--brain-url", default=DEFAULT_BRAIN_URL)
@@ -398,6 +516,8 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=3.0)
     parser.add_argument("--skip-dualeye", action="store_true", help="不检查真机端点，真机项标记为 needs_device/skip")
     parser.add_argument("--json", action="store_true", help="只输出 JSON")
+    parser.add_argument("--output-json", default="", help="把完整报告写入指定 JSON 文件")
+    parser.add_argument("--output-md", default="", help="把复盘报告写入指定 Markdown 文件")
     args = parser.parse_args()
 
     brain = args.brain_url.rstrip("/")
@@ -438,6 +558,8 @@ def main() -> int:
     report = {
         "ok": not required_failures and line_summary["fail"] == 0,
         "protocol": "atlas.experience.acceptance.v0",
+        "generated_at": generated_timestamp(),
+        "service_git_commit": service_git_commit(),
         "brain_url": brain,
         "dualeye_url": dualeye,
         "skip_dualeye": bool(args.skip_dualeye),
@@ -451,11 +573,19 @@ def main() -> int:
             if step
         ],
     }
+    if args.output_json:
+        write_text_report(args.output_json, json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        report["output_json"] = args.output_json
+    if args.output_md:
+        write_text_report(args.output_md, render_markdown_report(report))
+        report["output_md"] = args.output_md
 
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
         print("Atlas 体验线验收台")
+        print(f"Generated: {report['generated_at']}")
+        print(f"Commit:  {report['service_git_commit']}")
         print(f"Brain:   {brain}")
         print(f"DualEye: {dualeye}{' (skip)' if args.skip_dualeye else ''}")
         print(
@@ -474,6 +604,12 @@ def main() -> int:
             print("\n下一步:")
             for step in report["next_steps"]:
                 print(f"- {step}")
+        if args.output_json or args.output_md:
+            print("\n报告文件:")
+            if args.output_json:
+                print(f"- JSON: {args.output_json}")
+            if args.output_md:
+                print(f"- Markdown: {args.output_md}")
         print("\nJSON 摘要:")
         print(json.dumps(report, ensure_ascii=False, indent=2))
 
