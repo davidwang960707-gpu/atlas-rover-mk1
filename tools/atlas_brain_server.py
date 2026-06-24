@@ -136,6 +136,7 @@ BRAIN_EVENT_LOCK = threading.Lock()
 BRAIN_EVENTS: list[dict[str, Any]] = []
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+PET_HEAD_ASSET_ROOT = os.path.join(REPO_ROOT, "assets", "dualeye_sdcard_v0_1", "sdcard", "atlas_pet_head")
 
 ALLOWED_TOOLS = {
     "atlas_show_page",
@@ -1517,6 +1518,44 @@ def read_request_json(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
     return {key: values[-1] if values else "" for key, values in form.items()}
 
 
+def send_pet_head_asset(handler: BaseHTTPRequestHandler, rel_path: str) -> None:
+    decoded = urllib.parse.unquote(rel_path or "").strip("/")
+    normalized = os.path.normpath(decoded)
+    if not normalized or normalized.startswith("..") or os.path.isabs(normalized):
+        handler.send_json({"ok": False, "error": "bad asset path"}, HTTPStatus.BAD_REQUEST)
+        return
+
+    ext = os.path.splitext(normalized)[1].lower()
+    content_types = {
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".json": "application/json; charset=utf-8",
+    }
+    content_type = content_types.get(ext)
+    if content_type is None:
+        handler.send_json({"ok": False, "error": "unsupported asset type"}, HTTPStatus.BAD_REQUEST)
+        return
+
+    root = os.path.realpath(PET_HEAD_ASSET_ROOT)
+    full_path = os.path.realpath(os.path.join(root, normalized))
+    if full_path != root and not full_path.startswith(root + os.sep):
+        handler.send_json({"ok": False, "error": "asset path escaped root"}, HTTPStatus.BAD_REQUEST)
+        return
+    if not os.path.isfile(full_path):
+        handler.send_json({"ok": False, "error": "asset not found"}, HTTPStatus.NOT_FOUND)
+        return
+
+    with open(full_path, "rb") as fh:
+        body = fh.read()
+    handler.send_response(HTTPStatus.OK)
+    handler.send_header("Content-Type", content_type)
+    handler.send_header("Cache-Control", "public, max-age=3600")
+    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
 def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         server_version = "AtlasBrain/0.2"
@@ -2125,6 +2164,9 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 return
             if path == "/api/device/opus-stream/status":
                 handle_device_opus_stream_status(self, bridge)
+                return
+            if path.startswith("/assets/pet_head/"):
+                send_pet_head_asset(self, path.removeprefix("/assets/pet_head/"))
                 return
             if path.startswith("/api/devices/"):
                 device_id = urllib.parse.unquote(path.removeprefix("/api/devices/")).strip("/")
