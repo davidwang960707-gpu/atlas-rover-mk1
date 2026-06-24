@@ -38,6 +38,7 @@
 #include "atlas_scene.h"
 #include "atlas_sr_probe.h"
 #include "atlas_wifi.h"
+#include "common/atlas_common_device_status.h"
 
 static const char *TAG = "atlas_admin";
 
@@ -2556,42 +2557,60 @@ static esp_err_t selftest_handler(httpd_req_t *req)
         esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_OTA_1, NULL) != NULL &&
         esp_ota_get_next_update_partition(NULL) != NULL;
 
-    uint8_t pass_count = 0;
-    uint8_t warn_count = 0;
-    uint8_t fail_count = 0;
-#define ATLAS_COUNT_STATUS(status_expr) do { \
-        const char *_s = (status_expr); \
-        if (strcmp(_s, "pass") == 0) { ++pass_count; } \
-        else if (strcmp(_s, "warn") == 0) { ++warn_count; } \
-        else { ++fail_count; } \
-    } while (0)
-    const char *storage_status = storage_ok ? "pass" : "fail";
-    const char *assets_status = assets_pass ? "pass" : (assets_warn ? "warn" : "fail");
-    const char *wifi_status = wifi_pass ? "pass" : (wifi_warn ? "warn" : "fail");
-    const char *brain_status = brain_pass ? "pass" : "warn";
-    const char *audio_status = audio_pass ? "pass" : (audio_warn ? "warn" : "fail");
-    const char *audio_service_status = audio_service_pass ? "pass" : "fail";
-    const char *memory_status = memory_pass ? "pass" : (memory_warn ? "warn" : "fail");
-    const char *motion_status = motion_pass ? "pass" : "warn";
-    const char *desk_apps_status = desk_apps_pass ? "pass" : "warn";
-    ATLAS_COUNT_STATUS("pass");               // firmware fingerprint
-    ATLAS_COUNT_STATUS(storage_status);
-    ATLAS_COUNT_STATUS(assets_status);
-    ATLAS_COUNT_STATUS(wifi_status);
-    ATLAS_COUNT_STATUS(brain_status);
-    ATLAS_COUNT_STATUS(audio_status);
-    ATLAS_COUNT_STATUS(audio_service_status);
-    const char *brain_ws_status = brain_ws_pass ? "pass" : "warn";
-    ATLAS_COUNT_STATUS(brain_ws_status);
-    ATLAS_COUNT_STATUS("pass");               // opus probe endpoint
-    ATLAS_COUNT_STATUS("pass");               // opus websocket stream endpoint
-    ATLAS_COUNT_STATUS("warn");               // sr probe is intentionally not WakeNet/AEC yet
-    ATLAS_COUNT_STATUS("pass");               // tool schema version
-    ATLAS_COUNT_STATUS(ota_slots_pass ? "pass" : "fail");
-    ATLAS_COUNT_STATUS(desk_apps_status);
-    ATLAS_COUNT_STATUS(memory_status);
-    ATLAS_COUNT_STATUS(motion_status);
-#undef ATLAS_COUNT_STATUS
+    const atlas_common_check_status_t storage_check =
+        atlas_common_check_status_from_flags(storage_ok, false);
+    const atlas_common_check_status_t assets_check =
+        atlas_common_check_status_from_flags(assets_pass, assets_warn);
+    const atlas_common_check_status_t wifi_check =
+        atlas_common_check_status_from_flags(wifi_pass, wifi_warn);
+    const atlas_common_check_status_t brain_check =
+        atlas_common_check_status_from_flags(brain_pass, true);
+    const atlas_common_check_status_t audio_check =
+        atlas_common_check_status_from_flags(audio_pass, audio_warn);
+    const atlas_common_check_status_t audio_service_check =
+        atlas_common_check_status_from_flags(audio_service_pass, false);
+    const atlas_common_check_status_t brain_ws_check =
+        atlas_common_check_status_from_flags(brain_ws_pass, true);
+    const atlas_common_check_status_t sr_probe_check = ATLAS_COMMON_CHECK_WARN;
+    const atlas_common_check_status_t ota_slots_check =
+        atlas_common_check_status_from_flags(ota_slots_pass, false);
+    const atlas_common_check_status_t desk_apps_check =
+        atlas_common_check_status_from_flags(desk_apps_pass, true);
+    const atlas_common_check_status_t memory_check =
+        atlas_common_check_status_from_flags(memory_pass, memory_warn);
+    const atlas_common_check_status_t motion_check =
+        atlas_common_check_status_from_flags(motion_pass, true);
+
+    atlas_common_selftest_summary_t summary;
+    atlas_common_selftest_summary_reset(&summary);
+    atlas_common_selftest_summary_count(&summary, ATLAS_COMMON_CHECK_PASS);  // firmware fingerprint
+    atlas_common_selftest_summary_count(&summary, storage_check);
+    atlas_common_selftest_summary_count(&summary, assets_check);
+    atlas_common_selftest_summary_count(&summary, wifi_check);
+    atlas_common_selftest_summary_count(&summary, brain_check);
+    atlas_common_selftest_summary_count(&summary, audio_check);
+    atlas_common_selftest_summary_count(&summary, audio_service_check);
+    atlas_common_selftest_summary_count(&summary, brain_ws_check);
+    atlas_common_selftest_summary_count(&summary, ATLAS_COMMON_CHECK_PASS);  // opus probe endpoint
+    atlas_common_selftest_summary_count(&summary, ATLAS_COMMON_CHECK_PASS);  // opus websocket stream endpoint
+    atlas_common_selftest_summary_count(&summary, sr_probe_check);           // WakeNet/AEC probe is pending
+    atlas_common_selftest_summary_count(&summary, ATLAS_COMMON_CHECK_PASS);  // tool schema version
+    atlas_common_selftest_summary_count(&summary, ota_slots_check);
+    atlas_common_selftest_summary_count(&summary, desk_apps_check);
+    atlas_common_selftest_summary_count(&summary, memory_check);
+    atlas_common_selftest_summary_count(&summary, motion_check);
+
+    const char *storage_status = atlas_common_check_status_name(storage_check);
+    const char *assets_status = atlas_common_check_status_name(assets_check);
+    const char *wifi_status = atlas_common_check_status_name(wifi_check);
+    const char *brain_status = atlas_common_check_status_name(brain_check);
+    const char *audio_status = atlas_common_check_status_name(audio_check);
+    const char *audio_service_status = atlas_common_check_status_name(audio_service_check);
+    const char *brain_ws_status = atlas_common_check_status_name(brain_ws_check);
+    const char *ota_slots_status = atlas_common_check_status_name(ota_slots_check);
+    const char *desk_apps_status = atlas_common_check_status_name(desk_apps_check);
+    const char *memory_status = atlas_common_check_status_name(memory_check);
+    const char *motion_status = atlas_common_check_status_name(motion_check);
 
     char firmware[64];
     char wifi_mode[32];
@@ -2652,11 +2671,11 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              "\"manual_tests\":[\"/api/status/lite\",\"/api/tools/list\",\"/api/tools/call\",\"/api/ota/status\",\"/api/ota/manifest\",\"/api/ota/apply\",\"/api/audio/beep\",\"/api/audio/mic-level\",\"/api/audio/opus-probe\",\"/api/audio/opus-stream/start\",\"/api/audio/opus-stream/status\",\"/api/audio/opus-stream/stop\",\"/api/voice/turn?async=1\"],"
              "\"next_steps\":[\"确认 fail=0\",\"Mac 运行 tools/check_atlas_preflash.py\",\"烧录后再次打开 /api/selftest 与 Mac 验收页\"]"
              "}",
-             json_bool(fail_count == 0),
+             json_bool(atlas_common_selftest_ready(&summary)),
              firmware,
-             pass_count,
-             warn_count,
-             fail_count,
+             summary.pass,
+             summary.warn,
+             summary.fail,
              storage_status,
              (unsigned)spiffs_total,
              (unsigned)spiffs_used,
@@ -2696,7 +2715,7 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              brain_ws_stage,
              brain_ws_url,
              brain_ws.messages_sent,
-             ota_slots_pass ? "pass" : "fail",
+             ota_slots_status,
              json_bool(ota_slots_pass),
              desk_apps_status,
              json_bool(s_ctx.config->calendar.enabled),

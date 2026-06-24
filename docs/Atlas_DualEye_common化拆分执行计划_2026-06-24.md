@@ -56,15 +56,23 @@
 - 保留 `/api/audio/opus-probe`、`/api/audio/opus-stream/start|stop|status` 与 `atlas.audio.stream.v0`；Brain 侧 `/api/device/opus-*` 代理语义不需要固件改路由。
 - Brain 离线不影响本地 UI；OPUS stream start 仍只返回 host bridge 未配置/连接失败状态，不改双眼、时钟、番茄、日历本地页面降级规则。
 
-### P3 WakeNet/AEC 资源验证
+### P3 selftest/status/capabilities common 层
 
-目标：把 ESP-SR 资源检查独立成 probe contract，不急于启用常驻唤醒任务。
+目标：先把设备自检、状态摘要和能力声明中的通用状态语义抽出来，后续再把 ESP-SR/WakeNet/AEC 资源检查挂到同一套 contract。
 
-计划：
+本轮边界：
 
-- common 层输出 model partition、WakeNet model、wake words、chunk/sample-rate、heap 风险。
-- app 层提供分区名、fallback 策略和页面提示。
-- 保留 `/api/sr/status` 字段兼容。
+- 新增 `firmware/dualeye/main/common/atlas_common_device_status.*`。
+- common 层定义 `atlas.device.status.v0`、`atlas.selftest.v0`、`atlas.capabilities.v0` 协议标识，以及 `pass/warn/fail`、selftest summary、`ready_to_flash` 判断。
+- `/api/selftest` 复用 common summary/count helper，但不删除、不重命名现有 JSON 字段。
+- `/api/status`、`/api/status/lite`、`/api/capabilities`、`/api/system/info` 保持现有 route 和字段语义；后续只能兼容式新增协议字段。
+- Brain 离线、Wi-Fi 未连接、WakeNet/AEC 未启用等异常仍以结构化 `warn/fail` 暴露，UI 本地页面继续由 scene/UI 层降级显示双眼、时钟、番茄和日历，不切异常文字页或黑屏。
+
+下一步验收：
+
+- 构建通过。
+- `/api/selftest.summary` 数量与旧逻辑一致，Brain WS 离线仍为 warn 而非 fail。
+- 后续 P3b 可把 `/api/sr/status` 的 WakeNet/AEC model partition 与 heap 风险也接入 `atlas_common_device_status`。
 
 ### P4 Tool Schema V0 adapter
 
