@@ -75,6 +75,10 @@ GET /api/selftest
 | `tool_schema` | pass/fail | 是 | 工具表存在 |
 | `opus_stream` | pass/warn | 是 | OPUS 支持与推流状态 |
 | `sr_probe` | pass/warn | 是 | WakeNet/AEC 探针 |
+| `experience_voice` | pass/warn/fail | 是 | 连续语音、播放恢复、失败原因是否可观测 |
+| `experience_ui_modes` | pass/warn/fail | 是 | `pet_head`、`text`、`eyes_only` 与本地应用状态 |
+| `offline_fallback` | pass/warn | 是 | Brain/Wi-Fi 离线时本地 UI 是否仍可用 |
+| `experience_tools` | pass/fail | 是 | 工具调用面是否覆盖页面/表情/主题/番茄/日历/pet_head |
 | `motion_boundary` | pass/warn | 否 | 桌面宠物版 motion 应明确关闭 |
 
 ## 5. 状态语义
@@ -102,3 +106,4 @@ python3 tools/check_atlas_preflash.py --brain-url http://127.0.0.1:8787 --dualey
 - 核心资源检查 `pass`
 - Brain 离线时是 `warn` 且本地页面可用
 
+体验线 P1 要求 `/api/selftest` 同时暴露实机排障视角。`experience_voice` 不能只说明音频硬件是否存在，还要能看出 continuous 开关、最近 reason、播放后恢复动作和 runtime reason；`offline_fallback` 必须把 Brain 离线视为可降级状态，不应导致黑屏或通用异常文字页。

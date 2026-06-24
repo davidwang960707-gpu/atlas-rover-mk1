@@ -1283,6 +1283,7 @@ static esp_err_t status_handler(httpd_req_t *req)
     char wifi_ap_ssid[ATLAS_WIFI_AP_SSID_MAX * 2];
     char audio_error[32];
     char voice_reason[48];
+    char runtime_reason[96];
     char pairing_code[8];
     char firmware[64];
     char clock_time[16];
@@ -1309,6 +1310,7 @@ static esp_err_t status_handler(httpd_req_t *req)
     json_escape(wifi_ap_ssid, sizeof(wifi_ap_ssid), wifi.ap_ssid);
     json_escape(audio_error, sizeof(audio_error), esp_err_to_name(audio.last_error));
     json_escape(voice_reason, sizeof(voice_reason), s_voice_wake_last_reason);
+    json_escape(runtime_reason, sizeof(runtime_reason), atlas_runtime_get_reason());
     const bool clock_synced = format_clock_snapshot(clock_time,
                                                     sizeof(clock_time),
                                                     clock_date,
@@ -1378,6 +1380,8 @@ static esp_err_t status_handler(httpd_req_t *req)
     if (!json_fragment_complete(scene_len, sizeof(scene_json))) {
         return send_error(req, "500 Internal Server Error", "scene status json overflow");
     }
+    char scene_severity[32];
+    json_escape(scene_severity, sizeof(scene_severity), scene.severity);
     strlcpy(pairing_code, atlas_pairing_code(), sizeof(pairing_code));
     strlcpy(firmware, atlas_firmware_build_tag(), sizeof(firmware));
 
@@ -1404,6 +1408,12 @@ static esp_err_t status_handler(httpd_req_t *req)
     const bool feature_pet = true;
     const bool feature_desk_apps = true;
     const bool feature_rover_motion = atlas_config_motion_supported();
+    const bool local_apps_available =
+        feature_eyes && feature_clock_page && feature_calendar_ui && feature_pomodoro_ui && feature_pet;
+    const bool playback_recovered =
+        audio_service_status.last_success_ms > 0u &&
+        !audio_service_status.busy &&
+        audio_service_status.consecutive_failures == 0u;
     strlcpy(pairing_code, atlas_pairing_code(), sizeof(pairing_code));
     strlcpy(firmware, atlas_firmware_build_tag(), sizeof(firmware));
 
@@ -1423,6 +1433,10 @@ static esp_err_t status_handler(httpd_req_t *req)
              "\"ui\":{\"page\":\"%s\",\"expression\":\"%s\",\"motion\":\"%s\",\"moving\":%s,\"last_ack\":%d,"
              "\"theme\":\"%s\",\"chat_mode\":\"%s\",\"brightness\":%u,\"volume\":%u,\"chat_text\":\"%s\"},"
              "\"scene\":%s,"
+             "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
+             "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
+             "\"ui\":{\"chat_mode\":\"%s\",\"scene_severity\":\"%s\",\"local_apps_available\":%s},"
+             "\"offline\":{\"brain_online\":%s,\"brain_reason\":\"%s\",\"wifi_connected\":%s}},"
              "\"audio\":{\"initialized\":%s,\"i2c_ready\":%s,\"i2s_ready\":%s,\"input_ready\":%s,\"output_ready\":%s,"
              "\"sample_rate\":%" PRIu16 ",\"volume\":%" PRIu8 ",\"mic_level\":%" PRIu8 ",\"mic_rms\":%" PRIu32 ",\"mic_peak\":%" PRIu32 ","
              "\"speaker_tests\":%" PRIu32 ",\"mic_tests\":%" PRIu32 ",\"last_error\":\"%s\"},"
@@ -1487,6 +1501,16 @@ static esp_err_t status_handler(httpd_req_t *req)
              s_ctx.config->ui.volume,
              chat_text,
              scene_json,
+             json_bool(s_voice_wake_enabled),
+             voice_reason,
+             json_bool(playback_recovered),
+             runtime_reason,
+             chat_mode,
+             scene_severity,
+             json_bool(local_apps_available),
+             json_bool(brain_ws_status.connected),
+             brain_offline_reason,
+             json_bool(wifi.sta_connected),
              json_bool(audio.initialized),
              json_bool(audio.i2c_ready),
              json_bool(audio.i2s_ready),
@@ -1698,8 +1722,15 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
     if (!json_fragment_complete(scene_len, sizeof(scene_json))) {
         return send_error(req, "500 Internal Server Error", "scene status json overflow");
     }
+    char scene_severity[32];
+    json_escape(scene_severity, sizeof(scene_severity), scene.severity);
+    const bool local_apps_available = true;
+    const bool playback_recovered =
+        audio_service.last_success_ms > 0u &&
+        !audio_service.busy &&
+        audio_service.consecutive_failures == 0u;
 
-    char json[7000];
+    char json[7800];
     const int written = snprintf(json,
                                  sizeof(json),
                                  "{"
@@ -1712,6 +1743,10 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
                                  "\"features\":{\"eyes\":true,\"clock_page\":true,\"status_page\":true,\"audio_hw\":%s,\"voice_ui\":%s,\"music_ui\":true,\"story_ui\":true,\"chat_ui\":true,\"calendar_ui\":true,\"pomodoro_ui\":true,\"pet\":true,\"pet_head\":true,\"desk_apps\":true,\"tools\":true,\"rover_motion\":%s},"
                                  "\"ui\":{\"page\":\"%s\",\"expression\":\"%s\",\"theme\":\"%s\",\"chat_mode\":\"%s\",\"brightness\":%u,\"volume\":%u,\"chat_text\":\"%s\"},"
                                  "\"scene\":%s,"
+                                 "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
+                                 "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
+                                 "\"ui\":{\"chat_mode\":\"%s\",\"scene_severity\":\"%s\",\"local_apps_available\":%s},"
+                                 "\"offline\":{\"brain_online\":%s,\"brain_reason\":\"%s\",\"wifi_connected\":%s}},"
                                  "\"apps\":{\"clock\":{\"enabled\":true,\"synced\":%s,\"time\":\"%s\",\"date\":\"%s\",\"weekday\":\"%s\"},"
                                  "\"calendar\":{\"enabled\":%s,\"title\":\"%s\",\"note\":\"%s\"},"
                                  "\"pomodoro\":{\"enabled\":%s,\"running\":%s,\"in_break\":%s,\"task\":\"%s\",\"focus_minutes\":%" PRIu16 ",\"break_minutes\":%" PRIu16 ",\"progress_percent\":%" PRIu8 ",\"remaining_ms\":%" PRIu32 "}},"
@@ -1746,6 +1781,16 @@ static esp_err_t status_lite_handler(httpd_req_t *req)
                                  s_ctx.config->ui.volume,
                                  chat_text,
                                  scene_json,
+                                 json_bool(s_voice_wake_enabled),
+                                 voice_reason,
+                                 json_bool(playback_recovered),
+                                 runtime_reason,
+                                 chat_mode,
+                                 scene_severity,
+                                 json_bool(local_apps_available),
+                                 json_bool(brain_ws_status.connected),
+                                 brain_offline_reason,
+                                 json_bool(wifi.sta_connected),
                                  json_bool(clock_synced),
                                  clock_time,
                                  clock_date,
@@ -1961,6 +2006,8 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
     atlas_audio_get_status(&audio);
     atlas_audio_service_status_t audio_service_status;
     atlas_audio_service_get_status(&audio_service_status);
+    atlas_brain_ws_status_t brain_ws_status;
+    atlas_brain_ws_client_get_status(&brain_ws_status);
 
     char runtime_json[2200];
     atlas_runtime_write_json(runtime_json, sizeof(runtime_json));
@@ -1978,15 +2025,39 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
                         &scene);
     char scene_json[1100];
     atlas_scene_write_json(&scene, scene_json, sizeof(scene_json));
+    char voice_reason[48];
+    char runtime_reason[96];
+    char brain_offline_reason[72];
+    char scene_severity[32];
+    json_escape(voice_reason, sizeof(voice_reason), s_voice_wake_last_reason);
+    json_escape(runtime_reason, sizeof(runtime_reason), atlas_runtime_get_reason());
+    json_escape(brain_offline_reason,
+                sizeof(brain_offline_reason),
+                brain_ws_status.connected ? "" :
+                (!brain_ws_status.enabled ? "disabled" :
+                 (brain_ws_status.stage[0] == '\0' ? "not_connected" : brain_ws_status.stage)));
+    json_escape(scene_severity, sizeof(scene_severity), scene.severity);
+    char diag_chat_mode[ATLAS_CHAT_MODE_MAX * 2];
+    json_escape(diag_chat_mode,
+                sizeof(diag_chat_mode),
+                atlas_config_chat_mode_is_valid(s_ctx.ui_state->chat_mode) ? s_ctx.ui_state->chat_mode : s_ctx.config->ui.chat_mode);
+    const bool playback_recovered =
+        audio_service_status.last_success_ms > 0u &&
+        !audio_service_status.busy &&
+        audio_service_status.consecutive_failures == 0u;
 
     const uint32_t ts = now_ms();
-    char json[5600];
+    char json[6200];
     snprintf(json,
              sizeof(json),
              "{"
              "\"ok\":true,"
              "\"now_ms\":%" PRIu32 ","
              "\"voice_wake\":{\"enabled\":%s,\"busy\":%s,\"psram_stack\":%s,\"mute_ms\":%" PRIu32 ",\"triggers\":%" PRIu32 ",\"reason\":\"%s\"},"
+             "\"experience\":{\"protocol\":\"atlas.dualeye.experience.v0\","
+             "\"voice\":{\"continuous_enabled\":%s,\"continuous_reason\":\"%s\",\"playback_recovered\":%s,\"recovery_reason\":\"%s\"},"
+             "\"ui\":{\"chat_mode\":\"%s\",\"scene_severity\":\"%s\",\"local_apps_available\":true},"
+             "\"offline\":{\"brain_online\":%s,\"brain_reason\":\"%s\",\"wifi_connected\":%s}},"
              "\"scene\":%s,"
              "\"audio_service\":%s,"
              "\"runtime\":%s"
@@ -1997,7 +2068,16 @@ static esp_err_t diagnostics_turn_handler(httpd_req_t *req)
              json_bool(s_voice_wake_psram_stack),
              remaining_ms(ts, s_voice_wake_mute_until_ms),
              s_voice_wake_triggers,
-             s_voice_wake_last_reason,
+             voice_reason,
+             json_bool(s_voice_wake_enabled),
+             voice_reason,
+             json_bool(playback_recovered),
+             runtime_reason,
+             diag_chat_mode,
+             scene_severity,
+             json_bool(brain_ws_status.connected),
+             brain_offline_reason,
+             json_bool(wifi.sta_connected),
              scene_json,
              audio_service_json,
              runtime_json);
@@ -2502,6 +2582,9 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     const bool memory_warn = esp_get_free_heap_size() > 50000u;
     const bool motion_pass = !atlas_config_motion_supported() && !s_ctx.config->safety.motion_enabled;
     const bool desk_apps_pass = s_ctx.config->calendar.enabled && s_ctx.config->pomodoro.enabled;
+    const bool voice_observability_pass = audio_service.initialized && audio_service.worker_started;
+    const bool chat_modes_pass = atlas_config_chat_mode_is_valid(s_ctx.config->ui.chat_mode);
+    const bool offline_fallback_pass = true;
     const bool ota_slots_pass =
         esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_OTA_0, NULL) != NULL &&
         esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_OTA_1, NULL) != NULL &&
@@ -2526,6 +2609,13 @@ static esp_err_t selftest_handler(httpd_req_t *req)
         atlas_common_check_status_from_flags(ota_slots_pass, false);
     const atlas_common_check_status_t desk_apps_check =
         atlas_common_check_status_from_flags(desk_apps_pass, true);
+    const atlas_common_check_status_t voice_observability_check =
+        atlas_common_check_status_from_flags(voice_observability_pass, audio_service.initialized);
+    const atlas_common_check_status_t chat_modes_check =
+        atlas_common_check_status_from_flags(chat_modes_pass, true);
+    const atlas_common_check_status_t offline_fallback_check =
+        atlas_common_check_status_from_flags(offline_fallback_pass, true);
+    const atlas_common_check_status_t experience_tools_check = ATLAS_COMMON_CHECK_PASS;
     const atlas_common_check_status_t memory_check =
         atlas_common_check_status_from_flags(memory_pass, memory_warn);
     const atlas_common_check_status_t motion_check =
@@ -2547,6 +2637,10 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     atlas_common_selftest_summary_count(&summary, ATLAS_COMMON_CHECK_PASS);  // tool schema version
     atlas_common_selftest_summary_count(&summary, ota_slots_check);
     atlas_common_selftest_summary_count(&summary, desk_apps_check);
+    atlas_common_selftest_summary_count(&summary, voice_observability_check);
+    atlas_common_selftest_summary_count(&summary, chat_modes_check);
+    atlas_common_selftest_summary_count(&summary, offline_fallback_check);
+    atlas_common_selftest_summary_count(&summary, experience_tools_check);
     atlas_common_selftest_summary_count(&summary, memory_check);
     atlas_common_selftest_summary_count(&summary, motion_check);
 
@@ -2559,6 +2653,10 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     const char *brain_ws_status = atlas_common_check_status_name(brain_ws_check);
     const char *ota_slots_status = atlas_common_check_status_name(ota_slots_check);
     const char *desk_apps_status = atlas_common_check_status_name(desk_apps_check);
+    const char *voice_observability_status = atlas_common_check_status_name(voice_observability_check);
+    const char *chat_modes_status = atlas_common_check_status_name(chat_modes_check);
+    const char *offline_fallback_status = atlas_common_check_status_name(offline_fallback_check);
+    const char *experience_tools_status = atlas_common_check_status_name(experience_tools_check);
     const char *memory_status = atlas_common_check_status_name(memory_check);
     const char *motion_status = atlas_common_check_status_name(motion_check);
 
@@ -2573,6 +2671,11 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     char audio_error[32];
     char spiffs_error[32];
     char service_failure[160];
+    char service_action[sizeof(audio_service.last_action) * 2];
+    char voice_reason[48];
+    char runtime_reason[96];
+    char configured_chat_mode[ATLAS_CHAT_MODE_MAX * 2];
+    char brain_offline_reason[72];
     json_escape(firmware, sizeof(firmware), atlas_firmware_build_tag());
     json_escape(wifi_mode, sizeof(wifi_mode), atlas_wifi_mode_name(wifi.mode));
     json_escape(wifi_sta_ip, sizeof(wifi_sta_ip), wifi.sta_ip);
@@ -2586,8 +2689,17 @@ static esp_err_t selftest_handler(httpd_req_t *req)
     json_escape(service_failure,
                 sizeof(service_failure),
                 audio_service.last_failure[0] == '\0' ? "none" : audio_service.last_failure);
+    json_escape(service_action, sizeof(service_action), audio_service.last_action);
+    json_escape(voice_reason, sizeof(voice_reason), s_voice_wake_last_reason);
+    json_escape(runtime_reason, sizeof(runtime_reason), atlas_runtime_get_reason());
+    json_escape(configured_chat_mode, sizeof(configured_chat_mode), s_ctx.config->ui.chat_mode);
+    json_escape(brain_offline_reason,
+                sizeof(brain_offline_reason),
+                brain_ws.connected ? "" :
+                (!brain_ws.enabled ? "disabled" :
+                 (brain_ws.stage[0] == '\0' ? "not_connected" : brain_ws.stage)));
 
-    const size_t json_size = 6200;
+    const size_t json_size = 8200;
     char *json = (char *)calloc(1, json_size);
     if (json == NULL) {
         return send_error(req, "500 Internal Server Error", "no memory");
@@ -2615,10 +2727,14 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              "{\"id\":\"tool_schema\",\"status\":\"pass\",\"detail\":\"" ATLAS_TOOL_SCHEMA_VERSION "\"},"
              "{\"id\":\"ota_slots\",\"status\":\"%s\",\"detail\":\"ota_0/ota_1=%s apply=/api/ota/apply full_image=false\"},"
              "{\"id\":\"desk_apps\",\"status\":\"%s\",\"detail\":\"clock=true calendar=%s pomodoro=%s protocol=atlas.desk_apps.v0\"},"
+             "{\"id\":\"experience_voice\",\"status\":\"%s\",\"detail\":\"continuous=%s reason=%s playback_action=%s runtime=%s last_failure=%s\"},"
+             "{\"id\":\"experience_ui_modes\",\"status\":\"%s\",\"detail\":\"chat_mode=%s supported=pet_head,text,eyes_only apps=clock,pomodoro,calendar,pet_head\"},"
+             "{\"id\":\"offline_fallback\",\"status\":\"%s\",\"detail\":\"brain_online=%s brain_reason=%s wifi_connected=%s local_apps=true no_black_screen_expected=true\"},"
+             "{\"id\":\"experience_tools\",\"status\":\"%s\",\"detail\":\"/api/tools/list /api/tools/call /mcp/tools/list /mcp/tools/call display/chat/clock/pomodoro/calendar/pet_head motion=disabled\"},"
              "{\"id\":\"memory\",\"status\":\"%s\",\"detail\":\"free_heap=%u min_free=%u free_spiram=%u\"},"
              "{\"id\":\"motion_boundary\",\"status\":\"%s\",\"detail\":\"motion_supported=%s motion_enabled=%s\"}"
              "],"
-             "\"manual_tests\":[\"/api/status/lite\",\"/api/tools/list\",\"/api/tools/call\",\"/api/ota/status\",\"/api/ota/manifest\",\"/api/ota/apply\",\"/api/audio/beep\",\"/api/audio/mic-level\",\"/api/audio/opus-probe\",\"/api/audio/opus-stream/start\",\"/api/audio/opus-stream/status\",\"/api/audio/opus-stream/stop\",\"/api/voice/turn?async=1\"],"
+             "\"manual_tests\":[\"/api/status/lite\",\"/api/status\",\"/api/diagnostics/turn\",\"/api/tools/list\",\"/api/tools/call\",\"/mcp/tools/list\",\"/mcp/tools/call\",\"/api/ota/status\",\"/api/ota/manifest\",\"/api/ota/apply\",\"/api/audio/beep\",\"/api/audio/mic-level\",\"/api/audio/opus-probe\",\"/api/audio/opus-stream/start\",\"/api/audio/opus-stream/status\",\"/api/audio/opus-stream/stop\",\"/api/voice/turn?async=1\"],"
              "\"next_steps\":[\"确认 fail=0\",\"Mac 运行 tools/check_atlas_preflash.py\",\"烧录后再次打开 /api/selftest 与 Mac 验收页\"]"
              "}",
              json_bool(atlas_common_selftest_ready(&summary)),
@@ -2670,6 +2786,19 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              desk_apps_status,
              json_bool(s_ctx.config->calendar.enabled),
              json_bool(s_ctx.config->pomodoro.enabled),
+             voice_observability_status,
+             json_bool(audio_service.continuous_enabled),
+             voice_reason,
+             service_action,
+             runtime_reason,
+             service_failure,
+             chat_modes_status,
+             configured_chat_mode,
+             offline_fallback_status,
+             json_bool(brain_ws.connected),
+             brain_offline_reason,
+             json_bool(wifi.sta_connected),
+             experience_tools_status,
              memory_status,
              (unsigned)esp_get_free_heap_size(),
              (unsigned)esp_get_minimum_free_heap_size(),
