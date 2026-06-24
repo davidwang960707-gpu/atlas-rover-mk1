@@ -35,6 +35,15 @@ static bool host_bridge_missing(const atlas_config_t *config)
            config->llm.base_url[0] == '\0';
 }
 
+static bool local_page_should_survive_brain_offline(atlas_page_t page)
+{
+    return page == ATLAS_PAGE_EYES ||
+           page == ATLAS_PAGE_CHAT ||
+           page == ATLAS_PAGE_CLOCK ||
+           page == ATLAS_PAGE_CALENDAR ||
+           page == ATLAS_PAGE_POMODORO;
+}
+
 static bool starts_with(const char *text, const char *prefix)
 {
     return text != NULL && prefix != NULL && strncmp(text, prefix, strlen(prefix)) == 0;
@@ -261,7 +270,11 @@ void atlas_scene_resolve(const atlas_ui_state_t *ui,
     }
 
     if (audio_service != NULL && audio_service->mode == ATLAS_AUDIO_SERVICE_MODE_ERROR) {
-        friendly_error_text(audio_service->last_action, subtitle, sizeof(subtitle), hint, sizeof(hint));
+        friendly_error_text(audio_service->last_failure[0] == '\0' ? audio_service->last_action : audio_service->last_failure,
+                            subtitle,
+                            sizeof(subtitle),
+                            hint,
+                            sizeof(hint));
         scene_set(scene,
                   ATLAS_SCENE_ERROR,
                   ATLAS_PAGE_STATUS,
@@ -278,25 +291,45 @@ void atlas_scene_resolve(const atlas_ui_state_t *ui,
         return;
     }
 
-    if (host_bridge_missing(config)) {
+    if (requested_page == ATLAS_PAGE_VOICE && wifi != NULL && !wifi->sta_connected) {
         scene_set(scene,
                   ATLAS_SCENE_BRAIN_OFFLINE,
-                  ATLAS_PAGE_STATUS,
-                  ATLAS_EXPR_ERROR,
+                  ATLAS_PAGE_VOICE,
+                  ATLAS_EXPR_THINKING,
+                  0,
+                  true,
+                  true,
+                  "语音等待网络",
+                  wifi->ap_started ? "当前在配网/救援热点模式" : "Wi-Fi 未连接",
+                  "本地页面可继续使用",
+                  "情绪状态",
+                  "网络状态",
+                  "warn");
+        return;
+    }
+
+    const bool no_user_event_yet = ui == NULL || ui->last_event_ms == 0;
+    if (host_bridge_missing(config) &&
+        (requested_page == ATLAS_PAGE_VOICE ||
+         requested_page == ATLAS_PAGE_STATUS ||
+         (no_user_event_yet && !local_page_should_survive_brain_offline(requested_page)))) {
+        scene_set(scene,
+                  ATLAS_SCENE_BRAIN_OFFLINE,
+                  requested_page == ATLAS_PAGE_VOICE ? ATLAS_PAGE_VOICE : ATLAS_PAGE_STATUS,
+                  ATLAS_EXPR_THINKING,
                   0,
                   true,
                   true,
                   "大脑离线",
-                  "Mac Brain 地址未配置",
-                  "管理端填写 Mac 局域网 http://IP:8787",
+                  requested_page == ATLAS_PAGE_VOICE ? "语音对话等待配置" : "Mac Brain 地址未配置",
+                  "本地双眼、时钟、番茄、日历仍可用",
                   "情绪状态",
                   "桥接状态",
-                  "error");
+                  "warn");
         return;
     }
 
     const bool wifi_ap_fallback = wifi != NULL && !wifi->sta_connected && wifi->ap_started;
-    const bool no_user_event_yet = ui == NULL || ui->last_event_ms == 0;
     if (wifi_ap_fallback && no_user_event_yet && now_ms < ATLAS_WIFI_CONFIG_BOOT_HINT_MS) {
         snprintf(subtitle, sizeof(subtitle), "热点 %s", wifi->ap_ssid[0] == '\0' ? "AtlasRover" : wifi->ap_ssid);
         snprintf(hint, sizeof(hint), "访问 %s 配网或管理", wifi->ap_ip[0] == '\0' ? "192.168.4.1" : wifi->ap_ip);
@@ -493,6 +526,28 @@ void atlas_scene_resolve(const atlas_ui_state_t *ui,
     case ATLAS_RUNTIME_STATE_IDLE:
     default:
         break;
+    }
+
+    if (audio_service != NULL &&
+        audio_service->continuous_enabled &&
+        audio_service->consecutive_failures > 0 &&
+        audio_service->last_failure[0] != '\0' &&
+        requested_page == ATLAS_PAGE_VOICE) {
+        friendly_error_text(audio_service->last_failure, subtitle, sizeof(subtitle), hint, sizeof(hint));
+        scene_set(scene,
+                  ATLAS_SCENE_BRAIN_OFFLINE,
+                  ATLAS_PAGE_VOICE,
+                  ATLAS_EXPR_THINKING,
+                  0,
+                  true,
+                  true,
+                  "连续监听暂停",
+                  subtitle,
+                  hint,
+                  "情绪状态",
+                  "失败原因",
+                  "warn");
+        return;
     }
 
     if (audio_service != NULL &&

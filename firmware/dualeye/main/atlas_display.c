@@ -1866,6 +1866,39 @@ static void set_eye_page_content(size_t index,
         return;
     }
 
+    if (atlas_common_ui_page_uses_chat_mode(page) &&
+        strcmp(display_chat_mode(payload), ATLAS_COMMON_UI_CHAT_MODE_TEXT) == 0) {
+        char text_short[128];
+        char title_short[40];
+        const bool voice = page == ATLAS_PAGE_VOICE;
+        const bool story = page == ATLAS_PAGE_STORY;
+        const bool music = page == ATLAS_PAGE_MUSIC;
+        const char *title = voice ? "语音对话" : (story ? "故事" : (music ? "音乐" : "文字对话"));
+        const char *raw_text = payload->chat_text[0] != '\0' ? payload->chat_text :
+                               (payload->scene_subtitle[0] != '\0' ? payload->scene_subtitle :
+                                (voice ? "等待你的语音" : "暂无对话内容"));
+        utf8_copy_chars(title_short, sizeof(title_short), title, 6);
+        utf8_copy_chars(text_short, sizeof(text_short), raw_text, is_left ? 18 : 34);
+        lv_obj_set_width(eye->content, is_left ? 160 : 174);
+        lv_obj_set_style_text_font(eye->content, font_cjk(), LV_PART_MAIN);
+        lv_obj_set_style_text_color(eye->content, rgb(is_left ? s_theme->primary_rgb : s_theme->text_rgb), LV_PART_MAIN);
+        lv_obj_set_style_text_line_space(eye->content, 6, LV_PART_MAIN);
+        lv_label_set_long_mode(eye->content, LV_LABEL_LONG_WRAP);
+        snprintf(line1,
+                 sizeof(line1),
+                 "%s\n%s",
+                 is_left ? title_short : (payload->scene_title[0] == '\0' ? "回复" : payload->scene_title),
+                 text_short);
+        lv_label_set_text(eye->content, line1);
+        lv_obj_align(eye->content, LV_ALIGN_CENTER, 0, -24);
+        lv_obj_set_width(eye->status_text, 162);
+        lv_label_set_long_mode(eye->status_text, LV_LABEL_LONG_CLIP);
+        lv_obj_set_style_text_color(eye->status_text, rgb(s_theme->muted_rgb), LV_PART_MAIN);
+        lv_label_set_text(eye->status_text, is_left ? "text mode" : (voice ? "语音链路" : "本地显示"));
+        lv_obj_align(eye->status_text, LV_ALIGN_BOTTOM_MID, 0, -24);
+        return;
+    }
+
     if (page == ATLAS_PAGE_STATUS) {
         char title_short[40];
         char subtitle_short[64];

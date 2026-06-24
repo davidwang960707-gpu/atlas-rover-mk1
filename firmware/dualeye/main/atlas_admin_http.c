@@ -3482,6 +3482,9 @@ static esp_err_t run_voice_turn(uint16_t duration, atlas_voice_turn_result_t *re
         atlas_audio_service_note_stage(ATLAS_AUDIO_SERVICE_MODE_COOLDOWN, "playback_mute");
         brain_ws_emit_event("turn.played", "tts played");
         atlas_runtime_turn_finish(true, "", now_ms());
+        atlas_runtime_set_state(ATLAS_RUNTIME_STATE_IDLE,
+                                s_voice_wake_enabled ? "turn done; continuous listening rearmed" : "turn done; ready",
+                                now_ms());
     } else {
         atlas_runtime_turn_finish(false, esp_err_to_name(play_err), now_ms());
     }
@@ -3558,6 +3561,8 @@ static esp_err_t voice_turn_handler(httpd_req_t *req)
         const esp_err_t err = atlas_audio_service_submit_turn(run_voice_turn_async_job, job);
         if (err != ESP_OK) {
             free(job);
+            atlas_audio_service_note_failure("voice async submit failed", err);
+            atlas_runtime_set_state(ATLAS_RUNTIME_STATE_IDLE, esp_err_to_name(err), now_ms());
             if (err == ESP_ERR_INVALID_STATE) {
                 return send_error(req, "409 Conflict", esp_err_to_name(err));
             }
@@ -3710,6 +3715,16 @@ static void voice_wake_task(void *arg)
 
             atlas_voice_turn_result_t result;
             const esp_err_t turn_err = run_voice_turn_via_service(s_voice_wake_duration_ms, &result);
+            if (turn_err != ESP_OK) {
+                strlcpy(s_voice_wake_last_reason,
+                        result.bridge_error[0] == '\0' ? esp_err_to_name(turn_err) : result.bridge_error,
+                        sizeof(s_voice_wake_last_reason));
+                atlas_runtime_set_state(ATLAS_RUNTIME_STATE_IDLE, s_voice_wake_last_reason, now_ms());
+            } else {
+                strlcpy(s_voice_wake_last_reason,
+                        result.play_err == ESP_OK ? "turn_done_rearmed" : esp_err_to_name(result.play_err),
+                        sizeof(s_voice_wake_last_reason));
+            }
             ESP_LOGI(TAG,
                      "voice wake turn done err=%s asr='%s' reply='%s' played=%s",
                      esp_err_to_name(turn_err),
@@ -3820,6 +3835,9 @@ static esp_err_t voice_wake_handler(httpd_req_t *req)
     esp_err_t err = ESP_OK;
     if (enabled) {
         if (strcmp(s_ctx.config->llm.mode, "host") != 0 || s_ctx.config->llm.base_url[0] == '\0') {
+            strlcpy(s_voice_wake_last_reason, "host bridge not configured", sizeof(s_voice_wake_last_reason));
+            atlas_audio_service_note_failure("continuous listen disabled: host bridge not configured", ESP_ERR_INVALID_STATE);
+            atlas_runtime_set_state(ATLAS_RUNTIME_STATE_IDLE, "continuous listen waiting for Brain config", now_ms());
             return send_error(req, "409 Conflict", "host bridge not configured");
         }
         if (!was_enabled) {
@@ -3835,8 +3853,12 @@ static esp_err_t voice_wake_handler(httpd_req_t *req)
         s_voice_wake_hit_count = 0;
         atlas_audio_service_set_continuous_enabled(false);
         strlcpy(s_voice_wake_last_reason, "off", sizeof(s_voice_wake_last_reason));
+        atlas_runtime_set_state(ATLAS_RUNTIME_STATE_IDLE, "continuous listen off", now_ms());
     }
     if (err != ESP_OK) {
+        strlcpy(s_voice_wake_last_reason, esp_err_to_name(err), sizeof(s_voice_wake_last_reason));
+        atlas_audio_service_note_failure("continuous listen start failed", err);
+        atlas_runtime_set_state(ATLAS_RUNTIME_STATE_IDLE, esp_err_to_name(err), now_ms());
         return send_error(req, "500 Internal Server Error", esp_err_to_name(err));
     }
 
