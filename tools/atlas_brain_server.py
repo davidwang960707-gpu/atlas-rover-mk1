@@ -87,8 +87,10 @@ from atlas_brain_platform_routes import (
     handle_protocols,
     handle_providers,
     handle_runtime,
+    handle_runtime_diagnostics,
     handle_runtime_score,
     handle_runtime_sessions,
+    handle_simulate_turn,
 )
 from atlas_brain_tool_routes import (
     handle_legacy_skill_call,
@@ -1195,22 +1197,55 @@ class Bridge:
         }
 
     def send_text(self, text: str) -> dict[str, Any]:
+        started = time.time()
+        stages: list[dict[str, Any]] = []
         turn_id = self.session.next_turn_id()
         skill_match = self.text_to_skill(text)
         if skill_match is not None:
             skill_name, skill_args = skill_match
+            skill_started = time.time()
             skill_result = self.execute_skill(skill_name, skill_args)
+            skill_elapsed = int((time.time() - skill_started) * 1000)
+            tool_meta = self.skills.public_item(skill_name) or {}
+            self.runtime.record_tool_call(
+                name=skill_name,
+                arguments=skill_args,
+                risk=str(skill_result.get("risk", tool_meta.get("risk", ""))),
+                target=str(tool_meta.get("target", "")),
+                ok=bool(skill_result.get("ok")),
+                error=str(skill_result.get("error", "")),
+                error_code=str(skill_result.get("error_code", "")),
+                elapsed_ms=skill_elapsed,
+            )
+            stages.append({
+                "stage": "tool",
+                "ok": bool(skill_result.get("ok")),
+                "detail": f"direct skill {skill_name}",
+                "elapsed_ms": skill_elapsed,
+            })
             text_result = self.skill_result_to_text_result(skill_name, skill_result)
             text_result["turn_id"] = turn_id
+            self.runtime.record_turn_diagnosis(
+                kind="text",
+                ok=bool(text_result.get("ok")),
+                text=text,
+                reply=reply_from_text_result(text_result, fallback=""),
+                turn_id=turn_id,
+                source="skill",
+                stages=stages,
+                error=str(skill_result.get("error", "")),
+            )
             return text_result
 
         intents = text_to_intents(text, self.speed, self.duration_ms)
         source = "rules"
         llm_meta: dict[str, Any] = {"mode": "rules"}
+        llm_started = time.time()
         if self.llm_enabled() and is_default_chat_intents(intents):
             try:
                 intents, llm_meta = self.llm_chat_reply(text)
                 source = "llm_chat"
+                stages.append({"stage": "llm", "ok": True, "detail": "llm chat reply", "elapsed_ms": int((time.time() - llm_started) * 1000)})
             except Exception as exc:
                 fallback_reply = "我听到了，但大脑响应慢了一点。你可以再说一遍吗？"
                 intents = [
@@ -1226,15 +1261,29 @@ class Bridge:
                 ]
                 llm_meta = {"error": str(exc), "reply": fallback_reply, "fallback": True}
                 source = "llm_fallback"
+                stages.append({"stage": "llm", "ok": False, "detail": str(exc), "elapsed_ms": int((time.time() - llm_started) * 1000)})
+        else:
+            detail = "rules intent selection"
+            if not self.llm_enabled():
+                detail += "; provider not configured"
+            stages.append({"stage": "llm", "ok": True, "detail": detail, "elapsed_ms": int((time.time() - llm_started) * 1000)})
+        device_started = time.time()
         results = [self.send_intent(intent) for intent in intents]
         device_sync_ok = all(item.get("ok") for item in results)
+        device_error = "; ".join(str(item.get("error", "")) for item in results if item.get("error"))[:220]
+        stages.append({
+            "stage": "device_push",
+            "ok": bool(device_sync_ok),
+            "detail": "intent sync ok" if device_sync_ok else (device_error or "DualEye offline or busy"),
+            "elapsed_ms": int((time.time() - device_started) * 1000),
+        })
         if not str(llm_meta.get("reply", "")).strip():
             ack = ack_from_intents(intents)
             if ack:
                 llm_meta["reply"] = ack
         reply_ready = bool(str(llm_meta.get("reply", "")).strip())
         conversation_ok = device_sync_ok or (source in {"llm_chat", "llm_fallback"} and reply_ready)
-        return {
+        payload = {
             "ok": conversation_ok,
             "turn_id": turn_id,
             "source": source,
@@ -1244,6 +1293,18 @@ class Bridge:
             "device_sync_ok": device_sync_ok,
             "device_sync_warning": "" if device_sync_ok else "DualEye 离线或忙碌；本轮对话已完成，但未同步到设备屏幕。",
         }
+        self.runtime.record_turn_diagnosis(
+            kind="text",
+            ok=conversation_ok,
+            text=text,
+            reply=reply_from_text_result(payload, fallback=""),
+            turn_id=turn_id,
+            source=source,
+            stages=stages,
+            error=str(llm_meta.get("error", "") or ("" if device_sync_ok else payload["device_sync_warning"])),
+        )
+        self.runtime.emit("turn.text", detail=f"ok={conversation_ok} source={source}", payload={"turn_id": turn_id, "elapsed_ms": int((time.time() - started) * 1000)})
+        return payload
 
     def transcribe_audio(self, audio_data_url: str, language: str = "auto") -> dict[str, Any]:
         if not self.asr_enabled():
@@ -1984,6 +2045,9 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
             if path == "/api/runtime":
                 handle_runtime(self, bridge)
                 return
+            if path == "/api/runtime/diagnostics":
+                handle_runtime_diagnostics(self, bridge)
+                return
             if path == "/api/runtime/sessions":
                 handle_runtime_sessions(self, bridge)
                 return
@@ -2146,6 +2210,9 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
             if path == "/api/audio/stream/simulate":
                 handle_audio_stream_simulate(self, payload)
                 return
+            if path == "/api/diagnostics/simulate-turn":
+                handle_simulate_turn(self, bridge, payload, cache_tts_and_push=self.cache_tts_and_push)
+                return
             if path == "/api/device/opus-probe":
                 handle_dualeye_opus_probe(self, bridge, payload)
                 return
@@ -2167,16 +2234,32 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 result = bridge.send_text(text)
                 if bool(payload.get("speak", False)):
                     reply = reply_from_text_result(result, fallback=text)
+                    tts_started = time.time()
                     result["tts"] = bridge.synthesize_speech(
                         reply,
                         voice=str(payload.get("tts_voice", "")).strip(),
                         style=str(payload.get("tts_style", bridge.session.default_tts_style) or bridge.session.default_tts_style),
                         singing=bool(payload.get("tts_singing", False)),
                     )
+                    bridge.runtime.record_timeline(
+                        "tts",
+                        bool(result.get("tts", {}).get("ok")),
+                        str(result.get("tts", {}).get("provider", "") or result.get("tts", {}).get("error", "")),
+                        {"provider": result.get("tts", {}).get("provider", ""), "fallback": result.get("tts", {}).get("cloud_error", "")},
+                        elapsed_ms=int((time.time() - tts_started) * 1000),
+                        turn_id=str(result.get("turn_id", "")),
+                    )
                     tts_store, tts_url, dualeye_play = self.cache_tts_and_push(result["tts"])
                     result["tts_cached"] = tts_store
                     result["tts_url"] = tts_url
                     result["dualeye_play"] = dualeye_play
+                    bridge.runtime.record_timeline(
+                        "playback",
+                        bool(tts_store.get("ready")) and bool(dualeye_play.get("ok")),
+                        "tts cached and pushed" if dualeye_play.get("ok") else str(dualeye_play.get("error", tts_store.get("error", ""))),
+                        {"tts_ready": bool(tts_store.get("ready")), "dualeye_play": dualeye_play},
+                        turn_id=str(result.get("turn_id", "")),
+                    )
                 remember_turn({
                     "kind": "text",
                     "ok": bool(result.get("ok")),

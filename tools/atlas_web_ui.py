@@ -313,6 +313,7 @@ _ADMIN_TEMPLATE = Template("""<!doctype html><html lang="zh-CN"><meta charset="u
 <section class="quick-grid">
   <button class="app-card" onclick="getJson('/api/acceptance/report')"><b>验收报告</b><small>烧录前后检查</small></button>
   <button class="app-card" onclick="getJson('/api/runtime/score')"><b>运行评分</b><small>80 分目标</small></button>
+  <button class="app-card" onclick="getJson('/api/runtime/diagnostics')"><b>体验诊断</b><small>最近 Turn</small></button>
   <button class="app-card" onclick="getJson('/api/platform')"><b>平台快照</b><small>设备与应用</small></button>
   <button class="app-card" onclick="getJson('/api/providers')"><b>Provider</b><small>模型配置</small></button>
   <button class="app-card" onclick="getJson('/api/protocols')"><b>协议通道</b><small>音频与事件</small></button>
@@ -320,7 +321,7 @@ _ADMIN_TEMPLATE = Template("""<!doctype html><html lang="zh-CN"><meta charset="u
   <button class="app-card" onclick="getJson('/api/audio/stream/status')"><b>音频流</b><small>OPUS 状态</small></button>
   <button class="app-card" onclick="getJson('/ota/manifest')"><b>OTA</b><small>包清单</small></button>
 </section>
-<section class="panel"><div class="row"><button onclick="runPost('/api/device/opus-stream/start',{duration_ms:1800})">启动 OPUS 真流</button><button class="secondary" onclick="runPost('/api/device/opus-stream/stop',{})">停止真流</button><button class="secondary" onclick="getJson('/api/brain/events')">最近事件</button><button class="secondary" onclick="getJson('/health')">Health</button></div><pre id="out" class="debug">等待诊断...</pre></section>
+<section class="panel"><div class="row"><button onclick="runPost('/api/device/opus-stream/start',{duration_ms:1800})">启动 OPUS 真流</button><button class="secondary" onclick="runPost('/api/device/opus-stream/stop',{})">停止真流</button><button class="secondary" onclick="runPost('/api/diagnostics/simulate-turn',{speak:true})">模拟 Turn</button><button class="secondary" onclick="getJson('/api/brain/events')">最近事件</button><button class="secondary" onclick="getJson('/health')">Health</button></div><pre id="out" class="debug">等待诊断...</pre></section>
 </main><script>
 function out(v){document.getElementById('out').textContent=typeof v==='string'?v:JSON.stringify(v,null,2)}
 async function getJson(url){const r=await fetch(url);const t=await r.text();try{out(JSON.parse(t))}catch(e){out(t)}}

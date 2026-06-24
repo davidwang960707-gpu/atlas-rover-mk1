@@ -215,11 +215,29 @@ def handle_browser_audio_turn(handler: Any, bridge: Any, payload: dict[str, Any]
         tts_style=tts_style,
         tts_singing=tts_singing,
     )
+    bridge.runtime.record_timeline(
+        "asr",
+        bool(result.get("asr", {}).get("ok")),
+        str(result.get("asr", {}).get("text", "") or result.get("asr", {}).get("error", result.get("error", ""))),
+        {"language": language},
+    )
     if speak and isinstance(result.get("tts"), dict):
         tts_store, tts_url, dualeye_play = _cache_tts_and_push(bridge, result["tts"], latest_tts_url)
         result["tts_cached"] = tts_store
         result["tts_url"] = tts_url
         result["dualeye_play"] = dualeye_play
+        bridge.runtime.record_timeline(
+            "tts",
+            bool(result.get("tts", {}).get("ok")),
+            str(result.get("tts", {}).get("provider", "") or result.get("tts", {}).get("error", "")),
+            {"tts_ready": bool(tts_store.get("ready"))},
+        )
+        bridge.runtime.record_timeline(
+            "playback",
+            bool(tts_store.get("ready")) and bool(dualeye_play.get("ok")),
+            "tts cached and pushed" if dualeye_play.get("ok") else str(dualeye_play.get("error", tts_store.get("error", ""))),
+            {"dualeye_play": dualeye_play},
+        )
     remember_turn({
         "kind": "browser_audio",
         "ok": bool(result.get("ok")),
@@ -231,6 +249,26 @@ def handle_browser_audio_turn(handler: Any, bridge: Any, payload: dict[str, Any]
         "dualeye_play": result.get("dualeye_play", {}),
         "error": str(result.get("asr", {}).get("error", "") or result.get("error", "")),
     })
+    bridge.runtime.record_turn_diagnosis(
+        kind="browser_audio",
+        ok=bool(result.get("ok")),
+        text=str(result.get("asr", {}).get("text", "")),
+        reply=_reply_from_text_result(result.get("text_result", {}), fallback=""),
+        source=str(result.get("text_result", {}).get("source", "")),
+        stages=[
+            {
+                "stage": "asr",
+                "ok": bool(result.get("asr", {}).get("ok")),
+                "detail": str(result.get("asr", {}).get("text", "") or result.get("asr", {}).get("error", "")),
+            },
+            {
+                "stage": "tts",
+                "ok": (not speak) or bool(result.get("tts_cached", {}).get("ready")),
+                "detail": "not requested" if not speak else str(result.get("tts", {}).get("provider", "") or result.get("tts", {}).get("error", "")),
+            },
+        ],
+        error=str(result.get("asr", {}).get("error", "") or result.get("error", "")),
+    )
     handler.send_json(compact_audio_payload(result))
 
 

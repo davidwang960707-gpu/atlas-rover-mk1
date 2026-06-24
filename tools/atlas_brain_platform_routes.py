@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Callable
 
-from atlas_brain_audio import latest_tts_meta, latest_turn_meta
+from atlas_brain_audio import compact_audio_payload, latest_tts_meta, latest_turn_meta
 from atlas_brain_tool_routes import public_roles_payload
 
 
@@ -15,6 +16,8 @@ BRAIN_ENDPOINTS = [
     "/api/capabilities",
     "/api/acceptance/report",
     "/api/runtime",
+    "/api/diagnostics/simulate-turn",
+    "/api/runtime/diagnostics",
     "/api/runtime/sessions",
     "/api/runtime/score",
     "/api/platform",
@@ -131,6 +134,10 @@ def runtime_payload(bridge: Any) -> dict[str, Any]:
     return {"ok": True, "runtime": bridge.runtime.snapshot(), "score": bridge.runtime_score_payload()}
 
 
+def runtime_diagnostics_payload(bridge: Any) -> dict[str, Any]:
+    return {"ok": True, "diagnostics": bridge.runtime.diagnostics_snapshot(), "runtime": bridge.runtime.snapshot()}
+
+
 def runtime_sessions_payload(bridge: Any) -> dict[str, Any]:
     snapshot = bridge.runtime.snapshot()
     return {
@@ -171,6 +178,10 @@ def handle_runtime(handler: Any, bridge: Any) -> None:
     handler.send_json(runtime_payload(bridge))
 
 
+def handle_runtime_diagnostics(handler: Any, bridge: Any) -> None:
+    handler.send_json(runtime_diagnostics_payload(bridge))
+
+
 def handle_runtime_sessions(handler: Any, bridge: Any) -> None:
     handler.send_json(runtime_sessions_payload(bridge))
 
@@ -185,3 +196,95 @@ def handle_providers(handler: Any, bridge: Any) -> None:
 
 def handle_protocols(handler: Any, bridge: Any) -> None:
     handler.send_json(protocols_payload(bridge))
+
+
+def simulate_turn_payload(
+    bridge: Any,
+    payload: dict[str, Any],
+    *,
+    cache_tts_and_push: Callable[[dict[str, Any]], tuple[dict[str, Any], str, dict[str, Any]]],
+) -> dict[str, Any]:
+    text = str(payload.get("text") or "打开番茄页面并鼓励我一下").strip()
+    speak = bool(payload.get("speak", True))
+    started = time.time()
+    text_result = bridge.send_text(text)
+
+    tool_name = str(payload.get("tool") or "atlas.pomodoro.start")
+    tool_args = payload.get("arguments")
+    if not isinstance(tool_args, dict):
+        tool_args = {"task_name": "保持专注", "focus_minutes": 25, "break_minutes": 5}
+    tool_started = time.time()
+    tool_result = bridge.execute_skill(tool_name, tool_args)
+    tool_meta = bridge.skills.public_item(tool_name) or {}
+    bridge.runtime.record_tool_call(
+        name=tool_name,
+        arguments=tool_args,
+        risk=str(tool_result.get("risk", tool_meta.get("risk", ""))),
+        target=str(tool_meta.get("target", "")),
+        ok=bool(tool_result.get("ok")),
+        error=str(tool_result.get("error", "")),
+        error_code=str(tool_result.get("error_code", "")),
+        elapsed_ms=int((time.time() - tool_started) * 1000),
+        tts_requested=speak,
+    )
+
+    reply = str(tool_result.get("reply") or text_result.get("llm", {}).get("reply") or "番茄页面准备好了，慢慢来，你已经开始进入状态。").strip()
+    result: dict[str, Any] = {
+        "ok": bool(text_result.get("ok") or tool_result.get("ok")),
+        "protocol": "atlas.diagnostics.simulated_turn.v0",
+        "dry_run": bool(getattr(bridge, "dry_run", False)),
+        "text": text,
+        "text_result": text_result,
+        "tool": tool_name,
+        "arguments": bridge.runtime.tool_calls[-1]["arguments"] if bridge.runtime.tool_calls else {},
+        "tool_result": tool_result,
+        "reply": reply,
+        "elapsed_ms": int((time.time() - started) * 1000),
+    }
+    if speak and reply:
+        tts_started = time.time()
+        tts = bridge.synthesize_speech(reply)
+        result["tts"] = tts
+        bridge.runtime.record_timeline(
+            "tts",
+            bool(tts.get("ok")),
+            str(tts.get("provider", "") or tts.get("error", "")),
+            {"provider": tts.get("provider", ""), "cloud_error": tts.get("cloud_error", "")},
+            elapsed_ms=int((time.time() - tts_started) * 1000),
+        )
+        tts_store, tts_url, dualeye_play = cache_tts_and_push(tts)
+        result["tts_cached"] = tts_store
+        result["tts_url"] = tts_url
+        result["dualeye_play"] = dualeye_play
+        bridge.runtime.record_timeline(
+            "playback",
+            bool(tts_store.get("ready")) and bool(dualeye_play.get("ok")),
+            "tts cached and pushed" if dualeye_play.get("ok") else str(dualeye_play.get("error", tts_store.get("error", ""))),
+            {"tts_ready": bool(tts_store.get("ready")), "dualeye_play": dualeye_play},
+        )
+    bridge.runtime.record_turn_diagnosis(
+        kind="simulated_turn",
+        ok=bool(result.get("ok")),
+        text=text,
+        reply=reply,
+        source=str(text_result.get("source", "simulation")),
+        stages=[
+            {"stage": "llm", "ok": True, "detail": str(text_result.get("source", "")) or "rules"},
+            {"stage": "tool", "ok": bool(tool_result.get("ok")), "detail": tool_name},
+            {"stage": "tts", "ok": (not speak) or bool(result.get("tts", {}).get("ok")), "detail": str(result.get("tts", {}).get("provider", "not_requested"))},
+            {"stage": "playback", "ok": (not speak) or bool(result.get("dualeye_play", {}).get("ok")), "detail": str(result.get("dualeye_play", {}).get("error", ""))},
+        ],
+        error=str(tool_result.get("error", "") or result.get("tts", {}).get("error", "") or result.get("dualeye_play", {}).get("error", "")),
+    )
+    result["diagnostics"] = bridge.runtime.diagnostics_snapshot()
+    return compact_audio_payload(result)
+
+
+def handle_simulate_turn(
+    handler: Any,
+    bridge: Any,
+    payload: dict[str, Any],
+    *,
+    cache_tts_and_push: Callable[[dict[str, Any]], tuple[dict[str, Any], str, dict[str, Any]]],
+) -> None:
+    handler.send_json(simulate_turn_payload(bridge, payload, cache_tts_and_push=cache_tts_and_push))

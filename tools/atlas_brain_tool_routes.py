@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from http import HTTPStatus
 from typing import Any, Callable
 
@@ -88,18 +89,47 @@ def handle_tool_call(
     *,
     cache_tts_and_push: TtsPushCallback,
 ) -> None:
+    started = time.time()
     tool_name = str(payload.get("name") or payload.get("tool") or "").strip()
     args = payload.get("arguments", payload.get("args", payload.get("input", {})))
     if not isinstance(args, dict):
         args = {}
     if not tool_name:
+        bridge.runtime.record_tool_call(
+            name="",
+            arguments=args,
+            ok=False,
+            error="tool name required",
+            error_code="tool_name_required",
+            elapsed_ms=int((time.time() - started) * 1000),
+        )
         handler.send_json({"ok": False, "error": "tool name required"}, HTTPStatus.BAD_REQUEST)
         return
     tool_meta = bridge.skills.public_item(tool_name)
     if tool_meta is None:
+        bridge.runtime.record_tool_call(
+            name=tool_name,
+            arguments=args,
+            ok=False,
+            error=f"unknown tool: {tool_name}",
+            error_code="unknown_tool",
+            elapsed_ms=int((time.time() - started) * 1000),
+        )
         handler.send_json({"ok": False, "error": f"unknown tool: {tool_name}", "tool": tool_name}, HTTPStatus.NOT_FOUND)
         return
     if bool(tool_meta.get("confirm_required")) and not bool(payload.get("confirmed", False)):
+        bridge.runtime.record_tool_call(
+            name=tool_name,
+            arguments=args,
+            risk=str(tool_meta.get("risk", "unknown")),
+            target=str(tool_meta.get("target", "")),
+            ok=False,
+            error="confirmation required",
+            error_code="confirmation_required",
+            elapsed_ms=int((time.time() - started) * 1000),
+            confirm_required=True,
+            confirmation_missing=True,
+        )
         handler.send_json({
             "ok": False,
             "error": "confirmation required",
@@ -112,6 +142,20 @@ def handle_tool_call(
     result = bridge.execute_skill(tool_name, args)
     reply = str(result.get("reply") or result.get("speech") or "").strip()
     _maybe_speak_tool_reply(bridge, payload, result, reply, cache_tts_and_push)
+    elapsed_ms = int((time.time() - started) * 1000)
+    bridge.runtime.record_tool_call(
+        name=tool_name,
+        arguments=args,
+        risk=str(tool_meta.get("risk", result.get("risk", ""))),
+        target=str(tool_meta.get("target", "")),
+        ok=bool(result.get("ok")),
+        error=str(result.get("error", "")),
+        error_code=str(result.get("error_code", "")),
+        elapsed_ms=elapsed_ms,
+        tts_requested=bool(payload.get("speak", False)),
+        tts_ready=bool(result.get("tts_cached", {}).get("ready")),
+        confirm_required=bool(tool_meta.get("confirm_required", False)),
+    )
     remember_turn({
         "kind": "tool_call",
         "ok": bool(result.get("ok")),
@@ -139,17 +183,42 @@ def handle_legacy_skill_call(
     *,
     cache_tts_and_push: TtsPushCallback,
 ) -> None:
+    started = time.time()
     skill_name = str(payload.get("skill") or payload.get("name") or "").strip()
     args = payload.get("args", {})
     if not isinstance(args, dict):
         args = {}
     if not skill_name:
+        bridge.runtime.record_tool_call(
+            name="",
+            arguments=args,
+            ok=False,
+            error="skill required",
+            error_code="skill_required",
+            elapsed_ms=int((time.time() - started) * 1000),
+            legacy=True,
+        )
         handler.send_json({"ok": False, "error": "skill required"}, HTTPStatus.BAD_REQUEST)
         return
 
+    tool_meta = bridge.skills.public_item(skill_name) or {}
     result = bridge.execute_skill(skill_name, args)
     reply = str(result.get("reply") or result.get("speech") or "").strip()
     _maybe_speak_tool_reply(bridge, payload, result, reply, cache_tts_and_push)
+    bridge.runtime.record_tool_call(
+        name=skill_name,
+        arguments=args,
+        risk=str(result.get("risk", tool_meta.get("risk", ""))),
+        target=str(tool_meta.get("target", "")),
+        ok=bool(result.get("ok")),
+        error=str(result.get("error", "")),
+        error_code=str(result.get("error_code", "")),
+        elapsed_ms=int((time.time() - started) * 1000),
+        tts_requested=bool(payload.get("speak", False)),
+        tts_ready=bool(result.get("tts_cached", {}).get("ready")),
+        confirm_required=bool(tool_meta.get("confirm_required", False)),
+        legacy=True,
+    )
     remember_turn({
         "kind": "skill",
         "ok": bool(result.get("ok")),

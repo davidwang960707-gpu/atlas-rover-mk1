@@ -134,6 +134,83 @@ def summarize_acceptance(checks: list[dict[str, Any]]) -> dict[str, int]:
     return summary
 
 
+def build_experience_status(bridge: Any, *, skip_device: bool = False) -> dict[str, Any]:
+    runtime = bridge.runtime.snapshot()
+    diagnostics = runtime.get("diagnostics") if isinstance(runtime.get("diagnostics"), dict) else {}
+    platform = bridge.platform_snapshot()
+    tools_payload = bridge.skills.tool_schema_payload()
+    tool_count = int(tools_payload.get("tool_count", 0) or 0)
+    app_count = int(platform.get("summary", {}).get("app_count", 0) or 0)
+    latest_stream = runtime.get("latest_stream") if isinstance(runtime.get("latest_stream"), dict) else {}
+    recent_turns = diagnostics.get("recent_turns") if isinstance(diagnostics.get("recent_turns"), list) else []
+    recent_tools = diagnostics.get("recent_tool_calls") if isinstance(diagnostics.get("recent_tool_calls"), list) else []
+
+    voice_ready = bool(bridge.asr_enabled() and bridge.llm_enabled() and bridge.tts_enabled())
+    voice_state = "ready" if voice_ready else "needs_config"
+    voice_score = 70 if voice_ready else 45
+    if skip_device:
+        voice_state = "needs_device" if voice_ready else "needs_config"
+    if latest_stream.get("atlas_frames"):
+        voice_score += 15
+    if recent_turns:
+        voice_score += 10
+    voice_score = min(100, voice_score)
+
+    pet_state = "ready" if app_count >= 3 else "needs_config"
+    pet_score = min(100, 50 + app_count * 10)
+    if skip_device:
+        pet_state = "needs_device"
+        pet_score = min(pet_score, 70)
+
+    tools_ready = tools_payload.get("protocol") == "atlas.tools.v0.desk_apps" and tool_count >= 10
+    tool_state = "ready" if tools_ready else "needs_config"
+    tool_score = 80 if tools_ready else 45
+    if recent_tools:
+        tool_score += 10
+    if diagnostics.get("latest_failure"):
+        tool_score = min(tool_score, 75)
+    tool_score = min(100, tool_score)
+
+    return {
+        "protocol": "atlas.experience.status.v0",
+        "summary": {
+            "voice_continuous_conversation": voice_score,
+            "dualeye_pet_apps": pet_score,
+            "brain_tools_diagnostics": tool_score,
+        },
+        "lines": {
+            "voice_continuous_conversation": {
+                "state": voice_state,
+                "score": voice_score,
+                "ready": voice_state == "ready",
+                "needs_device": bool(skip_device),
+                "detail": "ASR/LLM/TTS 均配置后可完整语音对话；真机连续语音仍需 OPUS 真流验证。" if not voice_ready else "Provider 已配置，等待真机连续流验收。" if skip_device else "语音链路可验收。",
+                "latest_turn": diagnostics.get("latest_turn", {}),
+                "latest_stream": latest_stream,
+                "next_step": "配置 Provider 后重启 Mac Brain；连接真机后跑 OPUS turn。" if not voice_ready else "连接真机后去掉 skip_device 跑完整验收。" if skip_device else "",
+            },
+            "dualeye_pet_apps": {
+                "state": pet_state,
+                "score": pet_score,
+                "ready": pet_state == "ready",
+                "needs_device": bool(skip_device),
+                "detail": f"已注册 app_count={app_count}，宠物/应用工具存在；真机显示效果需设备在线验证。",
+                "next_step": "连接 DualEye 后 smoke /app、/devices/<id>/app 和宠物状态工具。" if skip_device else "",
+            },
+            "brain_tools_diagnostics": {
+                "state": tool_state,
+                "score": tool_score,
+                "ready": tool_state == "ready",
+                "needs_device": False,
+                "detail": f"tool_count={tool_count}，runtime diagnostics 可定位 asr/llm/tool/tts/device_push/playback。",
+                "latest_tool": diagnostics.get("latest_tool", {}),
+                "latest_failure": diagnostics.get("latest_failure", {}),
+                "next_step": diagnostics.get("next_step", "") or "运行 /api/diagnostics/simulate-turn 或实际工具调用，查看 /api/runtime diagnostics。",
+            },
+        },
+    }
+
+
 def build_acceptance_report(bridge: Any, audio_ws_url: str = "", skip_device: bool = False) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
     started = time.time()
@@ -327,6 +404,7 @@ def build_acceptance_report(bridge: Any, audio_ws_url: str = "", skip_device: bo
     warnings = [item for item in checks if item.get("status") == "warn"]
     next_steps = [item["next_step"] for item in required_failed + warnings if item.get("next_step")]
     runtime_score = build_runtime_score_payload(bridge)
+    experience = build_experience_status(bridge, skip_device=skip_device)
     return {
         "ok": len(required_failed) == 0,
         "ready_to_flash_test": len(required_failed) == 0 and not skip_device,
@@ -336,6 +414,7 @@ def build_acceptance_report(bridge: Any, audio_ws_url: str = "", skip_device: bo
         "elapsed_ms": int((time.time() - started) * 1000),
         "summary": summary,
         "runtime_score": runtime_score,
+        "experience_status": experience,
         "xiaozhi_gap": {
             "objective_maturity_estimate": "Atlas 本轮按 80 分可验收口径补强：会话运行时、OPUS 真流入口、工具化应用、平台后端和验收页已具备；流式 ASR/TTS、AEC/WakeNet、生产级 OTA 仍是后续超过 xiaozhi 的核心差距。",
             "atlas_advantage": "双屏表情、桌面宠物应用、可视化主题与本地 Mac Brain 可调试性。",
