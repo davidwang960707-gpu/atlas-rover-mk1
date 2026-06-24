@@ -61,6 +61,18 @@ from atlas_brain_core import (
     ProviderDescriptor,
 )
 from atlas_brain_devices import DualEyeDeviceClient
+from atlas_brain_device_routes import (
+    devices_payload,
+    handle_device_app_page,
+    handle_device_detail,
+    handle_device_opus_stream_status,
+    handle_device_scene,
+    handle_device_selftest,
+    handle_device_system_info,
+    handle_devices_page,
+    handle_status,
+    live_device_payload,
+)
 from atlas_brain_ota import (
     build_ota_manifest,
     build_ota_manifest_response,
@@ -91,7 +103,7 @@ from atlas_brain_weather import (
     query_weather as query_weather_provider,
     weather_provider_status,
 )
-from atlas_web_ui import render_admin_page, render_device_app_page, render_devices_page
+from atlas_web_ui import render_admin_page
 
 
 DEFAULT_DUALEYE_URL = "http://192.168.4.1"
@@ -1499,74 +1511,6 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 "protocols": platform["protocols"],
             }
 
-        def live_device_payload(self) -> dict[str, Any]:
-            device = bridge.device_summary()
-            online = bool(device.get("online"))
-            status = bridge.last_status if online and isinstance(bridge.last_status, dict) else {}
-            scene = status.get("scene") if isinstance(status.get("scene"), dict) else {}
-            ui = status.get("ui") if isinstance(status.get("ui"), dict) else {}
-            runtime = status.get("runtime") if isinstance(status.get("runtime"), dict) else {}
-            audio_service = status.get("audio_service") if isinstance(status.get("audio_service"), dict) else {}
-            voice_wake = status.get("voice_wake") if isinstance(status.get("voice_wake"), dict) else {}
-            if not ui:
-                ui = {
-                    "page": device.get("page", ""),
-                    "theme": device.get("theme", ""),
-                    "chat_mode": device.get("chat_mode", "pet_head"),
-                    "expression": device.get("expression", ""),
-                }
-            if not scene:
-                if online:
-                    scene = {
-                        "state": device.get("scene_state") or "idle",
-                        "label": device.get("scene") or "待机",
-                        "title": device.get("scene_title") or "DualEye 已连接",
-                        "severity": device.get("scene_severity") or "info",
-                        "needs_attention": bool(device.get("needs_attention", False)),
-                    }
-                else:
-                    scene = {
-                        "state": "offline",
-                        "label": "设备离线",
-                        "title": "DualEye 不可达",
-                        "subtitle": str(device.get("error", "")),
-                        "hint": "检查 Wi-Fi、设备 IP 或 USB 供电",
-                        "severity": "warn",
-                        "needs_attention": True,
-                    }
-            if not audio_service:
-                audio_service = {
-                    "mode": device.get("audio_mode") or "idle",
-                    "active": False,
-                }
-            if not voice_wake:
-                voice_wake = {
-                    "enabled": bool(device.get("continuous_voice", False)),
-                }
-            return {
-                "ok": True,
-                "online": online,
-                "service": "atlas-brain",
-                "dualeye_url": bridge.dualeye_url,
-                "pairing_code_known": bool(bridge.pin),
-                "device_id": device.get("id", "dualeye"),
-                "device": device,
-                "scene": scene,
-            "ui": ui,
-            "pet_visual": bridge.session.pet_visual_snapshot(),
-            "runtime": runtime,
-                "audio_service": audio_service,
-                "voice_wake": voice_wake,
-                "providers": {
-                    "llm_enabled": bridge.llm_enabled(),
-                    "asr_enabled": bridge.asr_enabled(),
-                    "tts_enabled": bridge.tts_enabled(),
-                },
-                "latest_tts": latest_tts_meta(),
-                "last_turn": latest_turn_meta(),
-                "updated_at": int(time.time()),
-            }
-
         def cache_tts_and_push(self, tts_payload: dict[str, Any]) -> tuple[dict[str, Any], str, dict[str, Any]]:
             tts_store = store_latest_tts(tts_payload)
             if not tts_store.get("ready"):
@@ -2142,10 +2086,7 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 send_ota_package(self, name)
                 return
             if path == "/status":
-                try:
-                    self.send_json({"ok": True, "dualeye": bridge.status()})
-                except Exception as exc:
-                    self.send_json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_GATEWAY)
+                handle_status(self, bridge)
                 return
             if path == "/skills":
                 self.send_json({
@@ -2167,90 +2108,29 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                     self.send_json(payload)
                 return
             if path == "/api/devices" or path == "/devices.json":
-                snapshot = bridge.platform_snapshot()
-                self.send_json({
-                    "ok": True,
-                    "devices": snapshot["devices"],
-                    "admin_path": "/admin",
-                    "platform": {
-                        "service": "atlas-brain",
-                        "device_count": snapshot["summary"]["device_count"],
-                        "rover_skills_enabled": ENABLE_ROVER_SKILLS,
-                    },
-                })
+                self.send_json(devices_payload(bridge, rover_skills_enabled=ENABLE_ROVER_SKILLS))
                 return
             if path in {"/api/device/live", "/api/device/state"}:
-                self.send_json(self.live_device_payload())
+                self.send_json(live_device_payload(bridge))
                 return
             if path == "/api/device/scene":
-                try:
-                    status = bridge.status()
-                    self.send_json({
-                        "ok": True,
-                        "device_id": bridge.session.device_id or "dualeye",
-                        "device": bridge.device_summary(),
-                        "scene": status.get("scene", {}),
-                        "ui": status.get("ui", {}),
-                        "runtime": status.get("runtime", {}),
-                        "audio_service": status.get("audio_service", {}),
-                        "voice_wake": status.get("voice_wake", {}),
-                        "last_turn": latest_turn_meta(),
-                    })
-                except Exception as exc:
-                    device = bridge.device_summary()
-                    self.send_json({
-                        "ok": False,
-                        "offline": True,
-                        "error": str(exc),
-                        "device_id": device.get("id", "dualeye"),
-                        "scene": {
-                            "state": "offline",
-                            "label": "设备离线",
-                            "title": "DualEye 不可达",
-                            "subtitle": str(device.get("error", "") or exc),
-                            "hint": "检查 Wi-Fi、设备 IP 或 USB 供电",
-                            "severity": "error",
-                            "needs_attention": True,
-                        },
-                        "ui": {
-                            "page": device.get("page", ""),
-                            "theme": device.get("theme", ""),
-                            "expression": device.get("expression", ""),
-                        },
-                        "runtime": {},
-                        "audio_service": {},
-                        "voice_wake": {},
-                    })
+                handle_device_scene(self, bridge)
                 return
             if path == "/api/device/selftest":
-                try:
-                    self.send_json(http_json(f"{bridge.dualeye_url}/api/selftest", timeout=3.0))
-                except Exception as exc:
-                    self.send_json({"ok": False, "error": str(exc), "dualeye_url": bridge.dualeye_url}, HTTPStatus.BAD_GATEWAY)
+                handle_device_selftest(self, bridge)
                 return
             if path == "/api/device/system-info":
-                try:
-                    self.send_json(http_json(f"{bridge.dualeye_url}/api/system/info", timeout=3.0))
-                except Exception as exc:
-                    self.send_json({"ok": False, "error": str(exc), "dualeye_url": bridge.dualeye_url}, HTTPStatus.BAD_GATEWAY)
+                handle_device_system_info(self, bridge)
                 return
             if path == "/api/device/opus-stream/status":
-                try:
-                    self.send_json(bridge.dualeye_opus_stream_status())
-                except Exception as exc:
-                    self.send_json({"ok": False, "error": str(exc), "dualeye_url": bridge.dualeye_url}, HTTPStatus.BAD_GATEWAY)
+                handle_device_opus_stream_status(self, bridge)
                 return
             if path.startswith("/api/devices/"):
                 device_id = urllib.parse.unquote(path.removeprefix("/api/devices/")).strip("/")
-                snapshot = bridge.platform_snapshot()
-                for device in snapshot["devices"]:
-                    if str(device.get("id")) == device_id:
-                        self.send_json({"ok": True, "device": device})
-                        return
-                self.send_json({"ok": False, "error": f"device not found: {device_id}"}, HTTPStatus.NOT_FOUND)
+                handle_device_detail(self, bridge, device_id)
                 return
             if path == "/devices":
-                self.send_html(render_devices_page(bridge.devices()))
+                handle_devices_page(self, bridge)
                 return
             if path == "/acceptance":
                 self.send_html(f"""<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Atlas 烧录验收</title>
@@ -2287,13 +2167,12 @@ runAll();
 </script>""")
                 return
             if path == "/app" or (path.startswith("/devices/") and path.endswith("/app")):
-                device = bridge.device_summary()
-                self.send_html(render_device_app_page(
-                    device,
-                    dualeye_url=bridge.dualeye_url,
+                handle_device_app_page(
+                    self,
+                    bridge,
                     lan_url=f"http://{local_lan_ip()}:{self.server.server_address[1]}",
-                    rover_enabled=ENABLE_ROVER_SKILLS,
-                ))
+                    rover_skills_enabled=ENABLE_ROVER_SKILLS,
+                )
                 return
             if path == "/tools":
                 legacy_tools = [
@@ -2328,13 +2207,12 @@ runAll();
                 self.wfile.write(audio)
                 return
             if path == "/":
-                device = bridge.device_summary()
-                self.send_html(render_device_app_page(
-                    device,
-                    dualeye_url=bridge.dualeye_url,
+                handle_device_app_page(
+                    self,
+                    bridge,
                     lan_url=f"http://{local_lan_ip()}:{self.server.server_address[1]}",
-                    rover_enabled=ENABLE_ROVER_SKILLS,
-                ))
+                    rover_skills_enabled=ENABLE_ROVER_SKILLS,
+                )
                 return
             if path == "/admin":
                 health = self.health_payload()
