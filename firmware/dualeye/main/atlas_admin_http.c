@@ -40,6 +40,7 @@
 #include "common/atlas_common_assets.h"
 #include "common/atlas_common_config.h"
 #include "common/atlas_common_device_status.h"
+#include "common/atlas_common_tool_schema.h"
 
 static const char *TAG = "atlas_admin";
 
@@ -47,7 +48,7 @@ static const char *TAG = "atlas_admin";
 #define ATLAS_FIRMWARE_CHANNEL "dev"
 #define ATLAS_RESOURCE_VERSION ATLAS_COMMON_RESOURCE_VERSION
 #define ATLAS_FONT_VERSION ATLAS_COMMON_FONT_VERSION
-#define ATLAS_TOOL_SCHEMA_VERSION "atlas.tools.v0.desk_apps"
+#define ATLAS_TOOL_SCHEMA_VERSION ATLAS_COMMON_TOOL_SCHEMA_VERSION
 #define ATLAS_BRAIN_SESSION_PROTOCOL "atlas.brain.session.v1"
 #define ATLAS_BRAIN_SESSION_STAGE "P1_dualeye_persistent_ws"
 #define ATLAS_HTTP_JSON_CHUNK_THRESHOLD 1400
@@ -2722,33 +2723,23 @@ static bool authorize_tool_body(const char *body, const cJSON *root)
 
 static esp_err_t tools_list_handler(httpd_req_t *req)
 {
-    const char json[] =
-        "{"
-        "\"ok\":true,"
-        "\"protocol\":\"" ATLAS_TOOL_SCHEMA_VERSION "\","
-        "\"mcp_like\":true,"
-        "\"tool_count\":15,"
-        "\"call_endpoint\":\"/api/tools/call\","
-        "\"tools\":["
-        "{\"name\":\"atlas.show_page\",\"description\":\"切换 DualEye 页面\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"page\":{\"type\":\"string\",\"enum\":[\"eyes\",\"clock\",\"status\",\"voice\",\"music\",\"story\",\"chat\",\"calendar\",\"pomodoro\"]}},\"required\":[\"page\"]}},"
-        "{\"name\":\"atlas.set_expression\",\"description\":\"切换表情\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"expression\":{\"type\":\"string\"}},\"required\":[\"expression\"]}},"
-        "{\"name\":\"atlas.set_theme\",\"description\":\"切换并保存双眼主题\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"theme\":{\"type\":\"string\"}},\"required\":[\"theme\"]}},"
-        "{\"name\":\"atlas.role.switch\",\"description\":\"联动角色、主题、表情和页面\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"role\":{\"type\":\"string\",\"enum\":[\"pet\",\"raptor\",\"mecha\",\"goggle\"]}},\"required\":[\"role\"]}},"
-        "{\"name\":\"atlas.clock.show\",\"description\":\"打开桌面时钟\",\"inputSchema\":{\"type\":\"object\"}},"
-        "{\"name\":\"atlas.clock.sync\",\"description\":\"校准时钟\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"epoch_ms\":{\"type\":\"integer\"}}}},"
-        "{\"name\":\"atlas.calendar.show\",\"description\":\"打开日历\",\"inputSchema\":{\"type\":\"object\"}},"
-        "{\"name\":\"atlas.calendar.today\",\"description\":\"显示今日日历\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"note\":{\"type\":\"string\"}}}},"
-        "{\"name\":\"atlas.calendar.set_note\",\"description\":\"设置日历便签\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"note\":{\"type\":\"string\"}},\"required\":[\"note\"]}},"
-        "{\"name\":\"atlas.pomodoro.show\",\"description\":\"打开番茄专注\",\"inputSchema\":{\"type\":\"object\"}},"
-        "{\"name\":\"atlas.pomodoro.start\",\"description\":\"开始番茄专注\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"task_name\":{\"type\":\"string\"},\"focus_minutes\":{\"type\":\"integer\"},\"break_minutes\":{\"type\":\"integer\"}}}},"
-        "{\"name\":\"atlas.pomodoro.stop\",\"description\":\"停止番茄专注\",\"inputSchema\":{\"type\":\"object\"}},"
-        "{\"name\":\"atlas.pet.event\",\"description\":\"触发电子宠物事件\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"event\":{\"type\":\"string\"}},\"required\":[\"event\"]}},"
-        "{\"name\":\"atlas.audio.opus_stream.status\",\"description\":\"读取 OPUS 真流状态\",\"inputSchema\":{\"type\":\"object\"}},"
-        "{\"name\":\"atlas.ota.check\",\"description\":\"读取固件包/OTA manifest\",\"inputSchema\":{\"type\":\"object\"}}"
-        "],"
-        "\"notes\":\"固件侧 Tool Schema V0 只执行桌面应用和诊断工具；运动工具已从当前桌面版本边界移除。\""
-        "}";
-    return send_json(req, json);
+    const size_t json_size = 16000;
+    char *json = (char *)heap_caps_calloc(1, json_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (json == NULL) {
+        json = (char *)heap_caps_calloc(1, json_size, MALLOC_CAP_8BIT);
+    }
+    if (json == NULL) {
+        return send_error(req, "500 Internal Server Error", "no memory");
+    }
+
+    const size_t len = atlas_common_tool_schema_write_list_json(json, json_size);
+    if (!json_fragment_complete(len, json_size)) {
+        free(json);
+        return send_error(req, "500 Internal Server Error", "tool schema json overflow");
+    }
+    const esp_err_t ret = send_json(req, json);
+    free(json);
+    return ret;
 }
 
 static esp_err_t apply_role_switch(const cJSON *args, char *result, size_t result_size)
@@ -2881,6 +2872,45 @@ static esp_err_t tools_call_handler(httpd_req_t *req)
             manual_ui_override(now_ms(), "tool clock sync");
             ui_apply_page(ATLAS_PAGE_CLOCK, now_ms());
         }
+    } else if (strcmp(name, "atlas.status.read") == 0) {
+        char response[420];
+        snprintf(response,
+                 sizeof(response),
+                 "{\"ok\":true,\"protocol\":\"" ATLAS_TOOL_SCHEMA_VERSION "\",\"tool\":\"%s\","
+                 "\"result\":{\"page\":\"%s\",\"expression\":\"%s\",\"chat_mode\":\"%s\","
+                 "\"status_endpoint\":\"/api/status/lite\"},\"error\":\"\",\"error_code\":\"ok\"}",
+                 name,
+                 atlas_page_name(s_ctx.ui_state->page),
+                 atlas_expression_name(s_ctx.ui_state->expression),
+                 s_ctx.ui_state->chat_mode);
+        cJSON_Delete(root);
+        return send_json(req, response);
+    } else if (strcmp(name, "atlas.selftest.run") == 0) {
+        cJSON_Delete(root);
+        return selftest_handler(req);
+    } else if (strcmp(name, "atlas.brain.offline_status") == 0) {
+        atlas_brain_ws_status_t brain_ws;
+        atlas_brain_ws_client_get_status(&brain_ws);
+        char stage[96];
+        char url[200];
+        json_escape(stage, sizeof(stage), brain_ws.stage);
+        json_escape(url, sizeof(url), brain_ws.url);
+        char response[900];
+        snprintf(response,
+                 sizeof(response),
+                 "{\"ok\":true,\"protocol\":\"" ATLAS_TOOL_SCHEMA_VERSION "\",\"tool\":\"%s\","
+                 "\"result\":{\"enabled\":%s,\"connected\":%s,\"stage\":\"%s\",\"url\":\"%s\","
+                 "\"offline_policy\":\"device_local\",\"local_ui_available\":true},\"error\":\"\",\"error_code\":\"ok\"}",
+                 name,
+                 json_bool(brain_ws.enabled),
+                 json_bool(brain_ws.connected),
+                 stage,
+                 url);
+        cJSON_Delete(root);
+        return send_json(req, response);
+    } else if (strcmp(name, "atlas.rover.move") == 0 || strcmp(name, "atlas.rover.stop") == 0) {
+        err = ESP_ERR_NOT_SUPPORTED;
+        strlcpy(result, "rover motion disabled for dualeye desktop", sizeof(result));
     } else if (strcmp(name, "atlas.audio.opus_stream.status") == 0) {
         atlas_opus_stream_status_t status;
         atlas_opus_stream_get_status(&status);
@@ -2913,20 +2943,14 @@ static esp_err_t tools_call_handler(httpd_req_t *req)
     }
 
     cJSON_Delete(root);
-    char safe_result[240];
-    json_escape(safe_result, sizeof(safe_result), result);
-    char safe_name[128];
-    json_escape(safe_name, sizeof(safe_name), name);
     char response[760];
-    snprintf(response,
-             sizeof(response),
-             "{\"ok\":%s,\"protocol\":\"" ATLAS_TOOL_SCHEMA_VERSION "\",\"tool\":\"%s\",\"result\":\"%s\",\"page\":\"%s\",\"expression\":\"%s\",\"error\":\"%s\"}",
-             json_bool(err == ESP_OK),
-             safe_name,
-             safe_result,
-             atlas_page_name(s_ctx.ui_state->page),
-             atlas_expression_name(s_ctx.ui_state->expression),
-             err == ESP_OK ? "" : esp_err_to_name(err));
+    atlas_common_tool_schema_write_call_result_json(response,
+                                                    sizeof(response),
+                                                    name,
+                                                    result,
+                                                    atlas_page_name(s_ctx.ui_state->page),
+                                                    atlas_expression_name(s_ctx.ui_state->expression),
+                                                    err);
     if (err == ESP_ERR_NOT_FOUND) {
         httpd_resp_set_status(req, "404 Not Found");
     } else if (err == ESP_ERR_NOT_SUPPORTED) {
@@ -4603,8 +4627,11 @@ esp_err_t atlas_admin_http_start(atlas_config_t *config,
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/ota/manifest", HTTP_GET, ota_manifest_handler), TAG, "route ota manifest failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/ota/packages", HTTP_GET, ota_packages_handler), TAG, "route ota packages failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/ota/apply", HTTP_POST, ota_apply_handler), TAG, "route ota apply failed");
+    ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/tools", HTTP_GET, tools_list_handler), TAG, "route tools failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/tools/list", HTTP_GET, tools_list_handler), TAG, "route tools list failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/tools/call", HTTP_POST, tools_call_handler), TAG, "route tools call failed");
+    ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/mcp/tools/list", HTTP_GET, tools_list_handler), TAG, "route mcp tools list failed");
+    ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/mcp/tools/call", HTTP_POST, tools_call_handler), TAG, "route mcp tools call failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/wifi/scan", HTTP_GET, wifi_scan_handler), TAG, "route wifi scan failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/audio/status", HTTP_GET, audio_status_handler), TAG, "route audio status failed");
     ESP_RETURN_ON_ERROR(register_uri(s_ctx.server, "/api/audio/beep", HTTP_POST, audio_beep_handler), TAG, "route audio beep failed");

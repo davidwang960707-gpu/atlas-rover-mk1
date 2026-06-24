@@ -429,7 +429,9 @@ static bool parse_tool_call(const cJSON *root, atlas_brain_intent_t *intent, cha
         return true;
     }
 
-    if (strcmp(tool, "atlas_set_expression") == 0 || strcmp(tool, "eyes.set_expression") == 0) {
+    if (strcmp(tool, "atlas.set_expression") == 0 ||
+        strcmp(tool, "atlas_set_expression") == 0 ||
+        strcmp(tool, "eyes.set_expression") == 0) {
         char expression_name[24] = "";
         if (!json_string_to_buffer(input, "expression", expression_name, sizeof(expression_name)) ||
             !atlas_expression_from_name(expression_name, &intent->expression)) {
@@ -440,7 +442,9 @@ static bool parse_tool_call(const cJSON *root, atlas_brain_intent_t *intent, cha
         return true;
     }
 
-    if (strcmp(tool, "atlas_show_page") == 0 || strcmp(tool, "display.show_page") == 0) {
+    if (strcmp(tool, "atlas.show_page") == 0 ||
+        strcmp(tool, "atlas_show_page") == 0 ||
+        strcmp(tool, "display.show_page") == 0) {
         char page_name[24] = "";
         if (!json_string_to_buffer(input, "page", page_name, sizeof(page_name)) ||
             !atlas_page_from_name(page_name, &intent->page)) {
@@ -518,7 +522,9 @@ static bool parse_tool_call(const cJSON *root, atlas_brain_intent_t *intent, cha
         return true;
     }
 
-    if (strcmp(tool, "atlas_pet_event") == 0 || strcmp(tool, "pet.event") == 0) {
+    if (strcmp(tool, "atlas.pet.event") == 0 ||
+        strcmp(tool, "atlas_pet_event") == 0 ||
+        strcmp(tool, "pet.event") == 0) {
         char event_name[24] = "";
         if (!json_string_to_buffer(input, "event", event_name, sizeof(event_name)) ||
             !atlas_pet_event_from_name(event_name, &intent->pet_event)) {

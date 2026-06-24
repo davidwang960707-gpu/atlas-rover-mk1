@@ -135,9 +135,18 @@
 
 计划：
 
-- common 层定义 tool descriptor、JSON list writer、call dispatcher。
-- app 层注册 eyes、clock、calendar、pomodoro、status、audio、ota 等 DualEye tool handlers。
+- 新增 `firmware/dualeye/main/common/atlas_common_tool_schema.*`。
+- common 层定义 `atlas.tools.v0.desk_apps`、tool descriptor、参数摘要 JSON、结果码和工具调用结果 writer。
+- app 层继续持有实际执行逻辑：eyes、theme、chat mode、clock、calendar、pomodoro、pet_head、status/selftest、audio、ota 等 handler 不迁入 common。
+- `/api/tools`、`/api/tools/list`、`/mcp/tools/list` 复用同一份工具表；`/api/tools/call`、`/mcp/tools/call` 复用同一调用入口。
+- 工具调用返回保留旧字段，并兼容式新增 `error_code`；运动工具保留 `enabled=false` 能力声明，不作为桌面版主线。
 - 固件只更新 `specs/atlas_tool_schema_v0.md` 的兼容扩展，不直接改 Brain 实现。
+
+下一步验收：
+
+- 构建通过。
+- `/api/tools/list` 与 `/mcp/tools/list` 返回 `atlas.tools.v0.desk_apps`，包含 display、chat mode、clock、calendar、pomodoro、pet_head、Brain offline、audio/OTA 状态工具。
+- `/api/tools/call` 与 `/mcp/tools/call` 继续支持页面/表情/主题、番茄、日历、宠物头等本地工具；失败时返回兼容旧 `error` 字段和新增 `error_code`。
 
 ### 后续 OTA manifest/包管理接口
 

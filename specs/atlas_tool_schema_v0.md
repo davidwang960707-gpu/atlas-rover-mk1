@@ -139,6 +139,9 @@
 - 新工具必须先出现在 Brain 侧，再决定是否需要设备侧实现。
 - 设备不支持的工具必须返回明确错误，而不是静默成功。
 - motion 工具在当前桌面版默认不注册或 `enabled=false`。
+- 固件 common 层以 `atlas_common_tool_schema.*` 固化本地工具能力声明、参数摘要、结果码和兼容 JSON writer；HTTP route 可以复用同一份 schema 输出。
+- 固件侧 `/api/tools`、`/api/tools/list`、`/mcp/tools/list` 返回同一份兼容工具表；`/api/tools/call`、`/mcp/tools/call` 保持旧字段 `ok/protocol/tool/result/page/expression/error`，并可兼容式新增 `error_code`。
+- DualEye 本地主链路工具包括页面/表情/主题、`atlas.ui.set_chat_mode`、时钟、番茄、日历、宠物头状态/动画、Brain 离线状态、OPUS 状态和 OTA 检查；小车移动工具只能 `enabled=false` 或按安全策略降级。
 
 ## 8. 验收方法
 
@@ -154,4 +157,3 @@ curl -X POST http://127.0.0.1:8787/api/tools/call \
 - 工具有 `name/description/inputSchema/risk/target`。
 - 失败有结构化 error。
 - 工具调用后设备状态可在 `/api/status/lite` 或 `/api/device/scene` 看到。
-
