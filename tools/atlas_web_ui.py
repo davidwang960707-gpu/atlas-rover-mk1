@@ -572,7 +572,7 @@ _APP_TEMPLATE = Template("""<!doctype html><html lang="zh-CN"><meta charset="utf
   <section class="panel stack control-block">
     <div><p class="eyebrow">Boot Intro</p><h2>小鲅 X1 开机动画</h2><p class="subtitle">左屏土拨鼠头睡醒，右屏 8-bit 像素状态面板。资源随 SPIFFS 烧录，无 SD 卡也能播放。</p></div>
     <div class="boot-preview">
-      <div class="boot-preview-frame"><img src="/assets/boot_preview/xiaoba_x1/xiaoba_x1_boot_intro_preview_v0_1.gif" alt="小鲅 X1 开机动画预览"></div>
+      <div class="boot-preview-frame"><img src="/assets/boot_preview/xiaoba_x1/xiaoba_x1_boot_intro_preview_v0_1.gif?v=0.1.1" alt="小鲅 X1 开机动画预览"></div>
       <div class="boot-spec">
         <span class="pill">产品标识 小鲅 X1</span>
         <span class="pill">6 帧 · 6fps · 约 1 秒</span>

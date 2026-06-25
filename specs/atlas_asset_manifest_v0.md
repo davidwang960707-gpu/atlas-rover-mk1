@@ -123,7 +123,7 @@ sdcard/
   "protocol": "atlas.boot_intro.v0",
   "id": "xiaoba_x1_boot_intro",
   "product_name": "小鲅 X1",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "canvas": {"width": 240, "height": 240},
   "fps": 6,
   "duration_ms": 1000,

@@ -111,30 +111,31 @@ def fit_pet(image: Image.Image, zoom: float, offset_y: int, alpha: int = 255, ro
 
 def pet_frame(index: int) -> Image.Image:
     # A deliberately sleepy, slightly delayed wake-up. It keeps the "only head"
-    # constraint and reuses the current no-SD pet_head assets.
+    # constraint and reuses only clean no-SD pet_head assets. Do not use the
+    # blink animation frames here: some of those frames intentionally exaggerate
+    # brow/eye motion and can look like four eyes during the boot intro.
     if index == 0:
         base = load_pet_asset("keyframes/sleepy.png")
         alpha = 150
-        zoom = 0.94
-        y = 8
+        zoom = 0.82
+        y = 16
         frame = fit_pet(base, zoom, y, alpha=alpha)
     elif index == 1:
-        base = load_pet_asset("keyframes/idle.png")
-        frame = fit_pet(base, 0.98, 2)
+        base = load_pet_asset("keyframes/sleepy.png")
+        frame = fit_pet(base, 0.86, 12, alpha=230)
     elif index == 2:
-        blink_index = 4
-        base = load_pet_asset(f"animations/blink/frame_{blink_index:02d}.png")
-        frame = fit_pet(base, 0.98, 2, rotate=-1.0)
+        base = load_pet_asset("keyframes/idle.png")
+        frame = fit_pet(base, 0.88, 9)
     elif index == 3:
-        view = "yaw_l30"
+        view = "yaw_l15"
         base = load_pet_asset(f"views/listen/{view}.png")
-        frame = fit_pet(base, 1.0, 0)
+        frame = fit_pet(base, 0.88, 9)
     elif index == 4:
-        base = load_pet_asset("animations/speak/frame_06.png")
-        frame = fit_pet(base, 1.01, -1, rotate=0.8 * math.sin(index))
+        base = load_pet_asset("keyframes/speak.png")
+        frame = fit_pet(base, 0.88, 9, rotate=0.8 * math.sin(index))
     else:
-        base = load_pet_asset("views/idle/yaw_c.png")
-        frame = fit_pet(base, 1.0, 0)
+        base = load_pet_asset("keyframes/happy.png")
+        frame = fit_pet(base, 0.88, 9)
 
     out = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     shadow = alpha_blur(frame)
@@ -216,15 +217,15 @@ def right_frame(index: int) -> Image.Image:
     # Chinese product name is pre-rendered into PNG, not delegated to firmware fonts.
     center_text(draw, 28, "小鲅 X1", FONT_TITLE, PALETTE["cream"])
     draw.text((26, 53), "BOOT", font=FONT_SMALL, fill=PALETTE["orange"])
-    draw.text((61, 53), "READY" if index >= 21 else "START", font=FONT_SMALL, fill=PALETTE["line"])
+    draw.text((61, 53), "READY" if index >= FRAME_COUNT - 1 else "START", font=FONT_SMALL, fill=PALETTE["line"])
 
     draw_progress(draw, frame)
 
     icon_states = [
-        ("LCD", index >= 3),
-        ("Wi-Fi", index >= 8),
-        ("Brain", index >= 14),
-        ("Audio", index >= 18),
+        ("LCD", index >= 1),
+        ("Wi-Fi", index >= 2),
+        ("Brain", index >= 3),
+        ("Audio", index >= 4),
     ]
     for i, (label, active) in enumerate(icon_states):
         y = 100 + i * 0  # keep icons on one row for the round safe area.
@@ -261,7 +262,7 @@ def write_manifest() -> None:
         "id": "xiaoba_x1_boot_intro",
         "product_name": "小鲅 X1",
         "internal_codename": "dualeye_pet_device",
-        "version": "0.1.0",
+        "version": "0.1.1",
         "canvas": {"width": SIZE, "height": SIZE},
         "fps": FPS,
         "duration_ms": int(FRAME_COUNT / FPS * 1000),
