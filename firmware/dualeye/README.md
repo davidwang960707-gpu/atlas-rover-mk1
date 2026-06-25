@@ -33,7 +33,7 @@ V0.15.0 已经从单文件脚手架升级为可配网、可管理、可日常控
 - Web 宠物控制：`/app` 已补电子宠物区块，可查看心情/能量/好奇心，并触发摸摸、玩耍、补能、休息、巡游、音乐、故事、对话状态。
 - 对话界面模式：新增 `pet_head/text/eyes_only` 三种模式；`pet_head` 为左屏 2.5D 土拨鼠头、右屏短文本，`text` 为双屏文字，`eyes_only` 为纯表情眼睛。
 - pet_head 资源：内置 `atlas_pet_head` V0.3，透明底、无 SD 卡、只有头；包含 11 张关键帧、`idle/listen/think/speak` 的 5 个 yaw 角度、4 条 6 帧转头过渡，以及 `blink/speak/sing/laugh` 4 组动画；`/api/selftest` 会检查 manifest、idle keyframe、speak animation、view 和 turn 资源。
-- 小鲅 X1 开机动画：内置 `boot/xiaoba_x1` V0.1，左屏土拨鼠头睡醒/眨眼/转头，右屏 8-bit 像素状态面板显示 `小鲅 X1`；6 帧、6fps、约 1 秒，显示层在启动前约 1 秒优先播放，资源缺失时降级到 fallback/正常页面。
+- 小鲅 X1 开机动画：内置 `boot/xiaoba_x1` V0.1.1，左屏土拨鼠头睡醒/转头/开心，右屏 8-bit 像素状态面板显示 `小鲅 X1`；6 帧、6fps、约 1 秒，显示层在启动前约 1 秒优先播放，资源缺失时降级到 fallback/正常页面。
 - Atlas Brain 适配层：当前支持本地关键词意图、LLM 配置状态、Mac 桥接服务，以及 `/api/intent` 结构化意图执行入口；`/api/brain/intent` 只保留旧客户端兼容。
 - 主题同步：`raptor`（猛禽眼）、`mecha`（机械电子眼）、`goggle`（护目镜眼）、`pet`（电子宠物巡游）、`blue_pupil`（蓝色瞳孔）、`no_smoking`（禁烟禁电子烟）、`tomoe_spin`（红色旋纹）已升级为 V0.4 单眼资源；每套包含 `idle/blink/listen` 三态、左右眼各一张 240x240 PNG，共 42 张，打包进 `storage` SPIFFS 分区。`pet` 使用 `/Users/macbook/Desktop/marmot-pet` 里的电子宠物 IP，`classic`、`amber`、`mint`、`alert`、`night` 保留为参数化绘制回退风格。
 - 眼睛活性：PNG 不再只是静态贴图，固件会按时间自动眨眼，并对聆听/思考/说话/移动状态加入轻微呼吸、漂移和脉冲。
@@ -71,7 +71,7 @@ V0.15.0 已经从单文件脚手架升级为可配网、可管理、可日常控
 - V0.14.3 Atlas Brain 主线改造：Mac 主服务入口切到 `tools/atlas_brain_server.py`；DualEye 新增 `/api/intent`，旧路径作为兼容别名；管理页、README、预览工具和启动脚本统一 Atlas Brain / Mac 桥口径。
 - V0.14.4 pet_head 对话界面：固件新增 `chat_mode` 持久化配置和状态上报，`/app` 与 `/admin` 可切换 `pet_head/text/eyes_only`；Atlas Brain 工具表新增 `atlas.ui.set_chat_mode`、`atlas.pet.set_state`、`atlas.pet.play_animation`；SPIFFS 内置 42 张 pet_head PNG，压缩后总资源目录约 3.6MB，`idf.py build` 通过，app 大小 `0x23b070`。
 - V0.14.8 pet_head 拟 3D 转头：资源升级为 `atlas.pet_head.v0.3`，透明 PNG 内置 SPIFFS，无需 SD 卡；待机会左右慢转头，聆听/思考轻微摆头，说话保留 10fps 嘴型动画，资源目录约 1.1MB，整个 `storage` 源目录约 3.8MB。
-- V0.15.0 小鲅 X1 开机动画：资源升级为 `dualeye-assets-v0.7-xiaoba-boot`，新增 `boot/xiaoba_x1` 6 帧双屏 PNG；UI task 提前到显示初始化后启动，冷启动即可看到开机动画；`/api/selftest` 会检查 boot manifest、左右首帧和 fallback。
+- V0.15.1 小鲅 X1 开机动画验收修复：资源升级为 `dualeye-assets-v0.8-xiaoba-boot-verified`，修复初版误用 blink 脏帧导致的“四眼”问题；新增 Brain/Firmware 资源哈希比对、四眼检测和圆屏烧录等效预览，冷启动仍播放约 1 秒；`/api/selftest` 会检查 boot manifest、左右首帧和 fallback。
 - V0.12 场景总线：新增 `atlas_scene`，把页面、表情、runtime、audio service、Wi-Fi、Mac Brain 配置合成为统一 `scene`；`/api/status`、`/api/diagnostics/turn`、屏幕状态页和 Mac Brain 设备页使用同一套场景判断。
 - V0.12 状态体验：`status` 与 `voice` 不再是普通眼睛页，已补成双屏信息页；配网、监听、录音、识别、思考、播放、收尾、大脑离线、音频异常都会显示明确标题、原因和下一步提示。
 - Flash/PSRAM 配置：已按 DualEye 官方规格设置为 16MB Flash、8MB PSRAM 方向；当前使用 960KB `model` 分区、双 5MB OTA app slot 和 4MB `storage` SPIFFS 资源分区。

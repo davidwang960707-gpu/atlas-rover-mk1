@@ -9,7 +9,7 @@
 #define ATLAS_COMMON_EYE_THEME_PROTOCOL "atlas.eye_theme.v0"
 #define ATLAS_COMMON_BOOT_INTRO_PROTOCOL "atlas.boot_intro.v0"
 #define ATLAS_COMMON_ASSET_PACK_ID "dualeye-assets"
-#define ATLAS_COMMON_RESOURCE_VERSION "dualeye-assets-v0.7-xiaoba-boot"
+#define ATLAS_COMMON_RESOURCE_VERSION "dualeye-assets-v0.8-xiaoba-boot-verified"
 #define ATLAS_COMMON_FONT_VERSION "atlas_font_zh_16_3500"
 #define ATLAS_COMMON_ASSET_MOUNT_PATH "/spiffs"
 #define ATLAS_COMMON_ASSET_PARTITION_LABEL "storage"
