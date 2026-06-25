@@ -128,6 +128,8 @@ static atlas_lvgl_eye_t s_eye[2];
 static bool s_lvgl_ready;
 static bool s_assets_ready;
 static bool s_lvgl_asset_fs_registered;
+static uint32_t s_boot_intro_start_ms;
+static bool s_boot_intro_done;
 
 #define ATLAS_VALIDATED_EYE_ASSET_MAX 192
 
@@ -499,6 +501,55 @@ static bool validate_eye_asset(const char *src)
              (unsigned)header.h,
              (unsigned)header.cf);
     remember_valid_eye_asset(src);
+    return true;
+}
+
+static void set_vector_objects_hidden(atlas_lvgl_eye_t *eye, bool hidden);
+static void hide_page_content(atlas_lvgl_eye_t *eye);
+
+static bool render_boot_intro_frame(size_t index, uint32_t now_ms)
+{
+    atlas_lvgl_eye_t *eye = &s_eye[index];
+    if (s_boot_intro_done || !s_assets_ready || eye->asset_img == NULL) {
+        return false;
+    }
+
+    if (s_boot_intro_start_ms == 0) {
+        s_boot_intro_start_ms = now_ms == 0 ? 1u : now_ms;
+    }
+
+    const uint32_t elapsed = now_ms > s_boot_intro_start_ms ? now_ms - s_boot_intro_start_ms : 0;
+    if (elapsed > ATLAS_COMMON_BOOT_INTRO_DURATION_MS + 120u) {
+        s_boot_intro_done = true;
+        return false;
+    }
+
+    const uint8_t frame = (uint8_t)clamp_u16((int)((elapsed * ATLAS_COMMON_BOOT_INTRO_FPS) / 1000u),
+                                             0,
+                                             ATLAS_COMMON_BOOT_INTRO_FRAME_COUNT - 1u);
+    const char *side = index == 0 ? "left" : "right";
+    char src[128];
+    atlas_common_assets_boot_intro_frame_lvgl_path(src, sizeof(src), side, frame);
+    if (!asset_exists(src) || !validate_eye_asset(src)) {
+        atlas_common_assets_boot_intro_fallback_lvgl_path(src, sizeof(src), side);
+        if (!asset_exists(src) || !validate_eye_asset(src)) {
+            s_boot_intro_done = true;
+            return false;
+        }
+    }
+
+    lv_obj_set_style_bg_color(eye->screen, rgb(0x080D18), LV_PART_MAIN);
+    if (strcmp(eye->asset_src, src) != 0) {
+        lv_img_set_src(eye->asset_img, src);
+        strlcpy(eye->asset_src, src, sizeof(eye->asset_src));
+    }
+    lv_obj_clear_flag(eye->asset_img, LV_OBJ_FLAG_HIDDEN);
+    lv_img_set_zoom(eye->asset_img, 256);
+    lv_img_set_angle(eye->asset_img, 0);
+    lv_obj_center(eye->asset_img);
+    lv_obj_move_background(eye->asset_img);
+    set_vector_objects_hidden(eye, true);
+    hide_page_content(eye);
     return true;
 }
 
@@ -1288,6 +1339,10 @@ static void render_lvgl_eye(size_t index,
 {
     atlas_lvgl_eye_t *eye = &s_eye[index];
     if (eye->screen == NULL || pose == NULL) {
+        return;
+    }
+
+    if (render_boot_intro_frame(index, now_ms)) {
         return;
     }
 
@@ -2513,6 +2568,8 @@ esp_err_t atlas_display_init(void)
 #if CONFIG_ATLAS_DISPLAY_WAVESHARE_LVGL
     const esp_err_t err = init_waveshare_lvgl_backend();
     if (err == ESP_OK) {
+        s_boot_intro_start_ms = (uint32_t)(esp_timer_get_time() / 1000);
+        s_boot_intro_done = false;
         return ESP_OK;
     }
     ESP_LOGE(TAG, "Waveshare LVGL backend failed: %s; falling back to log renderer", esp_err_to_name(err));

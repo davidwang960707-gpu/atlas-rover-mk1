@@ -119,19 +119,18 @@ void app_main(void)
     atlas_ui_apply_config(&s_ui_state, &s_config);
 
     ESP_ERROR_CHECK(atlas_display_init());
+    xTaskCreate(ui_task, "atlas_ui", ATLAS_UI_TASK_STACK_BYTES, NULL, 5, NULL);
+
     const esp_err_t audio_err = atlas_audio_init(s_config.ui.volume);
     if (audio_err != ESP_OK) {
         ESP_LOGW(TAG, "audio self-test layer init failed: %s", esp_err_to_name(audio_err));
     }
     ESP_ERROR_CHECK(atlas_rover_uart_init());
+    ESP_ERROR_CHECK(atlas_ui_stop(&s_ui_state, atlas_now_ms()));
     ESP_ERROR_CHECK(atlas_wifi_start(&s_config));
     ESP_ERROR_CHECK(atlas_brain_ws_client_start(&s_config, atlas_now_ms));
     ESP_ERROR_CHECK(atlas_admin_http_start(&s_config, &s_ui_state, atlas_now_ms));
 
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    ESP_ERROR_CHECK(atlas_ui_stop(&s_ui_state, atlas_now_ms()));
-
-    xTaskCreate(ui_task, "atlas_ui", ATLAS_UI_TASK_STACK_BYTES, NULL, 5, NULL);
     xTaskCreate(chassis_rx_task, "chassis_rx", ATLAS_IO_TASK_STACK_BYTES, NULL, 6, NULL);
 #if ATLAS_ENABLE_DEV_EVENT_DEMO
     xTaskCreate(dev_event_demo_task, "dev_events", ATLAS_IO_TASK_STACK_BYTES, NULL, 4, NULL);

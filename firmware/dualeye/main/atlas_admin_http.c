@@ -2972,7 +2972,7 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              "\"checks\":["
              "{\"id\":\"firmware_fingerprint\",\"status\":\"pass\",\"detail\":\"version " ATLAS_FIRMWARE_VERSION "\"},"
              "{\"id\":\"spiffs_storage\",\"status\":\"%s\",\"detail\":\"total=%u used=%u err=%s\"},"
-             "{\"id\":\"eye_assets\",\"status\":\"%s\",\"detail\":\"manifest=%s pet=%s goggle=%s tomoe=%s no_smoking=%s pet_head_manifest=%s pet_head_idle=%s pet_head_speak=%s pet_head_views=%s pet_head_turn=%s version=" ATLAS_RESOURCE_VERSION "\"},"
+             "{\"id\":\"eye_assets\",\"status\":\"%s\",\"detail\":\"manifest=%s pet=%s goggle=%s tomoe=%s no_smoking=%s pet_head_manifest=%s pet_head_idle=%s pet_head_speak=%s pet_head_views=%s pet_head_turn=%s boot_manifest=%s boot_left0=%s boot_right0=%s boot_fallback=%s version=" ATLAS_RESOURCE_VERSION "\"},"
              "{\"id\":\"wifi\",\"status\":\"%s\",\"detail\":\"mode=%s sta=%s sta_ip=%s ap=%s ap_ip=%s\"},"
              "{\"id\":\"mac_brain_config\",\"status\":\"%s\",\"detail\":\"mode=%s base_url=%s configured=%s\"},"
              "{\"id\":\"audio_hw\",\"status\":\"%s\",\"detail\":\"input=%s output=%s err=%s\"},"
@@ -3016,6 +3016,10 @@ static esp_err_t selftest_handler(httpd_req_t *req)
              json_bool(asset_probe.pet_head_speak),
              json_bool(asset_probe.pet_head_view),
              json_bool(asset_probe.pet_head_turn),
+             json_bool(asset_probe.boot_intro_manifest),
+             json_bool(asset_probe.boot_intro_left_frame0),
+             json_bool(asset_probe.boot_intro_right_frame0),
+             json_bool(asset_probe.boot_intro_fallback),
              wifi_status,
              wifi_mode,
              json_bool(wifi.sta_connected),

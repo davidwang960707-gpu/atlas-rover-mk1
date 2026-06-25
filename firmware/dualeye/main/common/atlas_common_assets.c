@@ -54,6 +54,11 @@ void atlas_common_assets_probe(atlas_common_assets_probe_t *probe)
                          atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_PET_HEAD_THINK_YAW_R15_PATH),
         .pet_head_turn = atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_PET_HEAD_TURN_C_TO_L30_FRAME0_PATH) &&
                          atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_PET_HEAD_TURN_R30_TO_C_FRAME5_PATH),
+        .boot_intro_manifest = atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_BOOT_INTRO_MANIFEST_PATH),
+        .boot_intro_left_frame0 = atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_BOOT_INTRO_LEFT_FRAME0_PATH),
+        .boot_intro_right_frame0 = atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_BOOT_INTRO_RIGHT_FRAME0_PATH),
+        .boot_intro_fallback = atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_BOOT_INTRO_FALLBACK_LEFT_PATH) &&
+                               atlas_common_assets_file_exists(ATLAS_COMMON_ASSET_BOOT_INTRO_FALLBACK_RIGHT_PATH),
     };
     probe->ok_count = count_true(probe->eye_manifest) +
                       count_true(probe->eye_pet_idle) +
@@ -64,12 +69,16 @@ void atlas_common_assets_probe(atlas_common_assets_probe_t *probe)
                       count_true(probe->pet_head_idle) +
                       count_true(probe->pet_head_speak) +
                       count_true(probe->pet_head_view) +
-                      count_true(probe->pet_head_turn);
+                      count_true(probe->pet_head_turn) +
+                      count_true(probe->boot_intro_manifest) +
+                      count_true(probe->boot_intro_left_frame0) +
+                      count_true(probe->boot_intro_right_frame0) +
+                      count_true(probe->boot_intro_fallback);
 }
 
 bool atlas_common_assets_probe_pass(const atlas_common_assets_probe_t *probe, bool storage_ok)
 {
-    return storage_ok && probe != NULL && probe->ok_count >= 9u;
+    return storage_ok && probe != NULL && probe->ok_count >= 13u;
 }
 
 bool atlas_common_assets_probe_warn(const atlas_common_assets_probe_t *probe, bool storage_ok)
@@ -188,4 +197,34 @@ size_t atlas_common_assets_pet_head_animation_lvgl_path(char *dst,
                             ATLAS_COMMON_ASSET_LVGL_LETTER,
                             animation == NULL ? "" : animation,
                             frame);
+}
+
+size_t atlas_common_assets_boot_intro_frame_lvgl_path(char *dst,
+                                                      size_t dst_size,
+                                                      const char *side,
+                                                      uint8_t frame)
+{
+    if (dst == NULL || dst_size == 0) {
+        return 0;
+    }
+    return (size_t)snprintf(dst,
+                            dst_size,
+                            "%c:/boot/xiaoba_x1/%s/frame_%02u.png",
+                            ATLAS_COMMON_ASSET_LVGL_LETTER,
+                            side == NULL || side[0] == '\0' ? "left" : side,
+                            frame);
+}
+
+size_t atlas_common_assets_boot_intro_fallback_lvgl_path(char *dst,
+                                                         size_t dst_size,
+                                                         const char *side)
+{
+    if (dst == NULL || dst_size == 0) {
+        return 0;
+    }
+    return (size_t)snprintf(dst,
+                            dst_size,
+                            "%c:/boot/xiaoba_x1/fallback_%s.png",
+                            ATLAS_COMMON_ASSET_LVGL_LETTER,
+                            side == NULL || side[0] == '\0' ? "left" : side);
 }

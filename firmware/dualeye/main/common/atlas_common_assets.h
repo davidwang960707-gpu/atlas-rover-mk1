@@ -7,12 +7,16 @@
 #define ATLAS_COMMON_ASSET_MANIFEST_PROTOCOL "atlas.asset.manifest.v0"
 #define ATLAS_COMMON_PET_HEAD_PROTOCOL "atlas.pet_head.v0"
 #define ATLAS_COMMON_EYE_THEME_PROTOCOL "atlas.eye_theme.v0"
+#define ATLAS_COMMON_BOOT_INTRO_PROTOCOL "atlas.boot_intro.v0"
 #define ATLAS_COMMON_ASSET_PACK_ID "dualeye-assets"
-#define ATLAS_COMMON_RESOURCE_VERSION "dualeye-assets-v0.6-pet-head-yaw"
+#define ATLAS_COMMON_RESOURCE_VERSION "dualeye-assets-v0.7-xiaoba-boot"
 #define ATLAS_COMMON_FONT_VERSION "atlas_font_zh_16_3500"
 #define ATLAS_COMMON_ASSET_MOUNT_PATH "/spiffs"
 #define ATLAS_COMMON_ASSET_PARTITION_LABEL "storage"
 #define ATLAS_COMMON_ASSET_LVGL_LETTER 'A'
+#define ATLAS_COMMON_BOOT_INTRO_FRAME_COUNT 6u
+#define ATLAS_COMMON_BOOT_INTRO_FPS 6u
+#define ATLAS_COMMON_BOOT_INTRO_DURATION_MS 1000u
 
 #define ATLAS_COMMON_ASSET_EYE_MANIFEST_PATH "/spiffs/atlas_eyes/manifest.json"
 #define ATLAS_COMMON_ASSET_EYE_PET_IDLE_LEFT_PATH "/spiffs/atlas_eyes/pet/idle/left.png"
@@ -26,6 +30,11 @@
 #define ATLAS_COMMON_ASSET_PET_HEAD_THINK_YAW_R15_PATH "/spiffs/atlas_pet_head/views/think/yaw_r15.png"
 #define ATLAS_COMMON_ASSET_PET_HEAD_TURN_C_TO_L30_FRAME0_PATH "/spiffs/atlas_pet_head/transitions/turn_yaw_c_to_yaw_l30/frame_00.png"
 #define ATLAS_COMMON_ASSET_PET_HEAD_TURN_R30_TO_C_FRAME5_PATH "/spiffs/atlas_pet_head/transitions/turn_yaw_r30_to_yaw_c/frame_05.png"
+#define ATLAS_COMMON_ASSET_BOOT_INTRO_MANIFEST_PATH "/spiffs/boot/xiaoba_x1/manifest.json"
+#define ATLAS_COMMON_ASSET_BOOT_INTRO_LEFT_FRAME0_PATH "/spiffs/boot/xiaoba_x1/left/frame_00.png"
+#define ATLAS_COMMON_ASSET_BOOT_INTRO_RIGHT_FRAME0_PATH "/spiffs/boot/xiaoba_x1/right/frame_00.png"
+#define ATLAS_COMMON_ASSET_BOOT_INTRO_FALLBACK_LEFT_PATH "/spiffs/boot/xiaoba_x1/fallback_left.png"
+#define ATLAS_COMMON_ASSET_BOOT_INTRO_FALLBACK_RIGHT_PATH "/spiffs/boot/xiaoba_x1/fallback_right.png"
 
 typedef struct {
     bool eye_manifest;
@@ -38,6 +47,10 @@ typedef struct {
     bool pet_head_speak;
     bool pet_head_view;
     bool pet_head_turn;
+    bool boot_intro_manifest;
+    bool boot_intro_left_frame0;
+    bool boot_intro_right_frame0;
+    bool boot_intro_fallback;
     uint8_t ok_count;
 } atlas_common_assets_probe_t;
 
@@ -72,3 +85,10 @@ size_t atlas_common_assets_pet_head_animation_lvgl_path(char *dst,
                                                         size_t dst_size,
                                                         const char *animation,
                                                         uint8_t frame);
+size_t atlas_common_assets_boot_intro_frame_lvgl_path(char *dst,
+                                                      size_t dst_size,
+                                                      const char *side,
+                                                      uint8_t frame);
+size_t atlas_common_assets_boot_intro_fallback_lvgl_path(char *dst,
+                                                         size_t dst_size,
+                                                         const char *side);
