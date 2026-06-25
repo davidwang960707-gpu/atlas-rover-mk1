@@ -125,9 +125,9 @@ sdcard/
   "product_name": "小鲅 X1",
   "version": "0.1.0",
   "canvas": {"width": 240, "height": 240},
-  "fps": 12,
-  "duration_ms": 2600,
-  "frame_count": 31,
+  "fps": 6,
+  "duration_ms": 1000,
+  "frame_count": 6,
   "asset_policy": "embedded_spiffs_no_sdcard",
   "left": {
     "style": "pet_head_2_5d",

@@ -1,0 +1,39 @@
+{
+  "protocol": "atlas.boot_intro.v0",
+  "id": "xiaoba_x1_boot_intro",
+  "product_name": "小鲅 X1",
+  "internal_codename": "dualeye_pet_device",
+  "version": "0.1.0",
+  "canvas": {
+    "width": 240,
+    "height": 240
+  },
+  "fps": 6,
+  "duration_ms": 1000,
+  "frame_count": 6,
+  "asset_policy": "embedded_spiffs_no_sdcard",
+  "left": {
+    "style": "pet_head_2_5d",
+    "frames": "left/frame_%02d.png",
+    "fallback": "fallback_left.png"
+  },
+  "right": {
+    "style": "8bit_pixel_status",
+    "frames": "right/frame_%02d.png",
+    "fallback": "fallback_right.png"
+  },
+  "outcomes": {
+    "ready": {
+      "right_label": "READY",
+      "next_page": "eyes"
+    },
+    "local_mode": {
+      "right_label": "LOCAL",
+      "next_page": "clock"
+    },
+    "pairing": {
+      "right_label": "PAIR",
+      "next_page": "provisioning"
+    }
+  }
+}

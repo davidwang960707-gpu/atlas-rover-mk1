@@ -137,6 +137,8 @@ BRAIN_EVENTS: list[dict[str, Any]] = []
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 PET_HEAD_ASSET_ROOT = os.path.join(REPO_ROOT, "assets", "dualeye_sdcard_v0_1", "sdcard", "atlas_pet_head")
+BOOT_ASSET_ROOT = os.path.join(REPO_ROOT, "assets", "dualeye_sdcard_v0_1", "sdcard", "boot")
+BOOT_PREVIEW_ASSET_ROOT = os.path.join(REPO_ROOT, "assets", "dualeye_sdcard_v0_1", "source", "boot")
 
 ALLOWED_TOOLS = {
     "atlas_show_page",
@@ -872,7 +874,7 @@ class Bridge:
         self.platform.apps.upsert(AppDescriptor(
             app_id="dualeye-control",
             device_id=self.session.device_id or "dualeye",
-            name="Atlas DualEye 日常操作台",
+            name="小鲅 X1 日常操作台",
             route=f"/devices/{urllib.parse.quote(self.session.device_id or 'dualeye')}/app",
             features=["chat", "voice", "theme", "expression", "clock", "pomodoro", "calendar", "pet"],
         ))
@@ -1518,7 +1520,7 @@ def read_request_json(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
     return {key: values[-1] if values else "" for key, values in form.items()}
 
 
-def send_pet_head_asset(handler: BaseHTTPRequestHandler, rel_path: str) -> None:
+def send_static_asset(handler: BaseHTTPRequestHandler, root_dir: str, rel_path: str, *, send_body: bool = True) -> None:
     decoded = urllib.parse.unquote(rel_path or "").strip("/")
     normalized = os.path.normpath(decoded)
     if not normalized or normalized.startswith("..") or os.path.isabs(normalized):
@@ -1536,7 +1538,7 @@ def send_pet_head_asset(handler: BaseHTTPRequestHandler, rel_path: str) -> None:
         handler.send_json({"ok": False, "error": "unsupported asset type"}, HTTPStatus.BAD_REQUEST)
         return
 
-    root = os.path.realpath(PET_HEAD_ASSET_ROOT)
+    root = os.path.realpath(root_dir)
     full_path = os.path.realpath(os.path.join(root, normalized))
     if full_path != root and not full_path.startswith(root + os.sep):
         handler.send_json({"ok": False, "error": "asset path escaped root"}, HTTPStatus.BAD_REQUEST)
@@ -1553,7 +1555,23 @@ def send_pet_head_asset(handler: BaseHTTPRequestHandler, rel_path: str) -> None:
     handler.send_header("Access-Control-Allow-Origin", "*")
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
-    handler.wfile.write(body)
+    if send_body:
+        try:
+            handler.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            return
+
+
+def send_pet_head_asset(handler: BaseHTTPRequestHandler, rel_path: str, *, send_body: bool = True) -> None:
+    send_static_asset(handler, PET_HEAD_ASSET_ROOT, rel_path, send_body=send_body)
+
+
+def send_boot_asset(handler: BaseHTTPRequestHandler, rel_path: str, *, send_body: bool = True) -> None:
+    send_static_asset(handler, BOOT_ASSET_ROOT, rel_path, send_body=send_body)
+
+
+def send_boot_preview_asset(handler: BaseHTTPRequestHandler, rel_path: str, *, send_body: bool = True) -> None:
+    send_static_asset(handler, BOOT_PREVIEW_ASSET_ROOT, rel_path, send_body=send_body)
 
 
 def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
@@ -1566,7 +1584,7 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -2051,9 +2069,32 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
         def do_OPTIONS(self) -> None:
             self.send_response(HTTPStatus.NO_CONTENT)
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
             self.end_headers()
+
+        def do_HEAD(self) -> None:
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            if path == "/health":
+                body = json.dumps({"ok": True, "service": "atlas-brain"}).encode("utf-8")
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                return
+            if path.startswith("/assets/pet_head/"):
+                send_pet_head_asset(self, path.removeprefix("/assets/pet_head/"), send_body=False)
+                return
+            if path.startswith("/assets/boot_preview/"):
+                send_boot_preview_asset(self, path.removeprefix("/assets/boot_preview/"), send_body=False)
+                return
+            if path.startswith("/assets/boot/"):
+                send_boot_asset(self, path.removeprefix("/assets/boot/"), send_body=False)
+                return
+            self.send_json({"ok": False, "error": "not found"}, HTTPStatus.NOT_FOUND)
 
         def do_GET(self) -> None:
             parsed = urllib.parse.urlparse(self.path)
@@ -2167,6 +2208,12 @@ def make_handler(bridge: Bridge) -> type[BaseHTTPRequestHandler]:
                 return
             if path.startswith("/assets/pet_head/"):
                 send_pet_head_asset(self, path.removeprefix("/assets/pet_head/"))
+                return
+            if path.startswith("/assets/boot_preview/"):
+                send_boot_preview_asset(self, path.removeprefix("/assets/boot_preview/"))
+                return
+            if path.startswith("/assets/boot/"):
+                send_boot_asset(self, path.removeprefix("/assets/boot/"))
                 return
             if path.startswith("/api/devices/"):
                 device_id = urllib.parse.unquote(path.removeprefix("/api/devices/")).strip("/")

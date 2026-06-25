@@ -31,7 +31,7 @@ def live_device_payload(bridge: Any) -> dict[str, Any]:
             scene = {
                 "state": device.get("scene_state") or "idle",
                 "label": device.get("scene") or "待机",
-                "title": device.get("scene_title") or "DualEye 已连接",
+                "title": device.get("scene_title") or "小鲅 X1 已连接",
                 "severity": device.get("scene_severity") or "info",
                 "needs_attention": bool(device.get("needs_attention", False)),
             }
@@ -39,7 +39,7 @@ def live_device_payload(bridge: Any) -> dict[str, Any]:
             scene = {
                 "state": "offline",
                 "label": "设备离线",
-                "title": "DualEye 不可达",
+                "title": "小鲅 X1 不可达",
                 "subtitle": str(device.get("error", "")),
                 "hint": "检查 Wi-Fi、设备 IP 或 USB 供电",
                 "severity": "warn",
@@ -124,7 +124,7 @@ def handle_device_scene(handler: Any, bridge: Any) -> None:
             "scene": {
                 "state": "offline",
                 "label": "设备离线",
-                "title": "DualEye 不可达",
+                "title": "小鲅 X1 不可达",
                 "subtitle": str(device.get("error", "") or exc),
                 "hint": "检查 Wi-Fi、设备 IP 或 USB 供电",
                 "severity": "error",

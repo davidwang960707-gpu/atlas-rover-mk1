@@ -123,7 +123,7 @@ class DualEyeDeviceClient:
         voice_wake = status.get("voice_wake") if isinstance(status.get("voice_wake"), dict) else {}
         summary = {
             "id": self.session.device_id or "dualeye",
-            "name": "Atlas DualEye",
+            "name": "小鲅 X1",
             "model": "waveshare-dualeye-s3-1.28",
             "url": self.base_url,
             "online": online,

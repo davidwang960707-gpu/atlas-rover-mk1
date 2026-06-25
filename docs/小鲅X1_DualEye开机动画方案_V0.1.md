@@ -34,6 +34,8 @@
 
 总时长建议 2.4-2.8 秒，12 fps，约 30-34 帧。若冷启动资源紧张，可降到 18-24 帧。
 
+实装 V0.1 因 4MB SPIFFS 分区已有眼睛主题、pet_head 和 3500 字库，24 帧和 12 帧版都会触发 `spiffsgen.py` 空间不足，因此当前烧录安全版采用 **6 帧、6fps、约 1 秒**。分镜不变，只把睡醒、眨眼、转头、张嘴和 READY 合并为更短的节奏。
+
 | 时间 | 左屏 | 右屏 |
 |---|---|---|
 | 0.0-0.4s | 黑场中土拨鼠头轮廓微亮，眼睛闭着 | 像素边框扫入，显示 `小鲅 X1` |
@@ -95,9 +97,9 @@
   "internal_codename": "dualeye_pet_device",
   "version": "0.1.0",
   "canvas": {"width": 240, "height": 240},
-  "fps": 12,
-  "duration_ms": 2600,
-  "frame_count": 31,
+  "fps": 6,
+  "duration_ms": 1000,
+  "frame_count": 6,
   "asset_policy": "embedded_spiffs_no_sdcard",
   "left": {
     "style": "pet_head_2_5d",

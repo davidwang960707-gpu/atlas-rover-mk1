@@ -29,8 +29,8 @@ Atlas Rover Mk.1 想成为一个小而完整的桌面机器人实验平台：
 | 双目表情方案 | 已有 V0.6，按“一屏一眼”设计并补充页面视觉、应用能力映射和候选界面推荐 |
 | Web 表情预览 | 已可在 VS Code Live Preview 中查看，支持 5 套主题、16 个表情、时钟/状态/语音/音乐/故事/对话/日历/番茄页评审 |
 | DualEye 固件 | `0.14.7-acceptance` 已实机烧录验收，接入 Waveshare GC9A01/LVGL 双屏、SPIFFS 主题资源、3500 常用汉字、时钟/日历/番茄/电子宠物页面、三种对话界面 `pet_head/text/eyes_only`、2.5D 土拨鼠头关键帧/动画、语音 turn runtime 诊断、`atlas_audio_service`、主动 Atlas Brain `/ws/brain` 常驻会话、WS binary TTS 下行、Brain 离线本地页面降级、真实 OPUS 60ms 上行流、ESP-SR WakeNet 模型资源探针和完整自检/OTA 包接口 |
-| Web 应用/管理界面 | DualEye `/app` 日常控制页和 `/admin` 本地管理后台已可用；Mac 侧 Atlas Brain 新增 `atlas.ui.set_chat_mode`、`atlas.pet.set_state`、`atlas.pet.play_animation` 工具，设备 App 页会同步真实主题、页面、表情和对话界面模式，并按“一个设备一个 App 页、管理端平台化”收敛 |
-| 真机双屏显示 | 已接 Waveshare 官方同款 GC9A01/LVGL 初始化，4 套核心眼睛主题和新增主题资源已内置；番茄/时钟/日历页面仍会继续打磨视觉 |
+| Web 应用/管理界面 | DualEye `/app` 日常控制页和 `/admin` 本地管理后台已可用；Mac 侧 Atlas Brain 新增 `atlas.ui.set_chat_mode`、`atlas.pet.set_state`、`atlas.pet.play_animation` 工具，设备 App 页会同步真实主题、页面、表情和对话界面模式，并按“一个设备一个 App 页、管理端平台化”收敛；`/app` 已补“小鲅 X1”开机动画预览 |
+| 真机双屏显示 | 已接 Waveshare 官方同款 GC9A01/LVGL 初始化，4 套核心眼睛主题、新增主题资源、pet_head 和 `boot/xiaoba_x1` 开机动画已内置；番茄/时钟/日历页面仍会继续打磨视觉 |
 | 语音 Atlas Brain/MiMo | DualEye 通过 Atlas Brain / Mac 桥接对接 MiMo LLM/ASR/TTS；Atlas Brain 已拆出 `atlas_brain_providers.py` Provider 层，支持会话状态、Provider 诊断、技能系统、角色切换、天气、联网搜索骨架和平台化设备列表；`/api/device/opus-turn/start` 已可把 DualEye OPUS packet 封装 Ogg、解码 WAV 并进入 ASR |
 | 底盘开环控制 | XIAO ESP32C3 底盘固件 V0.1 已补齐但本轮默认不启用动态移动；服务端默认不注册 rover 移动技能，固件 `motion_supported=false`，后续动态版再恢复 |
 
